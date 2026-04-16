@@ -121,7 +121,7 @@ namespace CNoom.DOTweenVisual.Editor
             if (player != null)
             {
                 serializedObject = new SerializedObject(player);
-                stepsProperty = serializedObject.FindProperty("Steps");
+                stepsProperty = serializedObject.FindProperty("_steps");  // 使用私有字段名
                 Log($"stepsProperty: {stepsProperty}, arraySize: {stepsProperty?.arraySize}");
             }
             else
