@@ -602,7 +602,6 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 创建预览序列
             previewSequence = DOTween.Sequence();
-            previewSequence.SetUpdate(UpdateType.Editor);
 
             // 构建预览序列
             BuildPreviewSequence();
