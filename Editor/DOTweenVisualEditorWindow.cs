@@ -185,7 +185,7 @@ namespace CNoom.DOTweenVisual.Editor
             rootVisualElement.Add(timelineContainer);
             
             // 初始提示
-            var helpLabel = new Label("请选择一个包含 DOTweenVisualPlayer 组件的物体");
+            var helpLabel = new Label("请选择一个包含 DOTweenVisualPlayer 组件的物体") { name = "help-label" };
             helpLabel.AddToClassList("help-label");
             rootVisualElement.Add(helpLabel);
         }
@@ -220,10 +220,23 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (stepListView == null) return;
             
-            if (stepsProperty != null)
+            // 隐藏帮助提示
+            var helpLabel = rootVisualElement.Q<Label>("help-label");
+            if (helpLabel != null)
             {
+                helpLabel.style.display = stepsProperty != null ? DisplayStyle.None : DisplayStyle.Flex;
+            }
+            
+            if (stepsProperty != null && serializedObject != null)
+            {
+                // 确保 serializedObject 是最新的
+                serializedObject.Update();
+                
                 // 使用 BindProperty 绑定 SerializedProperty
                 stepListView.BindProperty(stepsProperty);
+                
+                // 强制刷新
+                stepListView.RefreshItems();
             }
             else
             {
