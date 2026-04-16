@@ -81,7 +81,7 @@ namespace CNoom.DOTweenVisual.Editor
             StopPreview();
         }
 
-        private void OnTargetChanged(ChangeEvent<Object> evt)
+        private void OnTargetChanged(ChangeEvent<UnityEngine.Object> evt)
         {
             Log($"OnTargetChanged: {evt.newValue}");
             
