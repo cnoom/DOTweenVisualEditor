@@ -1,0 +1,160 @@
+/* DOTween Visual Editor 样式表 */
+
+/* 容器 */
+.container {
+    flex-direction: column;
+    flex-grow: 1;
+    background-color: #383838;
+}
+
+/* 工具栏 */
+.main-toolbar {
+    height: 24px;
+    background-color: #2D2D2D;
+    border-bottom-width: 1px;
+    border-bottom-color: #505050;
+}
+
+.toolbar-button {
+    margin-left: 4px;
+    margin-right: 4px;
+    padding-left: 8px;
+    padding-right: 8px;
+    min-width: 60px;
+}
+
+.toolbar-menu {
+    margin-right: 8px;
+}
+
+.spacer {
+    flex-grow: 1;
+}
+
+/* 步骤列表 */
+.step-list {
+    flex-grow: 1;
+    margin: 4px;
+    background-color: #2D2D2D;
+    border-width: 1px;
+    border-color: #505050;
+    border-radius: 4px;
+}
+
+/* 步骤项 */
+.step-item {
+    margin: 2px 4px;
+    padding: 4px;
+    background-color: #383838;
+    border-width: 1px;
+    border-color: #505050;
+    border-radius: 4px;
+}
+
+.step-item:selected {
+    background-color: #4F6E8D;
+}
+
+.step-header-row {
+    flex-direction: row;
+    align-items: center;
+    height: 24px;
+}
+
+.step-foldout {
+    width: 16px;
+}
+
+.step-title {
+    font-size: 12px;
+    color: #B4B4B4;
+    margin-left: 4px;
+    flex-grow: 1;
+}
+
+.step-summary {
+    font-size: 10px;
+    color: #808080;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+.step-button-row {
+    flex-direction: row;
+    align-items: center;
+}
+
+.enable-toggle {
+    margin-right: 4px;
+}
+
+.delete-button {
+    padding: 2px 8px;
+    font-size: 10px;
+    background-color: #8B0000;
+    color: #FFFFFF;
+    border-radius: 3px;
+}
+
+.step-details {
+    margin-top: 4px;
+    margin-left: 20px;
+}
+
+/* 时间轴 */
+.timeline-container {
+    height: 60px;
+    margin: 4px;
+    padding: 4px;
+    background-color: #2D2D2D;
+    border-width: 1px;
+    border-color: #505050;
+    border-radius: 4px;
+}
+
+.timeline-label {
+    font-size: 10px;
+    color: #808080;
+    margin-bottom: 4px;
+}
+
+/* 帮助标签 */
+.help-label {
+    flex-grow: 1;
+    justify-content: center;
+    align-items: center;
+    color: #808080;
+    font-size: 12px;
+    unity-text-align: middle-center;
+}
+
+/* 步骤类型颜色标记 */
+.step-move {
+    border-left-color: #4A90D9;
+    border-left-width: 3px;
+}
+
+.step-rotate {
+    border-left-color: #D99A4A;
+    border-left-width: 3px;
+}
+
+.step-scale {
+    border-left-color: #4AD94A;
+    border-left-width: 3px;
+}
+
+.step-delay {
+    border-left-color: #808080;
+    border-left-width: 3px;
+}
+
+.step-callback {
+    border-left-color: #D94A9A;
+    border-left-width: 3px;
+}
+
+/* 禁用状态 */
+.step-disabled {
+    opacity: 0.5;
+}

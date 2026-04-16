@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement class="container">
+        <!-- 工具栏 -->
+        <uie:Toolbar class="main-toolbar">
+            <ui:Button text="预览" name="preview-button" class="toolbar-button" />
+            <ui:Button text="停止" name="stop-button" class="toolbar-button" />
+            <ui:Button text="重置" name="reset-button" class="toolbar-button" />
+            <ui:VisualElement class="spacer" />
+            <uie:ToolbarMenu text="添加步骤" name="add-step-menu" class="toolbar-menu" />
+        </uie:Toolbar>
+        
+        <!-- 步骤列表 -->
+        <uie:ListView name="step-list" class="step-list" reorderable="true" selection-type="Single" show-border="true" />
+        
+        <!-- 时间轴 -->
+        <ui:VisualElement name="timeline-container" class="timeline-container">
+            <ui:Label text="时间轴预览" class="timeline-label" />
+        </ui:VisualElement>
+        
+        <!-- 提示 -->
+        <ui:Label text="请选择一个包含 DOTweenVisualPlayer 组件的物体" name="help-label" class="help-label" />
+    </ui:VisualElement>
+</ui:UXML>
