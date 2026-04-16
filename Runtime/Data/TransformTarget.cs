@@ -5,10 +5,14 @@ namespace CNoom.DOTweenVisual.Data
     /// </summary>
     public enum TransformTarget
     {
-        /// <summary>位置</summary>
+        /// <summary>世界坐标位置</summary>
         Position,
-        /// <summary>旋转（欧拉角）</summary>
+        /// <summary>本地坐标位置</summary>
+        LocalPosition,
+        /// <summary>世界旋转（欧拉角）</summary>
         Rotation,
+        /// <summary>本地旋转（欧拉角）</summary>
+        LocalRotation,
         /// <summary>缩放</summary>
         Scale
     }

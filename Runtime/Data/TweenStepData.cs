@@ -13,9 +13,6 @@ namespace CNoom.DOTweenVisual.Data
     {
         #region 基本信息
 
-        [Tooltip("步骤名称")]
-        public string StepName = "New Step";
-
         [Tooltip("是否启用此步骤")]
         public bool IsEnabled = true;
 
@@ -54,6 +51,9 @@ namespace CNoom.DOTweenVisual.Data
         #endregion
 
         #region Transform 相关参数
+
+        [Tooltip("目标物体（为null时使用组件所在物体）")]
+        public Transform TargetTransform = null;
 
         [Tooltip("Transform 目标类型")]
         public TransformTarget TransformTarget = TransformTarget.Position;

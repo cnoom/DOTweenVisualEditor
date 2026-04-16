@@ -331,29 +331,71 @@ namespace CNoom.DOTweenVisual.Components
 
         private Tweener CreateMoveTween(TweenStepData step)
         {
-            if (step.IsRelative)
+            var target = step.TargetTransform != null ? step.TargetTransform : transform;
+            
+            switch (step.TransformTarget)
             {
-                return transform.DOMove(step.TargetValue, step.Duration).From(isRelative: true);
+                case TransformTarget.Position:
+                    if (step.IsRelative)
+                    {
+                        return target.DOMove(step.TargetValue, step.Duration).From(isRelative: true);
+                    }
+                    return target.DOMove(step.TargetValue, step.Duration);
+                    
+                case TransformTarget.LocalPosition:
+                    if (step.IsRelative)
+                    {
+                        return target.DOLocalMove(step.TargetValue, step.Duration).From(isRelative: true);
+                    }
+                    return target.DOLocalMove(step.TargetValue, step.Duration);
+                    
+                default:
+                    if (step.IsRelative)
+                    {
+                        return target.DOMove(step.TargetValue, step.Duration).From(isRelative: true);
+                    }
+                    return target.DOMove(step.TargetValue, step.Duration);
             }
-            return transform.DOMove(step.TargetValue, step.Duration);
         }
 
         private Tweener CreateRotateTween(TweenStepData step)
         {
-            if (step.IsRelative)
+            var target = step.TargetTransform != null ? step.TargetTransform : transform;
+            
+            switch (step.TransformTarget)
             {
-                return transform.DORotate(step.TargetValue, step.Duration).From(isRelative: true);
+                case TransformTarget.Rotation:
+                    if (step.IsRelative)
+                    {
+                        return target.DORotate(step.TargetValue, step.Duration).From(isRelative: true);
+                    }
+                    return target.DORotate(step.TargetValue, step.Duration);
+                    
+                case TransformTarget.LocalRotation:
+                    if (step.IsRelative)
+                    {
+                        return target.DOLocalRotate(step.TargetValue, step.Duration).From(isRelative: true);
+                    }
+                    return target.DOLocalRotate(step.TargetValue, step.Duration);
+                    
+                default:
+                    if (step.IsRelative)
+                    {
+                        return target.DORotate(step.TargetValue, step.Duration).From(isRelative: true);
+                    }
+                    return target.DORotate(step.TargetValue, step.Duration);
             }
-            return transform.DORotate(step.TargetValue, step.Duration);
         }
 
         private Tweener CreateScaleTween(TweenStepData step)
         {
+            var target = step.TargetTransform != null ? step.TargetTransform : transform;
+            
             if (step.IsRelative)
             {
-                return transform.DOScale(step.TargetValue, step.Duration).From(isRelative: true);
+                return target.DOScale(step.TargetValue, step.Duration).From(isRelative: true);
             }
-            return transform.DOScale(step.TargetValue, step.Duration);
+            return target.DOScale(step.TargetValue, step.Duration);
         }
 
         private void KillSequence()
