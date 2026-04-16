@@ -907,7 +907,7 @@ namespace CNoom.DOTweenVisual.Editor
             if (previewSequence != null)
             {
                 totalDuration = (float)previewSequence.Duration();
-                currentTime = (float)previewSequence.ElapsedPosition();
+                currentTime = previewSequence.Elapsed();
             }
             else if (targetPlayer != null && targetPlayer.Steps != null)
             {
