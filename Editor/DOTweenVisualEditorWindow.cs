@@ -784,7 +784,8 @@ namespace CNoom.DOTweenVisual.Editor
             // 停止编辑器预览模式
             DOTweenEditorPreview.Stop();
 
-            previewState = PreviewState.None;
+            // 停止后设置为 Completed 状态，保留初始状态供用户重置
+            previewState = PreviewState.Completed;
             UpdateButtonStates();
         }
 
