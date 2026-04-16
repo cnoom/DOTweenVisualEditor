@@ -20,7 +20,7 @@ namespace CNoom.DOTweenVisual.Editor
         #region 常量
 
         private const string USS_PATH = "Assets/Plugins/DOTweenVisualEditor/Editor/USS/DOTweenVisualEditor.uss";
-        private const bool DEBUG_MODE = true;
+        private const bool DEBUG_MODE = false;
 
         #endregion
 
