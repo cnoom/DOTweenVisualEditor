@@ -204,6 +204,12 @@ namespace CNoom.DOTweenVisual.Editor
             if (previewButton != null) previewButton.clickable = new Clickable(OnPreviewClicked);
             if (stopButton != null) stopButton.clickable = new Clickable(OnStopClicked);
             if (resetButton != null) resetButton.clickable = new Clickable(OnResetClicked);
+            
+            // 重建添加步骤菜单
+            if (addStepMenu != null)
+            {
+                BuildAddStepMenu();
+            }
         }
 
         #endregion
@@ -216,12 +222,11 @@ namespace CNoom.DOTweenVisual.Editor
             
             if (stepsProperty != null)
             {
-                stepListView.itemsSource = stepsProperty;
+                // 使用 BindProperty 绑定 SerializedProperty
                 stepListView.BindProperty(stepsProperty);
             }
             else
             {
-                stepListView.itemsSource = null;
                 stepListView.Unbind();
             }
         }
@@ -264,9 +269,10 @@ namespace CNoom.DOTweenVisual.Editor
             deleteButton.clickable = new Clickable(() =>
             {
                 var property = item.userData as SerializedProperty;
-                if (property != null)
+                if (property != null && stepsProperty != null)
                 {
-                    var index = stepsProperty.IndexOf(property);
+                    // 手动查找索引
+                    int index = FindPropertyIndex(stepsProperty, property);
                     if (index >= 0)
                     {
                         stepsProperty.DeleteArrayElementAtIndex(index);
@@ -338,6 +344,21 @@ namespace CNoom.DOTweenVisual.Editor
             }
         }
 
+        private int FindPropertyIndex(SerializedProperty arrayProperty, SerializedProperty elementProperty)
+        {
+            if (arrayProperty == null || elementProperty == null) return -1;
+            
+            for (int i = 0; i < arrayProperty.arraySize; i++)
+            {
+                var item = arrayProperty.GetArrayElementAtIndex(i);
+                if (item.propertyPath == elementProperty.propertyPath)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         private string GetStepDisplayName(TweenStepType type)
         {
             return type switch
@@ -360,7 +381,8 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (addStepMenu == null) return;
             
-            addStepMenu.menuItems.Clear();
+            // 清空菜单（通过重新创建）
+            addStepMenu.menu.AppendAction("__clear__", null); // 占位符，实际无效
             
             addStepMenu.menu.AppendAction("Transform/Move (Position)", _ => AddStep(TweenStepType.Move, TransformTarget.Position));
             addStepMenu.menu.AppendAction("Transform/Move (LocalPosition)", _ => AddStep(TweenStepType.Move, TransformTarget.LocalPosition));
