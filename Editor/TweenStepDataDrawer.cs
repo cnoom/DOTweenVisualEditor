@@ -45,7 +45,7 @@ namespace CNoom.DOTweenVisual.Editor
         {
             CacheProperties(property);
             
-            float height = LineHeight + Spacing; // IsEnabled
+            float height = LineHeight + Spacing; // IsEnabled + Type
             
             var type = (TweenStepType)_typeProp.enumValueIndex;
             
@@ -56,6 +56,7 @@ namespace CNoom.DOTweenVisual.Editor
                 case TweenStepType.Rotate:
                 case TweenStepType.Scale:
                     height += GetTransformFieldsHeight();
+                    height += GetCommonFieldsHeight(type);
                     break;
                     
                 case TweenStepType.Delay:
@@ -70,9 +71,6 @@ namespace CNoom.DOTweenVisual.Editor
                     height += GetPropertyFieldsHeight();
                     break;
             }
-            
-            // 公共字段
-            height += GetCommonFieldsHeight();
             
             return height;
         }
@@ -102,6 +100,7 @@ namespace CNoom.DOTweenVisual.Editor
                 case TweenStepType.Rotate:
                 case TweenStepType.Scale:
                     DrawTransformFields(ref rect);
+                    DrawCommonFields(ref rect, type);
                     break;
                     
                 case TweenStepType.Delay:
@@ -116,9 +115,6 @@ namespace CNoom.DOTweenVisual.Editor
                     DrawPropertyFields(ref rect);
                     break;
             }
-            
-            // 公共字段
-            DrawCommonFields(ref rect, type);
             
             EditorGUI.EndProperty();
         }
@@ -164,7 +160,9 @@ namespace CNoom.DOTweenVisual.Editor
 
         private float GetCallbackFieldsHeight()
         {
-            return (LineHeight + Spacing) * 3; // OnComplete
+            float height = LineHeight + Spacing; // 标题
+            height += EditorGUI.GetPropertyHeight(_onCompleteProp) + Spacing;
+            return height;
         }
 
         private float GetPropertyFieldsHeight()
@@ -172,14 +170,29 @@ namespace CNoom.DOTweenVisual.Editor
             return LineHeight + Spacing; // 占位
         }
 
-        private float GetCommonFieldsHeight()
+        private float GetCommonFieldsHeight(TweenStepType type)
         {
             float height = LineHeight + Spacing; // Duration
             height += LineHeight + Spacing;      // Delay
             height += LineHeight + Spacing;      // Ease
             height += LineHeight + Spacing;      // UseCustomCurve
+            
+            // CustomCurve（条件显示）
+            if (_useCustomCurveProp.boolValue)
+            {
+                height += LineHeight + Spacing;
+            }
+            
             height += LineHeight + Spacing;      // ExecutionMode
-            height += LineHeight + Spacing;      // OnComplete
+            
+            // InsertTime（条件显示）
+            if ((ExecutionMode)_executionModeProp.enumValueIndex == ExecutionMode.Insert)
+            {
+                height += LineHeight + Spacing;
+            }
+            
+            height += EditorGUI.GetPropertyHeight(_onCompleteProp) + Spacing; // OnComplete
+            
             return height;
         }
 
@@ -224,8 +237,13 @@ namespace CNoom.DOTweenVisual.Editor
         private void DrawCallbackFields(ref Rect rect)
         {
             // Callback 类型只需要 OnComplete
-            EditorGUI.PropertyField(rect, _onCompleteProp);
-            rect.y += EditorGUI.GetPropertyHeight(_onCompleteProp) + Spacing;
+            EditorGUI.LabelField(rect, "回调事件", EditorStyles.boldLabel);
+            rect.y += LineHeight + Spacing;
+            
+            var height = EditorGUI.GetPropertyHeight(_onCompleteProp);
+            var eventRect = new Rect(rect.x, rect.y, rect.width, height);
+            EditorGUI.PropertyField(eventRect, _onCompleteProp, GUIContent.none);
+            rect.y += height + Spacing;
         }
 
         private void DrawPropertyFields(ref Rect rect)
@@ -236,56 +254,43 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void DrawCommonFields(ref Rect rect, TweenStepType type)
         {
-            // Duration（Delay 类型已在上方处理）
-            if (type != TweenStepType.Delay && type != TweenStepType.Callback)
+            // Duration
+            EditorGUI.PropertyField(rect, _durationProp);
+            rect.y += LineHeight + Spacing;
+            
+            // Delay
+            EditorGUI.PropertyField(rect, _delayProp);
+            rect.y += LineHeight + Spacing;
+            
+            // Ease
+            EditorGUI.PropertyField(rect, _easeProp);
+            rect.y += LineHeight + Spacing;
+            
+            // 自定义曲线
+            EditorGUI.PropertyField(rect, _useCustomCurveProp);
+            rect.y += LineHeight + Spacing;
+            
+            if (_useCustomCurveProp.boolValue)
             {
-                EditorGUI.PropertyField(rect, _durationProp);
+                EditorGUI.PropertyField(rect, _customCurveProp);
                 rect.y += LineHeight + Spacing;
             }
             
-            // Delay（Delay 类型不需要）
-            if (type != TweenStepType.Delay && type != TweenStepType.Callback)
+            // ExecutionMode
+            EditorGUI.PropertyField(rect, _executionModeProp);
+            rect.y += LineHeight + Spacing;
+            
+            if ((ExecutionMode)_executionModeProp.enumValueIndex == ExecutionMode.Insert)
             {
-                EditorGUI.PropertyField(rect, _delayProp);
+                EditorGUI.PropertyField(rect, _insertTimeProp);
                 rect.y += LineHeight + Spacing;
             }
             
-            // Ease（Delay 和 Callback 不需要）
-            if (type != TweenStepType.Delay && type != TweenStepType.Callback)
-            {
-                EditorGUI.PropertyField(rect, _easeProp);
-                rect.y += LineHeight + Spacing;
-                
-                // 自定义曲线
-                EditorGUI.PropertyField(rect, _useCustomCurveProp);
-                rect.y += LineHeight + Spacing;
-                
-                if (_useCustomCurveProp.boolValue)
-                {
-                    EditorGUI.PropertyField(rect, _customCurveProp);
-                    rect.y += LineHeight + Spacing;
-                }
-            }
-            
-            // ExecutionMode（Delay 和 Callback 不需要）
-            if (type != TweenStepType.Delay && type != TweenStepType.Callback)
-            {
-                EditorGUI.PropertyField(rect, _executionModeProp);
-                rect.y += LineHeight + Spacing;
-                
-                if ((ExecutionMode)_executionModeProp.enumValueIndex == ExecutionMode.Insert)
-                {
-                    EditorGUI.PropertyField(rect, _insertTimeProp);
-                    rect.y += LineHeight + Spacing;
-                }
-            }
-            
-            // OnComplete（Callback 类型已在上方处理）
-            if (type != TweenStepType.Callback)
-            {
-                EditorGUI.PropertyField(rect, _onCompleteProp);
-                rect.y += EditorGUI.GetPropertyHeight(_onCompleteProp) + Spacing;
-            }
+            // OnComplete
+            var height = EditorGUI.GetPropertyHeight(_onCompleteProp);
+            var eventRect = new Rect(rect.x, rect.y, rect.width, height);
+            EditorGUI.PropertyField(eventRect, _onCompleteProp);
+            rect.y += height + Spacing;
         }
 
         #endregion
@@ -296,10 +301,20 @@ namespace CNoom.DOTweenVisual.Editor
         {
             var target = _targetTransformProp.objectReferenceValue as Transform;
             
-            // 如果没有指定目标，无法同步
+            // 如果没有指定目标，尝试获取组件所在物体
             if (target == null)
             {
-                Debug.LogWarning("请先指定目标物体，或在 Inspector 中选择组件所在物体进行同步");
+                // 通过 serializedObject 获取组件
+                var component = _targetTransformProp.serializedObject.targetObject as MonoBehaviour;
+                if (component != null)
+                {
+                    target = component.transform;
+                }
+            }
+            
+            if (target == null)
+            {
+                Debug.LogWarning("无法获取目标物体");
                 return;
             }
             
