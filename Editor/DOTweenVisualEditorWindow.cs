@@ -717,9 +717,17 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnResetClicked()
         {
             if (targetPlayer == null) return;
-            
+
+            // 清理预览序列和编辑器预览模式
+            if (previewSequence != null)
+            {
+                previewSequence.Kill();
+                previewSequence = null;
+            }
+            DOTweenEditorPreview.Stop();
+
             RestoreInitialStates();
-            
+
             // 重置后清除状态，下次预览会重新保存初始状态
             previewState = PreviewState.None;
             initialStates.Clear();
