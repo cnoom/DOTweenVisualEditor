@@ -259,12 +259,10 @@ namespace CNoom.DOTweenVisual.Editor
             
             if (stepListView == null || stepsProperty == null) return;
             
-            // 同步数据
-            serializedObject?.Update();
-            
-            // 更新所有元素的标题（序号变化）
+            // 只更新 UI 标题，不要调用 Update 或修改数据
+            // Unity 内部已处理数据移动
             var items = stepListView.Query<VisualElement>(className: "step-item").ToList();
-            for (int i = 0; i < items.Count && i < stepsProperty.arraySize; i++)
+            for (int i = 0; i < items.Count; i++)
             {
                 UpdateStepTitle(items[i], i);
             }
