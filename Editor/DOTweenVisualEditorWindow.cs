@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using DG.Tweening;
 using DG.DOTweenEditor;
+using UnityEditor.Compilation;
 using CNoom.DOTweenVisual.Components;
 using CNoom.DOTweenVisual.Data;
 
@@ -15,8 +16,32 @@ namespace CNoom.DOTweenVisual.Editor
     /// <summary>
     /// DOTween 可视化编辑器主窗口
     /// </summary>
+    [InitializeOnLoad]
     public class DOTweenVisualEditorWindow : EditorWindow
     {
+        #region 静态初始化
+
+        static DOTweenVisualEditorWindow()
+        {
+            // 编译开始前自动重置所有预览状态
+            CompilationPipeline.compilationStarted += OnCompilationStarted;
+        }
+
+        private static void OnCompilationStarted(object obj)
+        {
+            // 查找所有打开的窗口实例并重置
+            var windows = Resources.FindObjectsOfTypeAll<DOTweenVisualEditorWindow>();
+            foreach (var window in windows)
+            {
+                if (window.previewState != PreviewState.None)
+                {
+                    window.ResetPreview();
+                }
+            }
+        }
+
+        #endregion
+
         #region 常量
 
         private const string USS_PATH = "Assets/Plugins/DOTweenVisualEditor/Editor/USS/DOTweenVisualEditor.uss";
