@@ -36,6 +36,11 @@ namespace CNoom.DOTweenVisual.Editor
         private VisualElement timelineContainer;
         private Label helpLabel;
 
+        // 状态栏元素
+        private VisualElement statusBar;
+        private Label stateLabel;
+        private Label timeLabel;
+
         #endregion
 
         #region 数据
@@ -48,11 +53,23 @@ namespace CNoom.DOTweenVisual.Editor
 
         #region 预览状态
 
-        private bool isPreviewing;
-        private bool isPaused;
-        private bool hasPreviewed;  // 是否已预览过（有初始状态）
+        // 预览状态枚举
+        private enum PreviewState
+        {
+            None,       // 未播放
+            Playing,    // 播放中
+            Paused,     // 已暂停
+            Completed   // 播放完成
+        }
+
+        private PreviewState previewState = PreviewState.None;
         private Sequence previewSequence;
         private Dictionary<Transform, TransformState> initialStates = new();
+
+        // 兼容旧代码的属性
+        private bool isPreviewing => previewState == PreviewState.Playing;
+        private bool isPaused => previewState == PreviewState.Paused;
+        private bool hasPreviewed => previewState != PreviewState.None;
 
         private struct TransformState
         {
@@ -78,12 +95,45 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnEnable()
         {
             Log("OnEnable");
+            EditorApplication.update += OnEditorUpdate;
         }
 
         private void OnDisable()
         {
             Log("OnDisable");
+            EditorApplication.update -= OnEditorUpdate;
             StopPreview();
+        }
+
+        private void OnEditorUpdate()
+        {
+            // 实时更新时间显示
+            UpdateTimeDisplay();
+        }
+
+        private void UpdateTimeDisplay()
+        {
+            if (previewSequence == null)
+            {
+                timeLabel.text = "--:-- / --:--";
+                return;
+            }
+
+            float currentTime = previewSequence.Elapsed(false);
+            float totalTime = previewSequence.Duration(false);
+            
+            string currentStr = FormatTime(currentTime);
+            string totalStr = FormatTime(totalTime);
+            
+            timeLabel.text = $"{currentStr} / {totalStr}";
+        }
+
+        private string FormatTime(float seconds)
+        {
+            int minutes = (int)(seconds / 60);
+            int secs = (int)(seconds % 60);
+            int ms = (int)((seconds * 10) % 10);
+            return $"{minutes:D2}:{secs:D2}.{ms}";
         }
 
         private void OnTargetChanged(ChangeEvent<UnityEngine.Object> evt)
@@ -194,6 +244,30 @@ namespace CNoom.DOTweenVisual.Editor
             toolbar.Add(addStepMenu);
             
             rootVisualElement.Add(toolbar);
+            
+            // 状态栏（显示预览状态和时间）
+            statusBar = new VisualElement();
+            statusBar.AddToClassList("status-bar");
+            statusBar.style.flexDirection = FlexDirection.Row;
+            statusBar.style.paddingLeft = 8;
+            statusBar.style.paddingRight = 8;
+            statusBar.style.paddingTop = 4;
+            statusBar.style.paddingBottom = 4;
+            statusBar.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+            
+            stateLabel = new Label("● 未播放");
+            stateLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            stateLabel.style.color = new Color(0.6f, 0.6f, 0.6f);
+            stateLabel.style.flexGrow = 1;
+            statusBar.Add(stateLabel);
+            
+            timeLabel = new Label("--:-- / --:--");
+            timeLabel.style.color = new Color(0.8f, 0.8f, 0.8f);
+            timeLabel.style.unityTextAlign = TextAnchor.MiddleRight;
+            timeLabel.style.width = 140;
+            statusBar.Add(timeLabel);
+            
+            rootVisualElement.Add(statusBar);
             
             // 主内容区域（包含列表和帮助提示）
             var contentArea = new VisualElement();
@@ -583,19 +657,19 @@ namespace CNoom.DOTweenVisual.Editor
                 return;
             }
 
-            if (isPreviewing)
+            if (previewState == PreviewState.Playing)
             {
                 // 正在播放 → 暂停
                 PausePreview();
             }
-            else if (previewSequence != null && !previewSequence.IsPlaying())
+            else if (previewState == PreviewState.Paused)
             {
                 // 已暂停 → 继续
                 ResumePreview();
             }
             else
             {
-                // 首次播放
+                // 未播放或已播放完成 → 开始预览
                 StartPreview();
             }
         }
@@ -612,7 +686,7 @@ namespace CNoom.DOTweenVisual.Editor
             RestoreInitialStates();
             
             // 重置后清除状态，下次预览会重新保存初始状态
-            hasPreviewed = false;
+            previewState = PreviewState.None;
             initialStates.Clear();
             UpdateButtonStates();
         }
@@ -625,9 +699,24 @@ namespace CNoom.DOTweenVisual.Editor
 
             Log("StartPreview");
 
-            // 每次开始预览都保存初始状态，确保重置时回到正确的位置
-            SaveInitialStates();
-            hasPreviewed = true;
+            // 清理旧序列
+            if (previewSequence != null)
+            {
+                previewSequence.Kill();
+                previewSequence = null;
+            }
+            DOTweenEditorPreview.Stop();
+
+            // 如果已有初始状态（播放完成后重新预览），先恢复初始状态
+            if (initialStates.Count > 0)
+            {
+                RestoreInitialStates();
+            }
+            else
+            {
+                // 首次预览，保存初始状态
+                SaveInitialStates();
+            }
 
             // 启动编辑器预览模式
             DOTweenEditorPreview.Start();
@@ -645,16 +734,14 @@ namespace CNoom.DOTweenVisual.Editor
             previewSequence.OnComplete(() =>
             {
                 Log("Preview completed");
-                isPreviewing = false;
-                isPaused = false;
+                previewState = PreviewState.Completed;
                 UpdateButtonStates();
             });
 
             // 为编辑器预览准备 Tween
             DOTweenEditorPreview.PrepareTweenForPreview(previewSequence);
             previewSequence.Play();
-            isPreviewing = true;
-            isPaused = false;
+            previewState = PreviewState.Playing;
             UpdateButtonStates();
 
             Log($"Preview started, isPlaying: {previewSequence.IsPlaying()}");
@@ -667,8 +754,7 @@ namespace CNoom.DOTweenVisual.Editor
             if (previewSequence != null && previewSequence.IsPlaying())
             {
                 previewSequence.Pause();
-                isPreviewing = false;
-                isPaused = true;
+                previewState = PreviewState.Paused;
                 UpdateButtonStates();
             }
         }
@@ -680,8 +766,7 @@ namespace CNoom.DOTweenVisual.Editor
             if (previewSequence != null && !previewSequence.IsPlaying())
             {
                 previewSequence.Play();
-                isPreviewing = true;
-                isPaused = false;
+                previewState = PreviewState.Playing;
                 UpdateButtonStates();
             }
         }
@@ -699,8 +784,7 @@ namespace CNoom.DOTweenVisual.Editor
             // 停止编辑器预览模式
             DOTweenEditorPreview.Stop();
 
-            isPreviewing = false;
-            isPaused = false;
+            previewState = PreviewState.None;
             UpdateButtonStates();
         }
 
@@ -733,6 +817,32 @@ namespace CNoom.DOTweenVisual.Editor
             // --- 添加步骤菜单 ---
             // 预览过程中禁用，避免数据不一致
             addStepMenu.SetEnabled(hasTarget && !inPreview);
+            
+            // --- 更新状态栏 ---
+            UpdateStatusBar();
+        }
+
+        private void UpdateStatusBar()
+        {
+            switch (previewState)
+            {
+                case PreviewState.None:
+                    stateLabel.text = "● 未播放";
+                    stateLabel.style.color = new Color(0.6f, 0.6f, 0.6f);
+                    break;
+                case PreviewState.Playing:
+                    stateLabel.text = "● 播放中";
+                    stateLabel.style.color = new Color(0.3f, 0.8f, 0.3f);
+                    break;
+                case PreviewState.Paused:
+                    stateLabel.text = "● 已暂停";
+                    stateLabel.style.color = new Color(1f, 0.7f, 0f);
+                    break;
+                case PreviewState.Completed:
+                    stateLabel.text = "● 播放完成";
+                    stateLabel.style.color = new Color(0.3f, 0.6f, 1f);
+                    break;
+            }
         }
 
         private void SaveInitialStates()
