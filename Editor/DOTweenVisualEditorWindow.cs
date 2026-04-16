@@ -263,13 +263,10 @@ namespace CNoom.DOTweenVisual.Editor
             serializedObject?.Update();
             
             // 更新所有元素的标题（序号变化）
-            for (int i = 0; i < stepsProperty.arraySize; i++)
+            var items = stepListView.Query<VisualElement>(className: "step-item").ToList();
+            for (int i = 0; i < items.Count && i < stepsProperty.arraySize; i++)
             {
-                var element = stepListView.GetRootElement(i);
-                if (element != null)
-                {
-                    UpdateStepTitle(element, i);
-                }
+                UpdateStepTitle(items[i], i);
             }
         }
 
