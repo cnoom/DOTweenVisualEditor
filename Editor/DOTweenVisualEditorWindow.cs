@@ -251,14 +251,26 @@ namespace CNoom.DOTweenVisual.Editor
         
         /// <summary>
         /// 处理拖拽重排后的 UI 刷新
-        /// ListView 绑定 SerializedProperty 后会自动同步数据，无需手动 MoveArrayElement
+        /// ListView 绑定 SerializedProperty 后会自动同步数据
         /// </summary>
         private void OnStepIndexChanged(int oldIndex, int newIndex)
         {
             Log($"OnStepIndexChanged: {oldIndex} -> {newIndex}");
             
-            // 刷新标题显示（序号变化）
-            RefreshStepList();
+            if (stepListView == null || stepsProperty == null) return;
+            
+            // 同步数据
+            serializedObject?.Update();
+            
+            // 更新所有元素的标题（序号变化）
+            for (int i = 0; i < stepsProperty.arraySize; i++)
+            {
+                var element = stepListView.GetRootElement(i);
+                if (element != null)
+                {
+                    UpdateStepTitle(element, i);
+                }
+            }
         }
 
         private VisualElement MakeStepItem()
