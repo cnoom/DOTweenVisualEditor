@@ -6,6 +6,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using DG.Tweening;
+using DG.Tweening.Editor;
 using CNoom.DOTweenVisual.Components;
 using CNoom.DOTweenVisual.Data;
 
@@ -596,21 +597,12 @@ namespace CNoom.DOTweenVisual.Editor
             // 保存初始状态
             SaveInitialStates();
 
-            // 确保在编辑模式下 DOTween 可用
-            DOTween.Init(true, true, LogBehaviour.Verbose);
+            // 启动编辑器预览模式
+            DOTweenEditorPreview.Start();
 
             // 创建预览序列
             previewSequence = DOTween.Sequence();
-            previewSequence.SetUpdate(UpdateType.Editor);  // 关键：编辑器模式更新
-            previewSequence.OnKill(() =>
-            {
-                Log("Preview sequence killed");
-                isPreviewing = false;
-                previewButton.text = "预览";
-            });
-
-            // 订阅编辑器更新
-            EditorApplication.update += OnEditorUpdate;
+            previewSequence.SetUpdate(UpdateType.Editor);
 
             // 构建预览序列
             BuildPreviewSequence();
@@ -619,6 +611,14 @@ namespace CNoom.DOTweenVisual.Editor
             Log($"Preview sequence created, duration: {previewSequence.Duration()}");
 
             // 播放
+            previewSequence.OnComplete(() =>
+            {
+                Log("Preview completed");
+                StopPreview();
+            });
+
+            // 为编辑器预览准备 Tween
+            DOTweenEditorPreview.PrepareTweenForPreview(previewSequence);
             previewSequence.Play();
             isPreviewing = true;
             previewButton.text = "停止";
@@ -636,12 +636,11 @@ namespace CNoom.DOTweenVisual.Editor
                 previewSequence = null;
             }
 
-            EditorApplication.update -= OnEditorUpdate;
+            // 停止编辑器预览模式
+            DOTweenEditorPreview.Stop();
+
             isPreviewing = false;
             previewButton.text = "预览";
-
-            // 清理所有编辑模式 Tween
-            DOTween.Clear(true);
         }
 
         private void SaveInitialStates()
@@ -836,12 +835,6 @@ namespace CNoom.DOTweenVisual.Editor
             }
 
             return tweener;
-        }
-
-        private void OnEditorUpdate()
-        {
-            // 驱动场景视图更新
-            SceneView.RepaintAll();
         }
 
         #endregion
