@@ -315,27 +315,6 @@ namespace CNoom.DOTweenVisual.Editor
                     }
                 }
             });
-                    }
-                }
-            });
-            
-            // 下移按钮
-            var downButton = new Button { text = "↓", name = "down-button" };
-            downButton.AddToClassList("move-button");
-            downButton.clickable = new Clickable(() =>
-            {
-                var property = item.userData as SerializedProperty;
-                if (property != null && stepsProperty != null)
-                {
-                    int index = FindPropertyIndex(stepsProperty, property);
-                    if (index >= 0 && index < stepsProperty.arraySize - 1)
-                    {
-                        stepsProperty.MoveArrayElement(index, index + 1);
-                        stepsProperty.serializedObject.ApplyModifiedProperties();
-                        RefreshStepList();
-                    }
-                }
-            });
             
             var enableToggle = new Toggle { name = "enable-toggle", value = true };
             enableToggle.AddToClassList("enable-toggle");
