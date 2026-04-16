@@ -35,7 +35,7 @@ namespace CNoom.DOTweenVisual.Editor
             {
                 if (window.previewState != PreviewState.None)
                 {
-                    window.ResetPreview();
+                    window.OnResetClicked();
                 }
             }
         }
