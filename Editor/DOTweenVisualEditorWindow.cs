@@ -16,8 +16,8 @@ namespace CNoom.DOTweenVisual.Editor
     {
         #region 常量
 
-        private const string UXML_PATH = "Assets/Plugins/DOTweenVisualEditor/Editor/UXML/DOTweenVisualEditorWindow.uxml";
         private const string USS_PATH = "Assets/Plugins/DOTweenVisualEditor/Editor/USS/DOTweenVisualEditor.uss";
+        private const bool DEBUG_MODE = true;
 
         #endregion
 
@@ -30,6 +30,7 @@ namespace CNoom.DOTweenVisual.Editor
         private ToolbarMenu addStepMenu;
         private ListView stepListView;
         private VisualElement timelineContainer;
+        private Label helpLabel;
 
         #endregion
 
@@ -53,31 +54,38 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void OnEnable()
         {
-            // 监听选择变化 - 在 OnEnable 中注册
+            Log("OnEnable");
+            
+            // 注册选择变化事件
             Selection.selectionChanged -= OnSelectionChanged;
             Selection.selectionChanged += OnSelectionChanged;
-            
-            // 如果窗口已经创建，立即检查当前选择
-            if (rootVisualElement.childCount > 0)
-            {
-                OnSelectionChanged();
-            }
         }
 
         private void OnDisable()
         {
+            Log("OnDisable");
             Selection.selectionChanged -= OnSelectionChanged;
         }
 
         private void OnSelectionChanged()
         {
+            Log($"OnSelectionChanged - stepListView null: {stepListView == null}");
+            
             // 确保 UI 已创建
-            if (stepListView == null) return;
+            if (stepListView == null)
+            {
+                Log("stepListView is null, skip");
+                return;
+            }
             
             var selected = Selection.activeGameObject;
+            Log($"Selected: {selected}");
+            
             if (selected != null)
             {
                 var player = selected.GetComponent<DOTweenVisualPlayer>();
+                Log($"Player found: {player != null}");
+                
                 if (player != null)
                 {
                     SetTarget(player);
@@ -91,12 +99,15 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void SetTarget(DOTweenVisualPlayer player)
         {
+            Log($"SetTarget: {player}");
+            
             targetPlayer = player;
             
             if (player != null)
             {
                 serializedObject = new SerializedObject(player);
                 stepsProperty = serializedObject.FindProperty("Steps");
+                Log($"stepsProperty: {stepsProperty}, arraySize: {stepsProperty?.arraySize}");
             }
             else
             {
@@ -104,14 +115,7 @@ namespace CNoom.DOTweenVisual.Editor
                 stepsProperty = null;
             }
             
-            // 延迟刷新，确保在下一帧执行
-            EditorApplication.delayCall += () =>
-            {
-                if (this != null)
-                {
-                    RefreshStepList();
-                }
-            };
+            RefreshStepList();
         }
 
         #endregion
@@ -120,17 +124,9 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void CreateGUI()
         {
-            // 加载 UXML
-            var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UXML_PATH);
-            if (visualTree != null)
-            {
-                visualTree.CloneTree(rootVisualElement);
-            }
-            else
-            {
-                // 如果 UXML 不存在，手动构建
-                BuildUIManually();
-            }
+            Log("CreateGUI");
+            
+            BuildUIManually();
             
             // 加载 USS
             var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(USS_PATH);
@@ -139,10 +135,8 @@ namespace CNoom.DOTweenVisual.Editor
                 rootVisualElement.styleSheets.Add(styleSheet);
             }
             
-            // 绑定回调
-            BindCallbacks();
-            
             // 检查当前选择
+            Log($"Checking current selection: {Selection.activeGameObject}");
             if (Selection.activeGameObject != null)
             {
                 var player = Selection.activeGameObject.GetComponent<DOTweenVisualPlayer>();
@@ -179,7 +173,6 @@ namespace CNoom.DOTweenVisual.Editor
             
             addStepMenu = new ToolbarMenu { text = "添加步骤" };
             addStepMenu.AddToClassList("toolbar-menu");
-            BuildAddStepMenu();
             toolbar.Add(addStepMenu);
             
             rootVisualElement.Add(toolbar);
@@ -198,9 +191,7 @@ namespace CNoom.DOTweenVisual.Editor
             };
             stepListView.AddToClassList("step-list");
             stepListView.style.flexGrow = 1;
-            
-            // 初始化空列表避免拖拽报错
-            stepListView.itemsSource = System.Array.Empty<object>();
+            stepListView.style.minHeight = 100;
             
             rootVisualElement.Add(stepListView);
             
@@ -211,31 +202,12 @@ namespace CNoom.DOTweenVisual.Editor
             rootVisualElement.Add(timelineContainer);
             
             // 初始提示
-            var helpLabel = new Label("请选择一个包含 DOTweenVisualPlayer 组件的物体") { name = "help-label" };
+            helpLabel = new Label("请选择一个包含 DOTweenVisualPlayer 组件的物体");
             helpLabel.AddToClassList("help-label");
             rootVisualElement.Add(helpLabel);
-        }
-
-        private void BindCallbacks()
-        {
-            // 获取 UI 元素引用（如果从 UXML 加载）
-            previewButton = rootVisualElement.Q<Button>("preview-button") ?? previewButton;
-            stopButton = rootVisualElement.Q<Button>("stop-button") ?? stopButton;
-            resetButton = rootVisualElement.Q<Button>("reset-button") ?? resetButton;
-            addStepMenu = rootVisualElement.Q<ToolbarMenu>("add-step-menu") ?? addStepMenu;
-            stepListView = rootVisualElement.Q<ListView>("step-list") ?? stepListView;
-            timelineContainer = rootVisualElement.Q<VisualElement>("timeline-container") ?? timelineContainer;
             
-            // 绑定按钮事件
-            if (previewButton != null) previewButton.clickable = new Clickable(OnPreviewClicked);
-            if (stopButton != null) stopButton.clickable = new Clickable(OnStopClicked);
-            if (resetButton != null) resetButton.clickable = new Clickable(OnResetClicked);
-            
-            // 重建添加步骤菜单
-            if (addStepMenu != null)
-            {
-                BuildAddStepMenu();
-            }
+            // 构建添加步骤菜单
+            BuildAddStepMenu();
         }
 
         #endregion
@@ -244,10 +216,11 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void RefreshStepList()
         {
+            Log($"RefreshStepList - stepListView null: {stepListView == null}, stepsProperty null: {stepsProperty == null}");
+            
             if (stepListView == null) return;
             
             // 隐藏帮助提示
-            var helpLabel = rootVisualElement.Q<Label>("help-label");
             if (helpLabel != null)
             {
                 helpLabel.style.display = stepsProperty != null ? DisplayStyle.None : DisplayStyle.Flex;
@@ -258,12 +231,14 @@ namespace CNoom.DOTweenVisual.Editor
                 // 确保 serializedObject 是最新的
                 serializedObject.Update();
                 
+                Log($"Binding stepsProperty, arraySize: {stepsProperty.arraySize}");
+                
                 // 绑定属性
                 stepListView.BindProperty(stepsProperty);
             }
             else
             {
-                // 解绑并重置为空列表
+                Log("Unbinding and clearing list");
                 stepListView.Unbind();
                 stepListView.itemsSource = System.Array.Empty<object>();
             }
@@ -271,6 +246,8 @@ namespace CNoom.DOTweenVisual.Editor
 
         private VisualElement MakeStepItem()
         {
+            Log("MakeStepItem");
+            
             var item = new VisualElement();
             item.AddToClassList("step-item");
             
@@ -309,7 +286,6 @@ namespace CNoom.DOTweenVisual.Editor
                 var property = item.userData as SerializedProperty;
                 if (property != null && stepsProperty != null)
                 {
-                    // 手动查找索引
                     int index = FindPropertyIndex(stepsProperty, property);
                     if (index >= 0)
                     {
@@ -340,6 +316,8 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void BindStepItem(VisualElement element, int index)
         {
+            Log($"BindStepItem index: {index}");
+            
             if (stepsProperty == null || index < 0 || index >= stepsProperty.arraySize) return;
             
             var stepProperty = stepsProperty.GetArrayElementAtIndex(index);
@@ -419,9 +397,6 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (addStepMenu == null) return;
             
-            // 清空菜单（通过重新创建）
-            addStepMenu.menu.AppendAction("__clear__", null); // 占位符，实际无效
-            
             addStepMenu.menu.AppendAction("Transform/Move (Position)", _ => AddStep(TweenStepType.Move, TransformTarget.Position));
             addStepMenu.menu.AppendAction("Transform/Move (LocalPosition)", _ => AddStep(TweenStepType.Move, TransformTarget.LocalPosition));
             addStepMenu.menu.AppendAction("Transform/Rotate (Rotation)", _ => AddStep(TweenStepType.Rotate, TransformTarget.Rotation));
@@ -462,23 +437,31 @@ namespace CNoom.DOTweenVisual.Editor
                 return;
             }
             
-            // 第三阶段实现编辑器预览
             Debug.Log("[DOTween Visual Editor] 预览功能将在第三阶段实现");
         }
 
         private void OnStopClicked()
         {
             if (targetPlayer == null) return;
-            
             targetPlayer.Stop();
         }
 
         private void OnResetClicked()
         {
             if (targetPlayer == null) return;
-            
-            // 第三阶段实现重置功能
             Debug.Log("[DOTween Visual Editor] 重置功能将在第三阶段实现");
+        }
+
+        #endregion
+
+        #region 调试
+
+        private void Log(string message)
+        {
+            if (DEBUG_MODE)
+            {
+                Debug.Log($"[DOTweenVisualEditor] {message}");
+            }
         }
 
         #endregion
