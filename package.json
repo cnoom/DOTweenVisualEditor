@@ -15,9 +15,7 @@
     "name": "CNoom",
     "url": "https://github.com/cnoom"
   },
-  "dependencies": {
-    "com.demigiant.dotween": "1.2.765"
-  },
+  "dependencies": {},
   "samples": [
     {
       "displayName": "Basic Usage",
