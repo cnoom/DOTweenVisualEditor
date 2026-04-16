@@ -56,7 +56,9 @@ namespace CNoom.DOTweenVisual.Editor
         {
             public Vector3 position;
             public Quaternion rotation;
-            public Vector3 scale;
+            public Vector3 localPosition;
+            public Quaternion localRotation;
+            public Vector3 localScale;
         }
 
         #endregion
@@ -638,6 +640,9 @@ namespace CNoom.DOTweenVisual.Editor
             // 停止编辑器预览模式
             DOTweenEditorPreview.Stop();
 
+            // 恢复初始状态
+            RestoreInitialStates();
+
             isPreviewing = false;
             previewButton.text = "预览";
         }
@@ -667,7 +672,9 @@ namespace CNoom.DOTweenVisual.Editor
                 {
                     position = t.position,
                     rotation = t.rotation,
-                    scale = t.localScale
+                    localPosition = t.localPosition,
+                    localRotation = t.localRotation,
+                    localScale = t.localScale
                 };
             }
         }
@@ -684,7 +691,9 @@ namespace CNoom.DOTweenVisual.Editor
                     Undo.RecordObject(t, "Reset Preview State");
                     t.position = state.position;
                     t.rotation = state.rotation;
-                    t.localScale = state.scale;
+                    t.localPosition = state.localPosition;
+                    t.localRotation = state.localRotation;
+                    t.localScale = state.localScale;
                 }
             }
 
