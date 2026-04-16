@@ -49,6 +49,8 @@ namespace CNoom.DOTweenVisual.Editor
         #region 预览状态
 
         private bool isPreviewing;
+        private bool isPaused;
+        private bool hasPreviewed;  // 是否已预览过（有初始状态）
         private Sequence previewSequence;
         private Dictionary<Transform, TransformState> initialStates = new();
 
@@ -88,8 +90,15 @@ namespace CNoom.DOTweenVisual.Editor
         {
             Log($"OnTargetChanged: {evt.newValue}");
             
+            // 切换目标时先停止预览
+            if (isPreviewing || isPaused)
+            {
+                StopPreview();
+            }
+            
             var player = evt.newValue as DOTweenVisualPlayer;
             SetTarget(player);
+            UpdateButtonStates();
         }
 
         private void SetTarget(DOTweenVisualPlayer player)
@@ -229,6 +238,9 @@ namespace CNoom.DOTweenVisual.Editor
             
             // 构建添加步骤菜单
             BuildAddStepMenu();
+            
+            // 初始化按钮状态
+            UpdateButtonStates();
         }
 
         #endregion
@@ -263,6 +275,9 @@ namespace CNoom.DOTweenVisual.Editor
                 stepListView.Unbind();
                 stepListView.itemsSource = System.Array.Empty<object>();
             }
+            
+            // 更新按钮状态（步骤数量变化可能影响预览按钮可用性）
+            UpdateButtonStates();
         }
 
         private VisualElement MakeStepItem()
@@ -593,7 +608,13 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnResetClicked()
         {
             if (targetPlayer == null) return;
+            
             RestoreInitialStates();
+            
+            // 重置后清除状态，下次预览会重新保存初始状态
+            hasPreviewed = false;
+            initialStates.Clear();
+            UpdateButtonStates();
         }
 
         #region 预览逻辑
@@ -604,8 +625,9 @@ namespace CNoom.DOTweenVisual.Editor
 
             Log("StartPreview");
 
-            // 保存初始状态
+            // 每次开始预览都保存初始状态，确保重置时回到正确的位置
             SaveInitialStates();
+            hasPreviewed = true;
 
             // 启动编辑器预览模式
             DOTweenEditorPreview.Start();
@@ -624,14 +646,16 @@ namespace CNoom.DOTweenVisual.Editor
             {
                 Log("Preview completed");
                 isPreviewing = false;
-                previewButton.text = "预览";
+                isPaused = false;
+                UpdateButtonStates();
             });
 
             // 为编辑器预览准备 Tween
             DOTweenEditorPreview.PrepareTweenForPreview(previewSequence);
             previewSequence.Play();
             isPreviewing = true;
-            previewButton.text = "暂停";
+            isPaused = false;
+            UpdateButtonStates();
 
             Log($"Preview started, isPlaying: {previewSequence.IsPlaying()}");
         }
@@ -644,7 +668,8 @@ namespace CNoom.DOTweenVisual.Editor
             {
                 previewSequence.Pause();
                 isPreviewing = false;
-                previewButton.text = "继续";
+                isPaused = true;
+                UpdateButtonStates();
             }
         }
 
@@ -656,7 +681,8 @@ namespace CNoom.DOTweenVisual.Editor
             {
                 previewSequence.Play();
                 isPreviewing = true;
-                previewButton.text = "暂停";
+                isPaused = false;
+                UpdateButtonStates();
             }
         }
 
@@ -674,7 +700,39 @@ namespace CNoom.DOTweenVisual.Editor
             DOTweenEditorPreview.Stop();
 
             isPreviewing = false;
-            previewButton.text = "预览";
+            isPaused = false;
+            UpdateButtonStates();
+        }
+
+        /// <summary>
+        /// 更新按钮状态，防止误触
+        /// </summary>
+        private void UpdateButtonStates()
+        {
+            // 目标物体是否存在
+            bool hasTarget = targetPlayer != null;
+            
+            // 步骤是否存在
+            bool hasSteps = hasTarget && targetPlayer.StepCount > 0;
+            
+            // 是否在预览中（播放或暂停）
+            bool inPreview = isPreviewing || isPaused;
+            
+            // --- 预览按钮 ---
+            previewButton.SetEnabled(hasSteps);
+            previewButton.text = isPreviewing ? "暂停" : (isPaused ? "继续" : "预览");
+            
+            // --- 停止按钮 ---
+            // 仅在预览过程中（播放或暂停）启用
+            stopButton.SetEnabled(inPreview);
+            
+            // --- 重置按钮 ---
+            // 仅在预览过后（有初始状态）且不在预览过程中启用
+            resetButton.SetEnabled(hasPreviewed && !inPreview);
+            
+            // --- 添加步骤菜单 ---
+            // 预览过程中禁用，避免数据不一致
+            addStepMenu.SetEnabled(hasTarget && !inPreview);
         }
 
         private void SaveInitialStates()
