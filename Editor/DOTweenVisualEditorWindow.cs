@@ -173,7 +173,7 @@ namespace CNoom.DOTweenVisual.Editor
             // 步骤列表
             stepListView = new ListView
             {
-                reorderable = true,
+                reorderable = false,  // 禁用拖拽，改用上移/下移按钮
                 makeItem = MakeStepItem,
                 bindItem = BindStepItem,
                 selectionType = SelectionType.Single,
@@ -235,36 +235,12 @@ namespace CNoom.DOTweenVisual.Editor
                 
                 // 绑定属性
                 stepListView.BindProperty(stepsProperty);
-                
-                // 注册拖拽重排回调
-                stepListView.itemIndexChanged -= OnStepIndexChanged;
-                stepListView.itemIndexChanged += OnStepIndexChanged;
             }
             else
             {
                 Log("Unbinding and clearing list");
-                stepListView.itemIndexChanged -= OnStepIndexChanged;
                 stepListView.Unbind();
                 stepListView.itemsSource = System.Array.Empty<object>();
-            }
-        }
-        
-        /// <summary>
-        /// 处理拖拽重排后的 UI 刷新
-        /// ListView 绑定 SerializedProperty 后会自动同步数据
-        /// </summary>
-        private void OnStepIndexChanged(int oldIndex, int newIndex)
-        {
-            Log($"OnStepIndexChanged: {oldIndex} -> {newIndex}");
-            
-            if (stepListView == null || stepsProperty == null) return;
-            
-            // 只更新 UI 标题，不要调用 Update 或修改数据
-            // Unity 内部已处理数据移动
-            var items = stepListView.Query<VisualElement>(className: "step-item").ToList();
-            for (int i = 0; i < items.Count; i++)
-            {
-                UpdateStepTitle(items[i], i);
             }
         }
 
@@ -290,6 +266,42 @@ namespace CNoom.DOTweenVisual.Editor
             
             var buttonRow = new VisualElement();
             buttonRow.AddToClassList("step-button-row");
+            
+            // 上移按钮
+            var upButton = new Button { text = "↑", name = "up-button" };
+            upButton.AddToClassList("move-button");
+            upButton.clickable = new Clickable(() =>
+            {
+                var property = item.userData as SerializedProperty;
+                if (property != null && stepsProperty != null)
+                {
+                    int index = FindPropertyIndex(stepsProperty, property);
+                    if (index > 0)
+                    {
+                        stepsProperty.MoveArrayElement(index, index - 1);
+                        stepsProperty.serializedObject.ApplyModifiedProperties();
+                        RefreshStepList();
+                    }
+                }
+            });
+            
+            // 下移按钮
+            var downButton = new Button { text = "↓", name = "down-button" };
+            downButton.AddToClassList("move-button");
+            downButton.clickable = new Clickable(() =>
+            {
+                var property = item.userData as SerializedProperty;
+                if (property != null && stepsProperty != null)
+                {
+                    int index = FindPropertyIndex(stepsProperty, property);
+                    if (index >= 0 && index < stepsProperty.arraySize - 1)
+                    {
+                        stepsProperty.MoveArrayElement(index, index + 1);
+                        stepsProperty.serializedObject.ApplyModifiedProperties();
+                        RefreshStepList();
+                    }
+                }
+            });
             
             var enableToggle = new Toggle { name = "enable-toggle", value = true };
             enableToggle.AddToClassList("enable-toggle");
@@ -320,6 +332,8 @@ namespace CNoom.DOTweenVisual.Editor
                 }
             });
             
+            buttonRow.Add(upButton);
+            buttonRow.Add(downButton);
             buttonRow.Add(enableToggle);
             buttonRow.Add(deleteButton);
             

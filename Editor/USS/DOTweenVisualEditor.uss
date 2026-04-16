@@ -88,6 +88,19 @@
     margin-right: 4px;
 }
 
+.move-button {
+    padding: 2px 6px;
+    font-size: 10px;
+    background-color: #404040;
+    color: #B4B4B4;
+    border-radius: 3px;
+    margin-right: 2px;
+}
+
+.move-button:hover {
+    background-color: #505050;
+}
+
 .delete-button {
     padding: 2px 8px;
     font-size: 10px;
