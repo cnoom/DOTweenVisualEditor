@@ -43,6 +43,21 @@ namespace CNoom.DOTweenVisual.Editor
 
         #endregion
 
+        #region 预览状态
+
+        private bool isPreviewing;
+        private Sequence previewSequence;
+        private Dictionary<Transform, TransformState> initialStates = new();
+
+        private struct TransformState
+        {
+            public Vector3 position;
+            public Quaternion rotation;
+            public Vector3 scale;
+        }
+
+        #endregion
+
         #region 生命周期
 
         [MenuItem("Tools/DOTween Visual Editor")]
@@ -61,6 +76,7 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnDisable()
         {
             Log("OnDisable");
+            StopPreview();
         }
 
         private void OnTargetChanged(ChangeEvent<Object> evt)
@@ -546,21 +562,255 @@ namespace CNoom.DOTweenVisual.Editor
                 Debug.LogWarning("请先选择一个 DOTweenVisualPlayer 组件");
                 return;
             }
-            
-            Debug.Log("[DOTween Visual Editor] 预览功能将在第三阶段实现");
+
+            if (isPreviewing)
+            {
+                StopPreview();
+                return;
+            }
+
+            StartPreview();
         }
 
         private void OnStopClicked()
         {
-            if (targetPlayer == null) return;
-            targetPlayer.Stop();
+            StopPreview();
         }
 
         private void OnResetClicked()
         {
             if (targetPlayer == null) return;
-            Debug.Log("[DOTween Visual Editor] 重置功能将在第三阶段实现");
+            RestoreInitialStates();
         }
+
+        #region 预览逻辑
+
+        private void StartPreview()
+        {
+            if (targetPlayer == null || targetPlayer.StepCount == 0) return;
+
+            Log("StartPreview");
+
+            // 保存初始状态
+            SaveInitialStates();
+
+            // 确保在编辑模式下 DOTween 可用
+            DOTween.Init(true, true, LogBehaviour.Verbose).SetCapacity(200, 10);
+
+            // 创建预览序列
+            previewSequence = DOTween.Sequence();
+            previewSequence.SetUpdate(true);  // 关键：允许编辑模式更新
+
+            // 订阅编辑器更新
+            EditorApplication.update += OnEditorUpdate;
+
+            // 构建预览序列
+            BuildPreviewSequence();
+
+            // 播放
+            previewSequence.OnComplete(() =>
+            {
+                Log("Preview completed");
+                StopPreview();
+            });
+
+            previewSequence.Play();
+            isPreviewing = true;
+            previewButton.text = "停止";
+        }
+
+        private void StopPreview()
+        {
+            Log("StopPreview");
+
+            if (previewSequence != null)
+            {
+                previewSequence.Kill();
+                previewSequence = null;
+            }
+
+            EditorApplication.update -= OnEditorUpdate;
+            isPreviewing = false;
+            previewButton.text = "预览";
+
+            // 清理所有编辑模式 Tween
+            DOTween.Clear(true);
+        }
+
+        private void SaveInitialStates()
+        {
+            initialStates.Clear();
+
+            // 保存主物体状态
+            SaveTransformState(targetPlayer.transform);
+
+            // 保存所有步骤中涉及的物体状态
+            foreach (var step in targetPlayer.Steps)
+            {
+                if (step.TargetTransform != null)
+                {
+                    SaveTransformState(step.TargetTransform);
+                }
+            }
+        }
+
+        private void SaveTransformState(Transform t)
+        {
+            if (!initialStates.ContainsKey(t))
+            {
+                initialStates[t] = new TransformState
+                {
+                    position = t.position,
+                    rotation = t.rotation,
+                    scale = t.localScale
+                };
+            }
+        }
+
+        private void RestoreInitialStates()
+        {
+            foreach (var kvp in initialStates)
+            {
+                var t = kvp.Key;
+                var state = kvp.Value;
+
+                if (t != null)
+                {
+                    Undo.RecordObject(t, "Reset Preview State");
+                    t.position = state.position;
+                    t.rotation = state.rotation;
+                    t.localScale = state.scale;
+                }
+            }
+
+            initialStates.Clear();
+            Log("Initial states restored");
+        }
+
+        private void BuildPreviewSequence()
+        {
+            foreach (var step in targetPlayer.Steps)
+            {
+                if (!step.IsEnabled) continue;
+                AppendStepToPreview(step);
+            }
+        }
+
+        private void AppendStepToPreview(TweenStepData step)
+        {
+            Tweener tweener = null;
+
+            switch (step.Type)
+            {
+                case TweenStepType.Move:
+                    tweener = CreateMoveTween(step);
+                    break;
+                case TweenStepType.Rotate:
+                    tweener = CreateRotateTween(step);
+                    break;
+                case TweenStepType.Scale:
+                    tweener = CreateScaleTween(step);
+                    break;
+                case TweenStepType.Delay:
+                    previewSequence.AppendInterval(step.Duration);
+                    return;
+                case TweenStepType.Callback:
+                    previewSequence.AppendCallback(() => step.OnComplete?.Invoke());
+                    return;
+            }
+
+            if (tweener == null) return;
+
+            // 设置缓动
+            if (step.UseCustomCurve && step.CustomCurve != null)
+            {
+                tweener.SetEase(step.CustomCurve);
+            }
+            else
+            {
+                tweener.SetEase(step.Ease);
+            }
+
+            // 关键：允许编辑模式更新
+            tweener.SetUpdate(true);
+
+            // 添加到序列
+            switch (step.ExecutionMode)
+            {
+                case ExecutionMode.Append:
+                    previewSequence.Append(tweener);
+                    break;
+                case ExecutionMode.Join:
+                    previewSequence.Join(tweener);
+                    break;
+                case ExecutionMode.Insert:
+                    previewSequence.Insert(step.InsertTime, tweener);
+                    break;
+            }
+        }
+
+        private Tweener CreateMoveTween(TweenStepData step)
+        {
+            var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
+
+            switch (step.TransformTarget)
+            {
+                case TransformTarget.Position:
+                    return step.IsRelative
+                        ? target.DOMove(step.TargetValue, step.Duration).From(isRelative: true)
+                        : target.DOMove(step.TargetValue, step.Duration);
+
+                case TransformTarget.LocalPosition:
+                    return step.IsRelative
+                        ? target.DOLocalMove(step.TargetValue, step.Duration).From(isRelative: true)
+                        : target.DOLocalMove(step.TargetValue, step.Duration);
+
+                default:
+                    return step.IsRelative
+                        ? target.DOMove(step.TargetValue, step.Duration).From(isRelative: true)
+                        : target.DOMove(step.TargetValue, step.Duration);
+            }
+        }
+
+        private Tweener CreateRotateTween(TweenStepData step)
+        {
+            var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
+
+            switch (step.TransformTarget)
+            {
+                case TransformTarget.Rotation:
+                    return step.IsRelative
+                        ? target.DORotate(step.TargetValue, step.Duration).From(isRelative: true)
+                        : target.DORotate(step.TargetValue, step.Duration);
+
+                case TransformTarget.LocalRotation:
+                    return step.IsRelative
+                        ? target.DOLocalRotate(step.TargetValue, step.Duration).From(isRelative: true)
+                        : target.DOLocalRotate(step.TargetValue, step.Duration);
+
+                default:
+                    return step.IsRelative
+                        ? target.DORotate(step.TargetValue, step.Duration).From(isRelative: true)
+                        : target.DORotate(step.TargetValue, step.Duration);
+            }
+        }
+
+        private Tweener CreateScaleTween(TweenStepData step)
+        {
+            var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
+
+            return step.IsRelative
+                ? target.DOScale(step.TargetValue, step.Duration).From(isRelative: true)
+                : target.DOScale(step.TargetValue, step.Duration);
+        }
+
+        private void OnEditorUpdate()
+        {
+            // 驱动场景视图更新
+            SceneView.RepaintAll();
+        }
+
+        #endregion
 
         #endregion
 
