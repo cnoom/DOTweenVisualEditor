@@ -754,56 +754,66 @@ namespace CNoom.DOTweenVisual.Editor
         private Tweener CreateMoveTween(TweenStepData step)
         {
             var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
+            Tweener tweener = null;
 
             switch (step.TransformTarget)
             {
                 case TransformTarget.Position:
-                    return step.IsRelative
-                        ? target.DOMove(step.TargetValue, step.Duration).From(isRelative: true)
-                        : target.DOMove(step.TargetValue, step.Duration);
-
+                    tweener = target.DOMove(step.TargetValue, step.Duration);
+                    break;
                 case TransformTarget.LocalPosition:
-                    return step.IsRelative
-                        ? target.DOLocalMove(step.TargetValue, step.Duration).From(isRelative: true)
-                        : target.DOLocalMove(step.TargetValue, step.Duration);
-
+                    tweener = target.DOLocalMove(step.TargetValue, step.Duration);
+                    break;
                 default:
-                    return step.IsRelative
-                        ? target.DOMove(step.TargetValue, step.Duration).From(isRelative: true)
-                        : target.DOMove(step.TargetValue, step.Duration);
+                    tweener = target.DOMove(step.TargetValue, step.Duration);
+                    break;
             }
+
+            if (step.IsRelative)
+            {
+                tweener.SetRelative(true);
+            }
+
+            return tweener;
         }
 
         private Tweener CreateRotateTween(TweenStepData step)
         {
             var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
+            Tweener tweener = null;
 
             switch (step.TransformTarget)
             {
                 case TransformTarget.Rotation:
-                    return step.IsRelative
-                        ? target.DORotate(step.TargetValue, step.Duration).From(isRelative: true)
-                        : target.DORotate(step.TargetValue, step.Duration);
-
+                    tweener = target.DORotate(step.TargetValue, step.Duration);
+                    break;
                 case TransformTarget.LocalRotation:
-                    return step.IsRelative
-                        ? target.DOLocalRotate(step.TargetValue, step.Duration).From(isRelative: true)
-                        : target.DOLocalRotate(step.TargetValue, step.Duration);
-
+                    tweener = target.DOLocalRotate(step.TargetValue, step.Duration);
+                    break;
                 default:
-                    return step.IsRelative
-                        ? target.DORotate(step.TargetValue, step.Duration).From(isRelative: true)
-                        : target.DORotate(step.TargetValue, step.Duration);
+                    tweener = target.DORotate(step.TargetValue, step.Duration);
+                    break;
             }
+
+            if (step.IsRelative)
+            {
+                tweener.SetRelative(true);
+            }
+
+            return tweener;
         }
 
         private Tweener CreateScaleTween(TweenStepData step)
         {
             var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
+            var tweener = target.DOScale(step.TargetValue, step.Duration);
 
-            return step.IsRelative
-                ? target.DOScale(step.TargetValue, step.Duration).From(isRelative: true)
-                : target.DOScale(step.TargetValue, step.Duration);
+            if (step.IsRelative)
+            {
+                tweener.SetRelative(true);
+            }
+
+            return tweener;
         }
 
         private void OnEditorUpdate()
