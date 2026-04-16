@@ -278,9 +278,43 @@ namespace CNoom.DOTweenVisual.Editor
                     int index = FindPropertyIndex(stepsProperty, property);
                     if (index > 0)
                     {
-                        stepsProperty.MoveArrayElement(index, index - 1);
+                        int newIndex = index - 1;
+                        stepsProperty.MoveArrayElement(index, newIndex);
                         stepsProperty.serializedObject.ApplyModifiedProperties();
                         RefreshStepList();
+                        
+                        // 设置选中状态跟随移动的项
+                        if (stepListView != null)
+                        {
+                            stepListView.selectedIndex = newIndex;
+                        }
+                    }
+                }
+            });
+            
+            var downButton = new Button { text = "↓", name = "down-button" };
+            downButton.AddToClassList("move-button");
+            downButton.clickable = new Clickable(() =>
+            {
+                var property = item.userData as SerializedProperty;
+                if (property != null && stepsProperty != null)
+                {
+                    int index = FindPropertyIndex(stepsProperty, property);
+                    if (index >= 0 && index < stepsProperty.arraySize - 1)
+                    {
+                        int newIndex = index + 1;
+                        stepsProperty.MoveArrayElement(index, newIndex);
+                        stepsProperty.serializedObject.ApplyModifiedProperties();
+                        RefreshStepList();
+                        
+                        // 设置选中状态跟随移动的项
+                        if (stepListView != null)
+                        {
+                            stepListView.selectedIndex = newIndex;
+                        }
+                    }
+                }
+            });
                     }
                 }
             });
