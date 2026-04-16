@@ -640,9 +640,6 @@ namespace CNoom.DOTweenVisual.Editor
             // 停止编辑器预览模式
             DOTweenEditorPreview.Stop();
 
-            // 恢复初始状态
-            RestoreInitialStates();
-
             isPreviewing = false;
             previewButton.text = "预览";
         }
