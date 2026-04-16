@@ -747,7 +747,10 @@ namespace CNoom.DOTweenVisual.Editor
             // 调试：检查序列状态
             Log($"Preview sequence created, duration: {previewSequence.Duration()}");
 
-            // 播放
+            // 为编辑器预览准备 Tween（必须在设置 OnComplete 之前调用）
+            DOTweenEditorPreview.PrepareTweenForPreview(previewSequence);
+
+            // 播放完成后设置状态（必须在 PrepareTweenForPreview 之后调用）
             previewSequence.OnComplete(() =>
             {
                 Log("Preview completed");
@@ -755,8 +758,6 @@ namespace CNoom.DOTweenVisual.Editor
                 UpdateButtonStates();
             });
 
-            // 为编辑器预览准备 Tween
-            DOTweenEditorPreview.PrepareTweenForPreview(previewSequence);
             previewSequence.Play();
             previewState = PreviewState.Playing;
             UpdateButtonStates();
