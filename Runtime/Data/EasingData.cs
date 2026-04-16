@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using DG.Tweening;
 
 namespace CNoom.DOTweenVisual.Data
 {
