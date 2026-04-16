@@ -223,13 +223,32 @@ namespace CNoom.DOTweenVisual.Editor
                 
                 // 绑定属性
                 stepListView.BindProperty(stepsProperty);
+                
+                // 注册拖拽重排回调
+                stepListView.itemIndexChanged -= OnStepIndexChanged;
+                stepListView.itemIndexChanged += OnStepIndexChanged;
             }
             else
             {
                 Log("Unbinding and clearing list");
+                stepListView.itemIndexChanged -= OnStepIndexChanged;
                 stepListView.Unbind();
                 stepListView.itemsSource = System.Array.Empty<object>();
             }
+        }
+        
+        /// <summary>
+        /// 处理拖拽重排后的数据同步
+        /// </summary>
+        private void OnStepIndexChanged(int oldIndex, int newIndex)
+        {
+            Log($"OnStepIndexChanged: {oldIndex} -> {newIndex}");
+            
+            if (stepsProperty == null) return;
+            
+            // 使用 SerializedProperty.MoveArrayElement 同步移动
+            stepsProperty.MoveArrayElement(oldIndex, newIndex);
+            stepsProperty.serializedObject.ApplyModifiedProperties();
         }
 
         private VisualElement MakeStepItem()
@@ -243,7 +262,7 @@ namespace CNoom.DOTweenVisual.Editor
             var headerRow = new VisualElement();
             headerRow.AddToClassList("step-header-row");
             
-            var foldout = new Foldout { value = false };
+            var foldout = new Foldout { value = false, name = "step-foldout" };
             foldout.AddToClassList("step-foldout");
             
             var titleLabel = new Label { name = "step-title" };
@@ -298,6 +317,15 @@ namespace CNoom.DOTweenVisual.Editor
             var detailsContainer = new PropertyField { name = "step-details" };
             detailsContainer.AddToClassList("step-details");
             item.Add(detailsContainer);
+            
+            // 默认隐藏详情
+            detailsContainer.style.display = DisplayStyle.None;
+            
+            // Foldout 折叠/展开控制
+            foldout.RegisterValueChangedCallback(evt => 
+            {
+                detailsContainer.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
+            });
             
             return item;
         }
