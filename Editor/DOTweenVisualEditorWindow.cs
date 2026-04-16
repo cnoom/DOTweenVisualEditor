@@ -601,7 +601,13 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 创建预览序列
             previewSequence = DOTween.Sequence();
-            previewSequence.SetUpdate(true);  // 关键：允许编辑模式更新
+            previewSequence.SetUpdate(UpdateType.Editor);  // 关键：编辑器模式更新
+            previewSequence.OnKill(() =>
+            {
+                Log("Preview sequence killed");
+                isPreviewing = false;
+                previewButton.text = "预览";
+            });
 
             // 订阅编辑器更新
             EditorApplication.update += OnEditorUpdate;
@@ -609,16 +615,15 @@ namespace CNoom.DOTweenVisual.Editor
             // 构建预览序列
             BuildPreviewSequence();
 
-            // 播放
-            previewSequence.OnComplete(() =>
-            {
-                Log("Preview completed");
-                StopPreview();
-            });
+            // 调试：检查序列状态
+            Log($"Preview sequence created, duration: {previewSequence.Duration()}");
 
+            // 播放
             previewSequence.Play();
             isPreviewing = true;
             previewButton.text = "停止";
+            
+            Log($"Preview started, isPlaying: {previewSequence.IsPlaying()}");
         }
 
         private void StopPreview()
@@ -691,15 +696,29 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void BuildPreviewSequence()
         {
+            Log($"BuildPreviewSequence: step count = {targetPlayer.StepCount}");
+            
+            int addedCount = 0;
             foreach (var step in targetPlayer.Steps)
             {
-                if (!step.IsEnabled) continue;
+                if (!step.IsEnabled)
+                {
+                    Log($"Step skipped (disabled)");
+                    continue;
+                }
+                
                 AppendStepToPreview(step);
+                addedCount++;
             }
+            
+            Log($"Added {addedCount} steps to preview sequence");
         }
 
         private void AppendStepToPreview(TweenStepData step)
         {
+            var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
+            Log($"AppendStep: {step.Type} | Target: {target.name} | Value: {step.TargetValue} | Duration: {step.Duration}");
+            
             Tweener tweener = null;
 
             switch (step.Type)
@@ -721,7 +740,11 @@ namespace CNoom.DOTweenVisual.Editor
                     return;
             }
 
-            if (tweener == null) return;
+            if (tweener == null)
+            {
+                Log($"Warning: tweener is null for {step.Type}");
+                return;
+            }
 
             // 设置缓动
             if (step.UseCustomCurve && step.CustomCurve != null)
@@ -732,9 +755,6 @@ namespace CNoom.DOTweenVisual.Editor
             {
                 tweener.SetEase(step.Ease);
             }
-
-            // 关键：允许编辑模式更新
-            tweener.SetUpdate(true);
 
             // 添加到序列
             switch (step.ExecutionMode)
@@ -749,6 +769,8 @@ namespace CNoom.DOTweenVisual.Editor
                     previewSequence.Insert(step.InsertTime, tweener);
                     break;
             }
+            
+            Log($"Tweener added to sequence");
         }
 
         private Tweener CreateMoveTween(TweenStepData step)
