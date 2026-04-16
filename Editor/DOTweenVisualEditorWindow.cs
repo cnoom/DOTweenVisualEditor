@@ -53,8 +53,15 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void OnEnable()
         {
-            // 监听选择变化
+            // 监听选择变化 - 在 OnEnable 中注册
+            Selection.selectionChanged -= OnSelectionChanged;
             Selection.selectionChanged += OnSelectionChanged;
+            
+            // 如果窗口已经创建，立即检查当前选择
+            if (rootVisualElement.childCount > 0)
+            {
+                OnSelectionChanged();
+            }
         }
 
         private void OnDisable()
@@ -64,15 +71,22 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void OnSelectionChanged()
         {
+            // 确保 UI 已创建
+            if (stepListView == null) return;
+            
             var selected = Selection.activeGameObject;
             if (selected != null)
             {
                 var player = selected.GetComponent<DOTweenVisualPlayer>();
-                if (player != null && player != targetPlayer)
+                if (player != null)
                 {
                     SetTarget(player);
+                    return;
                 }
             }
+            
+            // 没有选中 DOTweenVisualPlayer
+            SetTarget(null);
         }
 
         private void SetTarget(DOTweenVisualPlayer player)
@@ -90,7 +104,14 @@ namespace CNoom.DOTweenVisual.Editor
                 stepsProperty = null;
             }
             
-            RefreshStepList();
+            // 延迟刷新，确保在下一帧执行
+            EditorApplication.delayCall += () =>
+            {
+                if (this != null)
+                {
+                    RefreshStepList();
+                }
+            };
         }
 
         #endregion
@@ -172,10 +193,15 @@ namespace CNoom.DOTweenVisual.Editor
                 selectionType = SelectionType.Single,
                 showBorder = true,
                 showFoldoutHeader = false,
-                showAddRemoveFooter = false
+                showAddRemoveFooter = false,
+                virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight
             };
             stepListView.AddToClassList("step-list");
             stepListView.style.flexGrow = 1;
+            
+            // 初始化空列表避免拖拽报错
+            stepListView.itemsSource = System.Array.Empty<object>();
+            
             rootVisualElement.Add(stepListView);
             
             // 时间轴容器
@@ -232,15 +258,14 @@ namespace CNoom.DOTweenVisual.Editor
                 // 确保 serializedObject 是最新的
                 serializedObject.Update();
                 
-                // 使用 BindProperty 绑定 SerializedProperty
+                // 绑定属性
                 stepListView.BindProperty(stepsProperty);
-                
-                // 强制刷新
-                stepListView.RefreshItems();
             }
             else
             {
+                // 解绑并重置为空列表
                 stepListView.Unbind();
+                stepListView.itemsSource = System.Array.Empty<object>();
             }
         }
 
