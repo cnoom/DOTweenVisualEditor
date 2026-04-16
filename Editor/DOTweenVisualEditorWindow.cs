@@ -67,10 +67,22 @@ namespace CNoom.DOTweenVisual.Editor
             Selection.selectionChanged -= OnSelectionChanged;
         }
 
+        private void OnFocus()
+        {
+            Log("OnFocus");
+            
+            // 窗口获得焦点时也检查选择
+            CheckSelection();
+        }
+
         private void OnSelectionChanged()
         {
-            Log($"OnSelectionChanged - stepListView null: {stepListView == null}");
-            
+            Log($"OnSelectionChanged");
+            CheckSelection();
+        }
+
+        private void CheckSelection()
+        {
             // 确保 UI 已创建
             if (stepListView == null)
             {
@@ -86,7 +98,7 @@ namespace CNoom.DOTweenVisual.Editor
                 var player = selected.GetComponent<DOTweenVisualPlayer>();
                 Log($"Player found: {player != null}");
                 
-                if (player != null)
+                if (player != null && player != targetPlayer)
                 {
                     SetTarget(player);
                     return;
@@ -94,7 +106,10 @@ namespace CNoom.DOTweenVisual.Editor
             }
             
             // 没有选中 DOTweenVisualPlayer
-            SetTarget(null);
+            if (targetPlayer != null)
+            {
+                SetTarget(null);
+            }
         }
 
         private void SetTarget(DOTweenVisualPlayer player)
