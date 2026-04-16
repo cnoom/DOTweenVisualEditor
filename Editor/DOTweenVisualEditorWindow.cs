@@ -570,11 +570,19 @@ namespace CNoom.DOTweenVisual.Editor
 
             if (isPreviewing)
             {
-                StopPreview();
-                return;
+                // 正在播放 → 暂停
+                PausePreview();
             }
-
-            StartPreview();
+            else if (previewSequence != null && !previewSequence.IsPlaying())
+            {
+                // 已暂停 → 继续
+                ResumePreview();
+            }
+            else
+            {
+                // 首次播放
+                StartPreview();
+            }
         }
 
         private void OnStopClicked()
@@ -615,16 +623,41 @@ namespace CNoom.DOTweenVisual.Editor
             previewSequence.OnComplete(() =>
             {
                 Log("Preview completed");
-                StopPreview();
+                isPreviewing = false;
+                previewButton.text = "预览";
             });
 
             // 为编辑器预览准备 Tween
             DOTweenEditorPreview.PrepareTweenForPreview(previewSequence);
             previewSequence.Play();
             isPreviewing = true;
-            previewButton.text = "停止";
-            
+            previewButton.text = "暂停";
+
             Log($"Preview started, isPlaying: {previewSequence.IsPlaying()}");
+        }
+
+        private void PausePreview()
+        {
+            Log("PausePreview");
+
+            if (previewSequence != null && previewSequence.IsPlaying())
+            {
+                previewSequence.Pause();
+                isPreviewing = false;
+                previewButton.text = "继续";
+            }
+        }
+
+        private void ResumePreview()
+        {
+            Log("ResumePreview");
+
+            if (previewSequence != null && !previewSequence.IsPlaying())
+            {
+                previewSequence.Play();
+                isPreviewing = true;
+                previewButton.text = "暂停";
+            }
         }
 
         private void StopPreview()
