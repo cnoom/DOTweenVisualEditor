@@ -34,9 +34,7 @@ namespace CNoom.DOTweenVisual.Editor
         private Button resetButton;
         private ToolbarMenu addStepMenu;
         private ListView stepListView;
-        private VisualElement timelineContainer;
         private Label helpLabel;
-        private IMGUIContainer timelineGUI;
 
         // 状态栏元素
         private VisualElement statusBar;
@@ -128,12 +126,6 @@ namespace CNoom.DOTweenVisual.Editor
             string totalStr = FormatTime(totalTime);
 
             timeLabel.text = $"{currentStr} / {totalStr}";
-
-            // 更新时间轴显示
-            if (timelineGUI != null)
-            {
-                timelineGUI.MarkDirtyRepaint();
-            }
         }
 
         private string FormatTime(float seconds)
@@ -316,25 +308,6 @@ namespace CNoom.DOTweenVisual.Editor
             
             rootVisualElement.Add(contentArea);
             
-            // 时间轴容器（固定在底部）
-            timelineContainer = new VisualElement();
-            timelineContainer.AddToClassList("timeline-container");
-
-            // 时间轴标题
-            var timelineTitle = new Label("时间轴预览");
-            timelineTitle.AddToClassList("timeline-label");
-            timelineContainer.Add(timelineTitle);
-
-            // 时间轴绘制区域
-            timelineGUI = new IMGUIContainer(() =>
-            {
-                DrawTimeline();
-            });
-            timelineGUI.style.flexGrow = 1;
-            timelineContainer.Add(timelineGUI);
-
-            rootVisualElement.Add(timelineContainer);
-            
             // 构建添加步骤菜单
             BuildAddStepMenu();
             
@@ -377,12 +350,6 @@ namespace CNoom.DOTweenVisual.Editor
             
             // 更新按钮状态（步骤数量变化可能影响预览按钮可用性）
             UpdateButtonStates();
-
-            // 更新时间轴显示
-            if (timelineGUI != null)
-            {
-                timelineGUI.MarkDirtyRepaint();
-            }
         }
 
         private VisualElement MakeStepItem()
@@ -895,70 +862,6 @@ namespace CNoom.DOTweenVisual.Editor
                     stateLabel.text = "● 播放完成";
                     stateLabel.style.color = new Color(0.3f, 0.6f, 1f);
                     break;
-            }
-        }
-
-        private void DrawTimeline()
-        {
-            float totalDuration = 0f;
-            float currentTime = 0f;
-
-            // 计算总时长
-            if (previewSequence != null)
-            {
-                totalDuration = (float)previewSequence.Duration();
-                currentTime = previewSequence.Elapsed();
-            }
-            else if (targetPlayer != null && targetPlayer.Steps != null)
-            {
-                // 未预览时，计算步骤总时长
-                foreach (var step in targetPlayer.Steps)
-                {
-                    if (step.IsEnabled)
-                    {
-                        totalDuration += step.Duration;
-                    }
-                }
-            }
-
-            // 获取绘制区域
-            Rect rect = GUILayoutUtility.GetRect(EditorGUIUtility.currentViewWidth - 20, 40);
-            float barHeight = 20f;
-            float barY = rect.y + 10;
-
-            // 绘制背景
-            EditorGUI.DrawRect(new Rect(rect.x, barY, rect.width, barHeight), new Color(0.2f, 0.2f, 0.2f));
-
-            // 绘制进度条（仅在预览时）
-            if (previewSequence != null && totalDuration > 0)
-            {
-                float progress = currentTime / totalDuration;
-                float progressWidth = rect.width * progress;
-                EditorGUI.DrawRect(new Rect(rect.x, barY, progressWidth, barHeight), new Color(0.3f, 0.6f, 1f));
-            }
-
-            // 绘制时间刻度
-            int totalSeconds = Mathf.CeilToInt(totalDuration);
-            if (totalSeconds > 0)
-            {
-                int maxMarks = Mathf.Min(totalSeconds, 10);
-                for (int i = 0; i <= maxMarks; i++)
-                {
-                    float x = rect.x + (rect.width * i / maxMarks);
-                    EditorGUI.DrawRect(new Rect(x, barY + barHeight, 1, 5), Color.gray);
-
-                    // 绘制刻度标签
-                    int second = (totalSeconds * i) / maxMarks;
-                    var labelRect = new Rect(x - 10, barY + barHeight + 5, 20, 15);
-                    EditorGUI.LabelField(labelRect, $"{second}s", EditorStyles.centeredGreyMiniLabel);
-                }
-            }
-
-            // 绘制当前位置标记（仅在预览时）
-            if (previewSequence != null && totalDuration > 0 && currentTime >= 0)
-            {
-                float markerX = rect.x + (rect.width * currentTime / totalDuration);
-                EditorGUI.DrawRect(new Rect(markerX - 1, barY - 2, 2, barHeight + 4), Color.white);
             }
         }
 
