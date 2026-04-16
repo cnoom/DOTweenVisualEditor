@@ -1,0 +1,28 @@
+{
+  "name": "com.cnoom.dotweenvisual",
+  "displayName": "DOTween Visual Editor",
+  "version": "0.1.0",
+  "unity": "2021.3",
+  "description": "DOTween 可视化编辑器，提供更直观的 Tween 动画编辑体验。",
+  "keywords": [
+    "dotween",
+    "tween",
+    "animation",
+    "visual",
+    "editor"
+  ],
+  "author": {
+    "name": "CNoom",
+    "url": "https://github.com/cnoom"
+  },
+  "dependencies": {
+    "com.demigiant.dotween": "1.2.765"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Usage",
+      "description": "DOTween Visual Editor 基础使用示例",
+      "path": "Samples~/BasicUsage"
+    }
+  ]
+}
