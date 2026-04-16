@@ -818,6 +818,12 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void OnEditorUpdate()
         {
+            // 驱动 DOTween 手动更新（编辑器模式必需）
+            if (DOTween.instance != null)
+            {
+                DOTween.instance.ManualUpdate(Time.deltaTime, Time.unscaledDeltaTime);
+            }
+
             // 驱动场景视图更新
             SceneView.RepaintAll();
         }
