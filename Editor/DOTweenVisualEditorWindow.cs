@@ -24,6 +24,7 @@ namespace CNoom.DOTweenVisual.Editor
         #region UI 元素
 
         private Toolbar toolbar;
+        private ObjectField targetField;
         private Button previewButton;
         private Button stopButton;
         private Button resetButton;
@@ -55,61 +56,19 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnEnable()
         {
             Log("OnEnable");
-            
-            // 注册选择变化事件
-            Selection.selectionChanged -= OnSelectionChanged;
-            Selection.selectionChanged += OnSelectionChanged;
         }
 
         private void OnDisable()
         {
             Log("OnDisable");
-            Selection.selectionChanged -= OnSelectionChanged;
         }
 
-        private void OnFocus()
+        private void OnTargetChanged(ChangeEvent<Object> evt)
         {
-            Log("OnFocus");
+            Log($"OnTargetChanged: {evt.newValue}");
             
-            // 窗口获得焦点时也检查选择
-            CheckSelection();
-        }
-
-        private void OnSelectionChanged()
-        {
-            Log($"OnSelectionChanged");
-            CheckSelection();
-        }
-
-        private void CheckSelection()
-        {
-            // 确保 UI 已创建
-            if (stepListView == null)
-            {
-                Log("stepListView is null, skip");
-                return;
-            }
-            
-            var selected = Selection.activeGameObject;
-            Log($"Selected: {selected}");
-            
-            if (selected != null)
-            {
-                var player = selected.GetComponent<DOTweenVisualPlayer>();
-                Log($"Player found: {player != null}");
-                
-                if (player != null && player != targetPlayer)
-                {
-                    SetTarget(player);
-                    return;
-                }
-            }
-            
-            // 没有选中 DOTweenVisualPlayer
-            if (targetPlayer != null)
-            {
-                SetTarget(null);
-            }
+            var player = evt.newValue as DOTweenVisualPlayer;
+            SetTarget(player);
         }
 
         private void SetTarget(DOTweenVisualPlayer player)
@@ -150,15 +109,10 @@ namespace CNoom.DOTweenVisual.Editor
                 rootVisualElement.styleSheets.Add(styleSheet);
             }
             
-            // 检查当前选择
-            Log($"Checking current selection: {Selection.activeGameObject}");
-            if (Selection.activeGameObject != null)
+            // 如果已有目标，刷新列表
+            if (targetPlayer != null)
             {
-                var player = Selection.activeGameObject.GetComponent<DOTweenVisualPlayer>();
-                if (player != null)
-                {
-                    SetTarget(player);
-                }
+                SetTarget(targetPlayer);
             }
         }
 
@@ -169,6 +123,25 @@ namespace CNoom.DOTweenVisual.Editor
             // 工具栏
             toolbar = new Toolbar();
             toolbar.AddToClassList("main-toolbar");
+            
+            // 目标物体选择器
+            var targetLabel = new Label("目标物体:");
+            targetLabel.style.marginRight = 4;
+            toolbar.Add(targetLabel);
+            
+            targetField = new ObjectField
+            {
+                objectType = typeof(DOTweenVisualPlayer),
+                allowSceneObjects = true,
+                value = targetPlayer
+            };
+            targetField.style.width = 200;
+            targetField.RegisterValueChangedCallback(OnTargetChanged);
+            toolbar.Add(targetField);
+            
+            var spacer1 = new VisualElement();
+            spacer1.style.flexGrow = 1;
+            toolbar.Add(spacer1);
             
             previewButton = new Button(OnPreviewClicked) { text = "预览" };
             previewButton.AddToClassList("toolbar-button");
@@ -182,9 +155,9 @@ namespace CNoom.DOTweenVisual.Editor
             resetButton.AddToClassList("toolbar-button");
             toolbar.Add(resetButton);
             
-            var spacer = new VisualElement();
-            spacer.style.flexGrow = 1;
-            toolbar.Add(spacer);
+            var spacer2 = new VisualElement();
+            spacer2.style.flexGrow = 1;
+            toolbar.Add(spacer2);
             
             addStepMenu = new ToolbarMenu { text = "添加步骤" };
             addStepMenu.AddToClassList("toolbar-menu");
@@ -217,7 +190,7 @@ namespace CNoom.DOTweenVisual.Editor
             rootVisualElement.Add(timelineContainer);
             
             // 初始提示
-            helpLabel = new Label("请选择一个包含 DOTweenVisualPlayer 组件的物体");
+            helpLabel = new Label("请在上方指定目标物体（包含 DOTweenVisualPlayer 组件）");
             helpLabel.AddToClassList("help-label");
             rootVisualElement.Add(helpLabel);
             
