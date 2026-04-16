@@ -2,7 +2,7 @@
   "name": "CNoom.DOTweenVisual.Editor",
   "rootNamespace": "CNoom.DOTweenVisual.Editor",
   "references": [
-    "GUID:请替换为Runtime asmdef的GUID"
+    "CNoom.DOTweenVisual.Runtime"
   ],
   "includePlatforms": [
     "Editor"

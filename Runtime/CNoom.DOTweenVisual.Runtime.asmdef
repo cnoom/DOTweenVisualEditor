@@ -9,6 +9,17 @@
   "precompiledReferences": [],
   "autoReferenced": true,
   "defineConstraints": [],
-  "versionDefines": [],
+  "versionDefines": [
+    {
+      "name": "com.demigiant.dotween",
+      "expression": "1.2.0",
+      "define": "DOTWEEN"
+    },
+    {
+      "name": "com.demigiant.dotweenpro",
+      "expression": "1.2.0",
+      "define": "DOTWEEN_PRO"
+    }
+  ],
   "noEngineReferences": false
 }
