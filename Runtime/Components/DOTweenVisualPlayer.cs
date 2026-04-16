@@ -261,24 +261,24 @@ namespace CNoom.DOTweenVisual.Components
 
             switch (step.Type)
             {
-                case TweenType.Move:
+                case TweenStepType.Move:
                     tweener = CreateMoveTween(step);
                     break;
-                case TweenType.Rotate:
+                case TweenStepType.Rotate:
                     tweener = CreateRotateTween(step);
                     break;
-                case TweenType.Scale:
+                case TweenStepType.Scale:
                     tweener = CreateScaleTween(step);
                     break;
-                case TweenType.Delay:
+                case TweenStepType.Delay:
                     // Delay 使用 AppendInterval
                     _currentSequence.AppendInterval(step.Duration);
                     return;
-                case TweenType.Callback:
+                case TweenStepType.Callback:
                     // Callback 使用 AppendCallback
                     _currentSequence.AppendCallback(() => step.OnComplete?.Invoke());
                     return;
-                case TweenType.Property:
+                case TweenStepType.Property:
                     // Property 动画留待后续实现
                     if (_debugMode)
                     {

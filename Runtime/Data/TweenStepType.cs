@@ -1,9 +1,9 @@
 namespace CNoom.DOTweenVisual.Data
 {
     /// <summary>
-    /// 动画类型
+    /// 动画步骤类型
     /// </summary>
-    public enum TweenType
+    public enum TweenStepType
     {
         /// <summary>移动动画</summary>
         Move,

@@ -24,7 +24,7 @@ namespace CNoom.DOTweenVisual.Data
         #region 动画类型
 
         [Tooltip("动画类型")]
-        public TweenType Type = TweenType.Move;
+        public TweenStepType Type = TweenStepType.Move;
 
         #endregion
 
