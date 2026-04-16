@@ -165,6 +165,11 @@ namespace CNoom.DOTweenVisual.Editor
             
             rootVisualElement.Add(toolbar);
             
+            // 主内容区域（包含列表和帮助提示）
+            var contentArea = new VisualElement();
+            contentArea.style.flexGrow = 1;
+            contentArea.style.position = Position.Relative;
+            
             // 步骤列表
             stepListView = new ListView
             {
@@ -181,18 +186,25 @@ namespace CNoom.DOTweenVisual.Editor
             stepListView.style.flexGrow = 1;
             stepListView.style.minHeight = 100;
             
-            rootVisualElement.Add(stepListView);
+            contentArea.Add(stepListView);
             
-            // 时间轴容器
+            // 初始提示（覆盖在列表上方）
+            helpLabel = new Label("请在上方指定目标物体（包含 DOTweenVisualPlayer 组件）");
+            helpLabel.AddToClassList("help-label");
+            helpLabel.style.position = Position.Absolute;
+            helpLabel.style.left = 0;
+            helpLabel.style.right = 0;
+            helpLabel.style.top = 0;
+            helpLabel.style.bottom = 0;
+            contentArea.Add(helpLabel);
+            
+            rootVisualElement.Add(contentArea);
+            
+            // 时间轴容器（固定在底部）
             timelineContainer = new VisualElement();
             timelineContainer.AddToClassList("timeline-container");
             timelineContainer.style.height = 60;
             rootVisualElement.Add(timelineContainer);
-            
-            // 初始提示
-            helpLabel = new Label("请在上方指定目标物体（包含 DOTweenVisualPlayer 组件）");
-            helpLabel.AddToClassList("help-label");
-            rootVisualElement.Add(helpLabel);
             
             // 构建添加步骤菜单
             BuildAddStepMenu();
@@ -249,6 +261,9 @@ namespace CNoom.DOTweenVisual.Editor
             // 使用 SerializedProperty.MoveArrayElement 同步移动
             stepsProperty.MoveArrayElement(oldIndex, newIndex);
             stepsProperty.serializedObject.ApplyModifiedProperties();
+            
+            // 刷新列表显示
+            RefreshStepList();
         }
 
         private VisualElement MakeStepItem()
@@ -343,14 +358,20 @@ namespace CNoom.DOTweenVisual.Editor
             var isEnabledProp = stepProperty.FindPropertyRelative("IsEnabled");
             var durationProp = stepProperty.FindPropertyRelative("Duration");
             var easeProp = stepProperty.FindPropertyRelative("Ease");
+            var targetTransformProp = stepProperty.FindPropertyRelative("TargetTransform");
             
             var type = (TweenStepType)typeProp.enumValueIndex;
             
-            // 更新标题
+            // 更新标题 - 显示目标物体名称和类型
             var titleLabel = element.Q<Label>("step-title");
             if (titleLabel != null)
             {
-                titleLabel.text = $"{index + 1}. {GetStepDisplayName(type)}";
+                string targetName = "未指定";
+                if (targetTransformProp.objectReferenceValue != null)
+                {
+                    targetName = targetTransformProp.objectReferenceValue.name;
+                }
+                titleLabel.text = $"{index + 1}. [{targetName}] {GetStepDisplayName(type)}";
             }
             
             // 更新摘要
@@ -373,6 +394,50 @@ namespace CNoom.DOTweenVisual.Editor
             if (detailsField != null)
             {
                 detailsField.BindProperty(stepProperty);
+            }
+            
+            // 监听属性变化，刷新标题和摘要
+            element.TrackPropertyValue(typeProp, _ => UpdateStepTitle(element, index));
+            element.TrackPropertyValue(targetTransformProp, _ => UpdateStepTitle(element, index));
+            element.TrackPropertyValue(durationProp, _ => UpdateStepTitle(element, index));
+            element.TrackPropertyValue(easeProp, _ => UpdateStepTitle(element, index));
+        }
+        
+        /// <summary>
+        /// 更新步骤标题显示
+        /// </summary>
+        private void UpdateStepTitle(VisualElement element, int index)
+        {
+            if (stepsProperty == null || index < 0 || index >= stepsProperty.arraySize) return;
+            
+            // 刷新数据
+            serializedObject?.Update();
+            
+            var stepProperty = stepsProperty.GetArrayElementAtIndex(index);
+            var typeProp = stepProperty.FindPropertyRelative("Type");
+            var targetTransformProp = stepProperty.FindPropertyRelative("TargetTransform");
+            
+            var type = (TweenStepType)typeProp.enumValueIndex;
+            var titleLabel = element.Q<Label>("step-title");
+            
+            if (titleLabel != null)
+            {
+                string targetName = "未指定";
+                if (targetTransformProp.objectReferenceValue != null)
+                {
+                    targetName = targetTransformProp.objectReferenceValue.name;
+                }
+                titleLabel.text = $"{index + 1}. [{targetName}] {GetStepDisplayName(type)}";
+            }
+            
+            // 同时更新摘要
+            var durationProp = stepProperty.FindPropertyRelative("Duration");
+            var easeProp = stepProperty.FindPropertyRelative("Ease");
+            var summaryLabel = element.Q<Label>("step-summary");
+            if (summaryLabel != null)
+            {
+                var ease = (Ease)easeProp.enumValueIndex;
+                summaryLabel.text = $"{durationProp.floatValue:F1}s | {ease}";
             }
         }
 
