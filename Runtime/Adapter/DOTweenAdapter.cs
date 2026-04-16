@@ -92,7 +92,7 @@ namespace CNoom.DOTweenVisual.Adapter
     /// </summary>
     public class TweenerWrapper : TweenerAdapter
     {
-        private Tweener _tweener;
+        internal Tweener _tweener;
 
         public TweenerWrapper(Tweener tweener)
         {
