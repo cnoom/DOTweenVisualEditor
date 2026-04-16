@@ -6,7 +6,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using DG.Tweening;
-using DG.Tweening.Editor;
+using DG.DOTweenEditor;
 using CNoom.DOTweenVisual.Components;
 using CNoom.DOTweenVisual.Data;
 
