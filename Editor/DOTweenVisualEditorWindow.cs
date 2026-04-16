@@ -597,7 +597,7 @@ namespace CNoom.DOTweenVisual.Editor
             SaveInitialStates();
 
             // 确保在编辑模式下 DOTween 可用
-            DOTween.Init(true, true, LogBehaviour.Verbose).SetCapacity(200, 10);
+            DOTween.Init(true, true, LogBehaviour.Verbose);
 
             // 创建预览序列
             previewSequence = DOTween.Sequence();
