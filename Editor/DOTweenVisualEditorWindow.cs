@@ -30,6 +30,7 @@ namespace CNoom.DOTweenVisual.Editor
         private ObjectField targetField;
         private Button previewButton;
         private Button stopButton;
+        private Button replayButton;
         private Button resetButton;
         private ToolbarMenu addStepMenu;
         private ListView stepListView;
@@ -230,6 +231,10 @@ namespace CNoom.DOTweenVisual.Editor
             stopButton = new Button(OnStopClicked) { text = "停止" };
             stopButton.AddToClassList("toolbar-button");
             toolbar.Add(stopButton);
+            
+            replayButton = new Button(OnReplayClicked) { text = "重播" };
+            replayButton.AddToClassList("toolbar-button");
+            toolbar.Add(replayButton);
             
             resetButton = new Button(OnResetClicked) { text = "重置" };
             resetButton.AddToClassList("toolbar-button");
@@ -667,11 +672,23 @@ namespace CNoom.DOTweenVisual.Editor
                 // 已暂停 → 继续
                 ResumePreview();
             }
-            else
+            else if (previewState == PreviewState.None)
             {
-                // 未播放或已播放完成 → 开始预览
+                // 未播放 → 开始预览
                 StartPreview();
             }
+            // Completed 状态不响应，由重播按钮处理
+        }
+
+        private void OnReplayClicked()
+        {
+            if (targetPlayer == null) return;
+
+            // 恢复初始状态
+            RestoreInitialStates();
+
+            // 重新开始预览
+            StartPreview();
         }
 
         private void OnStopClicked()
@@ -796,29 +813,37 @@ namespace CNoom.DOTweenVisual.Editor
         {
             // 目标物体是否存在
             bool hasTarget = targetPlayer != null;
-            
+
             // 步骤是否存在
             bool hasSteps = hasTarget && targetPlayer.StepCount > 0;
-            
+
             // 是否在预览中（播放或暂停）
             bool inPreview = isPreviewing || isPaused;
-            
+
+            // 是否已播放完成
+            bool isCompleted = previewState == PreviewState.Completed;
+
             // --- 预览按钮 ---
-            previewButton.SetEnabled(hasSteps);
+            // 仅在 None/Playing/Paused 状态启用
+            previewButton.SetEnabled(hasSteps && !isCompleted);
             previewButton.text = isPreviewing ? "暂停" : (isPaused ? "继续" : "预览");
-            
+
             // --- 停止按钮 ---
             // 仅在预览过程中（播放或暂停）启用
             stopButton.SetEnabled(inPreview);
-            
+
+            // --- 重播按钮 ---
+            // 仅在播放完成后启用
+            replayButton.SetEnabled(hasSteps && isCompleted);
+
             // --- 重置按钮 ---
-            // 仅在预览过后（有初始状态）且不在预览过程中启用
-            resetButton.SetEnabled(hasPreviewed && !inPreview);
-            
+            // 仅在播放完成后启用
+            resetButton.SetEnabled(isCompleted);
+
             // --- 添加步骤菜单 ---
             // 预览过程中禁用，避免数据不一致
             addStepMenu.SetEnabled(hasTarget && !inPreview);
-            
+
             // --- 更新状态栏 ---
             UpdateStatusBar();
         }
