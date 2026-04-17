@@ -23,7 +23,8 @@ namespace CNoom.DOTweenVisual.Editor
 
         static DOTweenVisualEditorWindow()
         {
-            // 编译开始前自动重置所有预览状态
+            // 先取消订阅再订阅，防止域重载后重复订阅
+            CompilationPipeline.compilationStarted -= OnCompilationStarted;
             CompilationPipeline.compilationStarted += OnCompilationStarted;
         }
 

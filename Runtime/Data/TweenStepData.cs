@@ -80,7 +80,7 @@ namespace CNoom.DOTweenVisual.Data
         #region 回调
 
         [Tooltip("步骤完成回调")]
-        public UnityEvent OnComplete;
+        public UnityEvent OnComplete = new UnityEvent();
 
         #endregion
 

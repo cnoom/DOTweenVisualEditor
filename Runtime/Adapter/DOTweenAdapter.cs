@@ -2,7 +2,6 @@ using System;
 using UnityEngine;
 using DG.Tweening;
 using CNoom.DOTweenVisual.Data;
-using CNoom.DOTweenVisual.Pool;
 
 namespace CNoom.DOTweenVisual.Adapter
 {
@@ -41,41 +40,51 @@ namespace CNoom.DOTweenVisual.Adapter
 
         public TweenerAdapter CreateMoveTween(Transform target, Vector3 endValue, float duration)
         {
-            var tweener = TweenPool.Instance.Get<Tweener>(
-                () => target.DOMove(endValue, duration)
-            );
+            if (target == null)
+            {
+                Debug.LogError("[DOTweenVisual] CreateMoveTween: target 为 null");
+                return null;
+            }
+            var tweener = target.DOMove(endValue, duration).SetRecyclable(true);
             return new TweenerWrapper(tweener);
         }
 
         public TweenerAdapter CreateMoveTweenRelative(Transform target, Vector3 delta, float duration)
         {
-            var tweener = TweenPool.Instance.Get<Tweener>(
-                () => target.DOMove(delta, duration).From(isRelative: true)
-            );
+            if (target == null)
+            {
+                Debug.LogError("[DOTweenVisual] CreateMoveTweenRelative: target 为 null");
+                return null;
+            }
+            var tweener = target.DOMove(delta, duration).From(isRelative: true).SetRecyclable(true);
             return new TweenerWrapper(tweener);
         }
 
         public TweenerAdapter CreateRotateTween(Transform target, Vector3 endValue, float duration)
         {
-            var tweener = TweenPool.Instance.Get<Tweener>(
-                () => target.DORotate(endValue, duration)
-            );
+            if (target == null)
+            {
+                Debug.LogError("[DOTweenVisual] CreateRotateTween: target 为 null");
+                return null;
+            }
+            var tweener = target.DORotate(endValue, duration).SetRecyclable(true);
             return new TweenerWrapper(tweener);
         }
 
         public TweenerAdapter CreateScaleTween(Transform target, Vector3 endValue, float duration)
         {
-            var tweener = TweenPool.Instance.Get<Tweener>(
-                () => target.DOScale(endValue, duration)
-            );
+            if (target == null)
+            {
+                Debug.LogError("[DOTweenVisual] CreateScaleTween: target 为 null");
+                return null;
+            }
+            var tweener = target.DOScale(endValue, duration).SetRecyclable(true);
             return new TweenerWrapper(tweener);
         }
 
         public SequenceAdapter CreateSequence()
         {
-            var sequence = TweenPool.Instance.Get<Sequence>(
-                () => DOTween.Sequence()
-            );
+            var sequence = DOTween.Sequence().SetRecyclable(true);
             return new SequenceWrapper(sequence);
         }
 
