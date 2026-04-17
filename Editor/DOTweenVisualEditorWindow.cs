@@ -122,13 +122,28 @@ namespace CNoom.DOTweenVisual.Editor
         {
             Log("OnEnable");
             EditorApplication.update += OnEditorUpdate;
+            // 监听播放模式切换，确保预览状态正确重置
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         private void OnDisable()
         {
             Log("OnDisable");
             EditorApplication.update -= OnEditorUpdate;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             StopPreview();
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            // 进入播放模式前重置预览状态
+            if (state == PlayModeStateChange.ExitingEditMode)
+            {
+                if (previewState != PreviewState.None)
+                {
+                    OnResetClicked();
+                }
+            }
         }
 
         private void OnEditorUpdate()
@@ -768,31 +783,50 @@ namespace CNoom.DOTweenVisual.Editor
             // 启动编辑器预览模式
             DOTweenEditorPreview.Start();
 
-            // 创建预览序列
-            previewSequence = DOTween.Sequence();
-
-            // 构建预览序列
-            BuildPreviewSequence();
-
-            // 调试：检查序列状态
-            Log($"Preview sequence created, duration: {previewSequence.Duration()}");
-
-            // 为编辑器预览准备 Tween（必须在设置 OnComplete 之前调用）
-            DOTweenEditorPreview.PrepareTweenForPreview(previewSequence);
-
-            // 播放完成后设置状态（必须在 PrepareTweenForPreview 之后调用）
-            previewSequence.OnComplete(() =>
+            try
             {
-                Log("Preview completed");
-                previewState = PreviewState.Completed;
+                // 创建预览序列
+                previewSequence = DOTween.Sequence();
+
+                // 构建预览序列
+                BuildPreviewSequence();
+
+                // 调试：检查序列状态
+                Log($"Preview sequence created, duration: {previewSequence.Duration()}");
+
+                // 为编辑器预览准备 Tween（必须在设置 OnComplete 之前调用）
+                DOTweenEditorPreview.PrepareTweenForPreview(previewSequence);
+
+                // 播放完成后设置状态（必须在 PrepareTweenForPreview 之后调用）
+                previewSequence.OnComplete(() =>
+                {
+                    // 窗口可能已在回调触发前被关闭
+                    if (this == null) return;
+                    Log("Preview completed");
+                    previewState = PreviewState.Completed;
+                    UpdateButtonStates();
+                });
+
+                previewSequence.Play();
+                previewState = PreviewState.Playing;
                 UpdateButtonStates();
-            });
 
-            previewSequence.Play();
-            previewState = PreviewState.Playing;
-            UpdateButtonStates();
-
-            Log($"Preview started, isPlaying: {previewSequence.IsPlaying()}");
+                Log($"Preview started, isPlaying: {previewSequence.IsPlaying()}");
+            }
+            catch (Exception e)
+            {
+                // 异常时确保清理编辑器预览状态
+                Debug.LogError($"[DOTweenVisualEditor] 预览启动失败: {e.Message}");
+                DOTweenEditorPreview.Stop();
+                if (previewSequence != null)
+                {
+                    previewSequence.Kill();
+                    previewSequence = null;
+                }
+                RestoreInitialStates();
+                previewState = PreviewState.None;
+                UpdateButtonStates();
+            }
         }
 
         private void PausePreview()
@@ -921,6 +955,7 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void SaveTransformState(Transform t)
         {
+            if (t == null) return;
             if (!initialStates.ContainsKey(t))
             {
                 initialStates[t] = new TransformState
@@ -936,20 +971,41 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void RestoreInitialStates()
         {
+            var keysToRemove = new List<Transform>();
+
             foreach (var kvp in initialStates)
             {
                 var t = kvp.Key;
                 var state = kvp.Value;
 
-                if (t != null)
+                // Unity 中被 Destroy 的对象 != null 为 false，但访问会抛异常
+                // 使用 gameObject 检测是否真正存活
+                try
                 {
-                    Undo.RecordObject(t, "Reset Preview State");
-                    t.position = state.position;
-                    t.rotation = state.rotation;
-                    t.localPosition = state.localPosition;
-                    t.localRotation = state.localRotation;
-                    t.localScale = state.localScale;
+                    if (t != null && t.gameObject != null)
+                    {
+                        Undo.RecordObject(t, "Reset Preview State");
+                        t.position = state.position;
+                        t.rotation = state.rotation;
+                        t.localPosition = state.localPosition;
+                        t.localRotation = state.localRotation;
+                        t.localScale = state.localScale;
+                    }
+                    else
+                    {
+                        keysToRemove.Add(t);
+                    }
                 }
+                catch (MissingReferenceException)
+                {
+                    keysToRemove.Add(t);
+                }
+            }
+
+            // 移除已销毁的 Transform
+            foreach (var key in keysToRemove)
+            {
+                initialStates.Remove(key);
             }
 
             initialStates.Clear();
@@ -998,7 +1054,8 @@ namespace CNoom.DOTweenVisual.Editor
                     previewSequence.AppendInterval(step.Duration);
                     return;
                 case TweenStepType.Callback:
-                    previewSequence.AppendCallback(() => step.OnComplete?.Invoke());
+                    var onComplete = step.OnComplete;
+                    previewSequence.AppendCallback(() => onComplete?.Invoke());
                     return;
             }
 

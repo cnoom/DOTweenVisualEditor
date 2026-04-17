@@ -76,6 +76,8 @@ namespace CNoom.DOTweenVisual.Components
         private void OnDestroy()
         {
             KillSequence();
+            // OnDestroy 时 DOTween 可能已清理，确保状态一致
+            _isPlaying = false;
         }
 
         private void OnDisable()
@@ -275,8 +277,9 @@ namespace CNoom.DOTweenVisual.Components
                     _currentSequence.AppendInterval(step.Duration);
                     return;
                 case TweenStepType.Callback:
-                    // Callback 使用 AppendCallback
-                    _currentSequence.AppendCallback(() => step.OnComplete?.Invoke());
+                    // Callback 使用 AppendCallback，捕获局部引用避免闭包问题
+                    var callback = step.OnComplete;
+                    _currentSequence.AppendCallback(() => callback?.Invoke());
                     return;
                 case TweenStepType.Property:
                     // Property 动画留待后续实现
@@ -322,10 +325,11 @@ namespace CNoom.DOTweenVisual.Components
                     break;
             }
 
-            // 完成回调
-            if (step.OnComplete != null && step.OnComplete.GetPersistentEventCount() > 0)
+            // 完成回调，捕获局部引用避免闭包问题
+            var stepOnComplete = step.OnComplete;
+            if (stepOnComplete != null && stepOnComplete.GetPersistentEventCount() > 0)
             {
-                tweener.OnComplete(() => step.OnComplete?.Invoke());
+                tweener.OnComplete(() => stepOnComplete?.Invoke());
             }
         }
 
