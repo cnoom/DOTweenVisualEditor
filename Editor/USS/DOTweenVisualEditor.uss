@@ -1,173 +1,201 @@
 /* DOTween Visual Editor 样式表 */
 
-/* 容器 */
-.container {
-    flex-direction: column;
-    flex-grow: 1;
-    background-color: #383838;
-}
-
-/* 工具栏 */
-.main-toolbar {
-    height: 24px;
+/* === 顶部工具栏 === */
+.top-toolbar {
+    flex-direction: row;
+    align-items: center;
+    height: 28px;
+    padding-left: 8px;
+    padding-right: 8px;
     background-color: #2D2D2D;
     border-bottom-width: 1px;
     border-bottom-color: #505050;
 }
 
-.toolbar-button {
-    margin-left: 4px;
+.toolbar-label {
+    font-size: 12px;
+    color: #B4B4B4;
     margin-right: 4px;
-    padding-left: 8px;
-    padding-right: 8px;
-    min-width: 60px;
 }
 
-.toolbar-menu {
+.target-field {
+    width: 180px;
     margin-right: 8px;
 }
 
-.spacer {
+.toolbar-button {
+    margin-left: 2px;
+    margin-right: 2px;
+    padding-left: 8px;
+    padding-right: 8px;
+    min-width: 50px;
+    font-size: 11px;
+}
+
+/* === 状态栏 === */
+.status-bar {
+    flex-direction: row;
+    align-items: center;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    background-color: #252525;
+    border-bottom-width: 1px;
+    border-bottom-color: #404040;
+}
+
+.state-label {
+    font-size: 11px;
+    -unity-font-style: bold;
     flex-grow: 1;
 }
 
-/* 步骤列表 */
-.step-list {
-    flex-grow: 1;
-    margin: 4px;
+.time-label {
+    font-size: 11px;
+    color: #909090;
+    -unity-text-align: middle-right;
+    width: 130px;
+}
+
+/* === 左侧面板 === */
+.left-panel {
     background-color: #2D2D2D;
-    border-width: 1px;
-    border-color: #505050;
-    border-radius: 4px;
 }
 
-/* 步骤项 */
-.step-item {
-    margin: 0;
-    padding: 6px 8px;
-    background-color: #383838;
-    border-width: 1px;
-    border-color: #505050;
-    border-radius: 4px;
-}
-
-.step-item:selected {
-    background-color: #4F6E8D;
-}
-
-.step-header-row {
+.panel-header {
     flex-direction: row;
     align-items: center;
     height: 24px;
+    padding-left: 8px;
+    padding-right: 4px;
+    background-color: #333333;
+    border-bottom-width: 1px;
+    border-bottom-color: #404040;
 }
 
-.step-foldout {
-    width: 16px;
+.panel-title {
+    font-size: 11px;
+    color: #AAAAAA;
+    -unity-font-style: bold;
+    flex-grow: 1;
+}
+
+.add-step-menu {
+    font-size: 11px;
+    padding: 2px 8px;
+}
+
+/* === 步骤列表 === */
+.step-list {
+    flex-grow: 1;
+    background-color: #2D2D2D;
+}
+
+.step-item {
+    flex-direction: row;
+    align-items: center;
+    height: 36px;
+    padding: 0 6px;
+    border-left-width: 3px;
+    border-left-color: #505050;
+    border-bottom-width: 1px;
+    border-bottom-color: #383838;
+}
+
+.step-item:selected {
+    background-color: #3A5A7C;
+}
+
+.step-item:hover {
+    background-color: #404040;
+}
+
+.step-row {
+    flex-direction: row;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.step-enable-toggle {
+    margin-right: 4px;
+    width: 14px;
 }
 
 .step-title {
-    font-size: 12px;
-    color: #B4B4B4;
-    margin-left: 4px;
-    flex-grow: 1;
+    font-size: 11px;
+    color: #C0C0C0;
+    margin-right: 6px;
+    flex-shrink: 1;
+    overflow: hidden;
 }
 
 .step-summary {
     font-size: 10px;
     color: #808080;
-    margin-left: 8px;
-    margin-right: 8px;
+    flex-shrink: 0;
 }
 
-.step-button-row {
-    flex-direction: row;
-    align-items: center;
-}
-
-.enable-toggle {
-    margin-right: 4px;
-}
-
-.move-button {
-    padding: 2px 6px;
-    font-size: 10px;
-    background-color: #404040;
-    color: #B4B4B4;
-    border-radius: 3px;
-    margin-right: 2px;
-}
-
-.move-button:hover {
-    background-color: #505050;
-}
-
-.delete-button {
-    padding: 2px 8px;
-    font-size: 10px;
-    background-color: #8B0000;
-    color: #FFFFFF;
-    border-radius: 3px;
-}
-
-.step-details {
-    margin-top: 4px;
-    margin-left: 20px;
-}
-
-/* 时间轴 */
-.timeline-container {
-    height: 60px;
-    margin: 4px;
-    padding: 4px;
-    background-color: #2D2D2D;
-    border-width: 1px;
-    border-color: #505050;
-    border-radius: 4px;
-}
-
-.timeline-label {
-    font-size: 10px;
+.step-delete-button {
+    font-size: 11px;
     color: #808080;
-    margin-bottom: 4px;
+    padding: 0 4px;
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    margin-left: 4px;
 }
 
-/* 帮助标签 */
-.help-label {
+.step-delete-button:hover {
+    color: #FF4444;
+    background-color: rgba(255, 68, 68, 0.1);
+}
+
+/* 步骤类型颜色 */
+.step-move { border-left-color: #4A90D9; }
+.step-rotate { border-left-color: #D99A4A; }
+.step-scale { border-left-color: #4AD94A; }
+.step-color { border-left-color: #D94AD9; }
+.step-fade { border-left-color: #9A9AD9; }
+.step-delay { border-left-color: #808080; }
+.step-callback { border-left-color: #D94A9A; }
+
+/* 禁用状态 */
+.step-disabled {
+    opacity: 0.45;
+}
+
+/* === 右侧面板 === */
+.right-panel {
+    background-color: #303030;
+    border-left-width: 1px;
+    border-left-color: #404040;
+}
+
+.detail-content {
+    padding: 8px;
+    flex-grow: 1;
+}
+
+.detail-help-label {
     flex-grow: 1;
     justify-content: center;
     align-items: center;
-    color: #808080;
+    color: #707070;
     font-size: 12px;
     -unity-text-align: middle-center;
 }
 
-/* 步骤类型颜色标记 */
-.step-move {
-    border-left-color: #4A90D9;
-    border-left-width: 3px;
+.detail-property {
+    flex-grow: 1;
 }
 
-.step-rotate {
-    border-left-color: #D99A4A;
-    border-left-width: 3px;
-}
-
-.step-scale {
-    border-left-color: #4AD94A;
-    border-left-width: 3px;
-}
-
-.step-delay {
-    border-left-color: #808080;
-    border-left-width: 3px;
-}
-
-.step-callback {
-    border-left-color: #D94A9A;
-    border-left-width: 3px;
-}
-
-/* 禁用状态 */
-.step-disabled {
-    opacity: 0.5;
-}
+/* === 旧版兼容（可移除）=== */
+.main-toolbar { display: none; }
+.step-foldout { display: none; }
+.step-button-row { display: none; }
+.step-details { display: none; }
+.container { display: none; }
+.spacer { display: none; }
+.timeline-container { display: none; }
+.timeline-label { display: none; }
+.help-label { display: none; }
