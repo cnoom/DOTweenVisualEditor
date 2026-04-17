@@ -131,6 +131,15 @@
     flex-grow: 1;
 }
 
+/* 步骤类型色块 */
+.step-type-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+
 .step-enable-toggle {
     margin-right: 4px;
     width: 14px;
@@ -170,14 +179,34 @@
     background-color: rgba(255, 68, 68, 0.1);
 }
 
-/* 步骤类型颜色 */
-.step-move { border-left-color: #4A90D9; }
-.step-rotate { border-left-color: #D99A4A; }
-.step-scale { border-left-color: #4AD94A; }
-.step-color { border-left-color: #D94AD9; }
-.step-fade { border-left-color: #9A9AD9; }
-.step-delay { border-left-color: #808080; }
-.step-callback { border-left-color: #D94A9A; }
+/* 执行模式颜色 */
+.mode-append { border-left-color: #4A90D9; }
+.mode-join { border-left-color: #4AD94A; }
+.mode-insert { border-left-color: #D99A4A; }
+.mode-default { border-left-color: #707070; }
+
+/* 时间轴条 */
+.step-timeline-track {
+    height: 4px;
+    background-color: #383838;
+    border-radius: 2px;
+    margin-top: 3px;
+    margin-left: 3px;
+    margin-right: 6px;
+    position: relative;
+}
+
+.step-timeline-bar {
+    position: absolute;
+    height: 100%;
+    border-radius: 2px;
+    background-color: #4A90D9;
+}
+
+.mode-append .step-timeline-bar { background-color: #4A90D9; }
+.mode-join .step-timeline-bar { background-color: #4AD94A; }
+.mode-insert .step-timeline-bar { background-color: #D99A4A; }
+.mode-default .step-timeline-bar { background-color: #707070; }
 
 /* 禁用状态 */
 .step-disabled {

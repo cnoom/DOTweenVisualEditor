@@ -69,6 +69,8 @@ namespace CNoom.DOTweenVisual.Editor
         // 左侧概览
         private ListView stepListView;
         private int selectedStepIndex = -1;
+        private float totalSequenceDuration;
+        private float[] stepStartTimes;
 
         // 右侧详情
         private VisualElement detailPanel;
@@ -379,6 +381,7 @@ namespace CNoom.DOTweenVisual.Editor
             }
 
             serializedObject.Update();
+            CalculateStepTimings();
 
             // 使用 SerializedProperty 作为数据源
             stepListView.itemsSource = new SerializedPropertyArray(stepsProperty);
@@ -395,6 +398,77 @@ namespace CNoom.DOTweenVisual.Editor
         }
 
         /// <summary>
+        /// 根据执行模式计算每个步骤的开始时间
+        /// </summary>
+        private void CalculateStepTimings()
+        {
+            if (stepsProperty == null || stepsProperty.arraySize == 0)
+            {
+                totalSequenceDuration = 0;
+                stepStartTimes = Array.Empty<float>();
+                return;
+            }
+
+            int count = stepsProperty.arraySize;
+            stepStartTimes = new float[count];
+            float lastTweenStartTime = 0f;
+            float sequenceEndTime = 0f;
+
+            for (int i = 0; i < count; i++)
+            {
+                var step = stepsProperty.GetArrayElementAtIndex(i);
+                var type = (TweenStepType)step.FindPropertyRelative("Type").enumValueIndex;
+                var duration = Mathf.Max(0.001f, step.FindPropertyRelative("Duration").floatValue);
+                float startTime;
+
+                // Delay 和 Callback 始终视为 Append
+                if (type == TweenStepType.Callback)
+                {
+                    startTime = sequenceEndTime;
+                    lastTweenStartTime = startTime;
+                }
+                else if (type == TweenStepType.Delay)
+                {
+                    startTime = sequenceEndTime;
+                    lastTweenStartTime = startTime;
+                    sequenceEndTime = startTime + duration;
+                }
+                else
+                {
+                    var mode = (ExecutionMode)step.FindPropertyRelative("ExecutionMode").enumValueIndex;
+                    switch (mode)
+                    {
+                        case ExecutionMode.Append:
+                            startTime = sequenceEndTime;
+                            lastTweenStartTime = startTime;
+                            sequenceEndTime = startTime + duration;
+                            break;
+                        case ExecutionMode.Join:
+                            startTime = lastTweenStartTime;
+                            if (startTime + duration > sequenceEndTime)
+                                sequenceEndTime = startTime + duration;
+                            break;
+                        case ExecutionMode.Insert:
+                            startTime = step.FindPropertyRelative("InsertTime").floatValue;
+                            lastTweenStartTime = startTime;
+                            if (startTime + duration > sequenceEndTime)
+                                sequenceEndTime = startTime + duration;
+                            break;
+                        default:
+                            startTime = sequenceEndTime;
+                            lastTweenStartTime = startTime;
+                            sequenceEndTime = startTime + duration;
+                            break;
+                    }
+                }
+
+                stepStartTimes[i] = startTime;
+            }
+
+            totalSequenceDuration = sequenceEndTime;
+        }
+
+        /// <summary>
         /// 创建步骤行模板（可复用）
         /// </summary>
         private VisualElement MakeStepItem()
@@ -404,6 +478,11 @@ namespace CNoom.DOTweenVisual.Editor
 
             var row = new VisualElement();
             row.AddToClassList("step-row");
+
+            // 步骤类型色块
+            var typeDot = new VisualElement();
+            typeDot.AddToClassList("step-type-dot");
+            row.Add(typeDot);
 
             // 启用开关
             var enableToggle = new Toggle();
@@ -462,6 +541,14 @@ namespace CNoom.DOTweenVisual.Editor
             summaryRow.Add(summaryLabel);
             item.Add(summaryRow);
 
+            // 时间轴条
+            var timelineTrack = new VisualElement();
+            timelineTrack.AddToClassList("step-timeline-track");
+            var timelineBar = new VisualElement();
+            timelineBar.AddToClassList("step-timeline-bar");
+            timelineTrack.Add(timelineBar);
+            item.Add(timelineTrack);
+
             return item;
         }
 
@@ -491,7 +578,27 @@ namespace CNoom.DOTweenVisual.Editor
             // 更新样式
             element.ClearClassList();
             element.AddToClassList("step-item");
-            element.AddToClassList(GetStepTypeCssClass(type));
+
+            // 执行模式颜色（内联样式确保覆盖 .step-item 的默认边框色）
+            Color modeColor;
+            if (type == TweenStepType.Delay || type == TweenStepType.Callback)
+            {
+                modeColor = new Color(0.44f, 0.44f, 0.44f); // 灰色
+                element.AddToClassList("mode-default");
+            }
+            else
+            {
+                var executionMode = (ExecutionMode)stepProperty.FindPropertyRelative("ExecutionMode").enumValueIndex;
+                element.AddToClassList(GetExecutionModeCssClass(executionMode));
+                modeColor = GetExecutionModeColor(executionMode);
+            }
+
+            element.style.borderLeftColor = modeColor;
+
+            // 步骤类型色块颜色
+            var typeDot = element.Q<VisualElement>(className: "step-type-dot");
+            if (typeDot != null) typeDot.style.backgroundColor = GetStepTypeColor(type);
+
             if (!isEnabledProp.boolValue) element.AddToClassList("step-disabled");
 
             // 绑定 Toggle
@@ -505,6 +612,18 @@ namespace CNoom.DOTweenVisual.Editor
             // 绑定摘要
             var summaryLabel = element.Q<Label>(className: "step-summary");
             if (summaryLabel != null) summaryLabel.text = $"{durationProp.floatValue:F1}s | {ease}";
+
+            // 时间轴位置
+            var timelineBar = element.Q<VisualElement>(className: "step-timeline-bar");
+            if (timelineBar != null && stepStartTimes != null && index < stepStartTimes.Length)
+            {
+                float start = stepStartTimes[index];
+                float dur = durationProp.floatValue;
+                float total = Mathf.Max(0.001f, totalSequenceDuration);
+
+                timelineBar.style.left = Length.Percent(Mathf.Min(start / total * 100f, 97f));
+                timelineBar.style.width = Length.Percent(Mathf.Max(3f, dur / total * 100f));
+            }
         }
 
         private void UnbindStepItem(VisualElement element, int index)
@@ -543,6 +662,7 @@ namespace CNoom.DOTweenVisual.Editor
             if (stepsProperty == null) return;
             stepsProperty.MoveArrayElement(from, to);
             stepsProperty.serializedObject.ApplyModifiedProperties();
+            CalculateStepTimings();
 
             // 同步选中索引
             if (selectedStepIndex == from)
@@ -687,7 +807,7 @@ namespace CNoom.DOTweenVisual.Editor
             // --- 通用字段 ---
             AddDetailField("类型", CreateEnumField(typeProp, typeof(TweenStepType), OnTypeChanged));
             AddDetailField("启用", CreateToggle(isEnabledProp));
-            AddDetailField("时长", CreateFloatField(durationProp));
+            AddDetailField("时长", CreateFloatField(durationProp, OnTimingChanged));
             AddDetailField("延迟", CreateFloatField(delayProp));
 
             // --- 按类型显示 ---
@@ -749,7 +869,7 @@ namespace CNoom.DOTweenVisual.Editor
             AddDetailField("执行模式", CreateEnumField(executionModeProp, typeof(ExecutionMode), OnEnumRebuild));
             if ((ExecutionMode)executionModeProp.enumValueIndex == ExecutionMode.Insert)
             {
-                AddDetailField("插入时间", CreateFloatField(insertTimeProp));
+                AddDetailField("插入时间", CreateFloatField(insertTimeProp, OnTimingChanged));
             }
 
             AddDetailField("缓动", CreateEnumField(easeProp, typeof(Ease)));
@@ -785,13 +905,14 @@ namespace CNoom.DOTweenVisual.Editor
             return toggle;
         }
 
-        private FloatField CreateFloatField(SerializedProperty prop)
+        private FloatField CreateFloatField(SerializedProperty prop, Action onChanged = null)
         {
             var field = new FloatField { value = prop.floatValue };
             field.RegisterValueChangedCallback(evt =>
             {
                 prop.floatValue = evt.newValue;
                 prop.serializedObject.ApplyModifiedProperties();
+                onChanged?.Invoke();
             });
             return field;
         }
@@ -860,10 +981,18 @@ namespace CNoom.DOTweenVisual.Editor
             RefreshDetailPanel();
         }
 
-        /// <summary>影响字段可见性的枚举变化：仅重建详情</summary>
+        /// <summary>影响字段可见性的枚举变化：重建列表+详情</summary>
         private void OnEnumRebuild()
         {
+            RebuildStepList();
             RefreshDetailPanel();
+        }
+
+        /// <summary>时间相关字段变化：重算时间轴并刷新列表</summary>
+        private void OnTimingChanged()
+        {
+            CalculateStepTimings();
+            stepListView.Rebuild();
         }
 
         /// <summary>影响字段可见性的 Toggle 变化：仅重建详情</summary>
@@ -1416,16 +1545,32 @@ namespace CNoom.DOTweenVisual.Editor
             _ => type.ToString()
         };
 
-        private string GetStepTypeCssClass(TweenStepType type) => type switch
+        private string GetExecutionModeCssClass(ExecutionMode mode) => mode switch
         {
-            TweenStepType.Move => "step-move",
-            TweenStepType.Rotate => "step-rotate",
-            TweenStepType.Scale => "step-scale",
-            TweenStepType.Color => "step-color",
-            TweenStepType.Fade => "step-fade",
-            TweenStepType.Delay => "step-delay",
-            TweenStepType.Callback => "step-callback",
-            _ => ""
+            ExecutionMode.Append => "mode-append",
+            ExecutionMode.Join => "mode-join",
+            ExecutionMode.Insert => "mode-insert",
+            _ => "mode-append"
+        };
+
+        private Color GetExecutionModeColor(ExecutionMode mode) => mode switch
+        {
+            ExecutionMode.Append => new Color(0.29f, 0.56f, 0.85f),  // #4A90D9
+            ExecutionMode.Join => new Color(0.29f, 0.85f, 0.29f),    // #4AD94A
+            ExecutionMode.Insert => new Color(0.85f, 0.60f, 0.29f),  // #D99A4A
+            _ => new Color(0.44f, 0.44f, 0.44f)
+        };
+
+        private Color GetStepTypeColor(TweenStepType type) => type switch
+        {
+            TweenStepType.Move => new Color(0.29f, 0.56f, 0.85f),    // #4A90D9 蓝
+            TweenStepType.Rotate => new Color(0.85f, 0.60f, 0.29f),  // #D99A4A 橙
+            TweenStepType.Scale => new Color(0.29f, 0.85f, 0.29f),   // #4AD94A 绿
+            TweenStepType.Color => new Color(0.85f, 0.29f, 0.85f),   // #D94AD9 粉
+            TweenStepType.Fade => new Color(0.60f, 0.60f, 0.85f),    // #9A9AD9 淡紫
+            TweenStepType.Delay => new Color(0.50f, 0.50f, 0.50f),   // 灰
+            TweenStepType.Callback => new Color(0.85f, 0.29f, 0.60f),// #D94A9A 玫红
+            _ => new Color(0.5f, 0.5f, 0.5f)
         };
 
         private void Log(string message)
