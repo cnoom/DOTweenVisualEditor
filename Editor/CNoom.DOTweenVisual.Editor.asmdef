@@ -11,7 +11,8 @@
   "allowUnsafeCode": false,
   "overrideReferences": true,
   "precompiledReferences": [
-    "DOTween.dll"
+    "DOTween.dll",
+    "DOTweenEditor.dll"
   ],
   "autoReferenced": true,
   "defineConstraints": [],
