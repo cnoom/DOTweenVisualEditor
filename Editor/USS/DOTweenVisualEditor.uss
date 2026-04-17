@@ -86,6 +86,11 @@
     padding: 2px 8px;
 }
 
+.sync-button {
+    font-size: 11px;
+    padding: 2px 8px;
+}
+
 /* === 步骤列表 === */
 .step-list {
     flex-grow: 1;
@@ -95,7 +100,7 @@
 .step-item {
     flex-direction: row;
     align-items: center;
-    height: 36px;
+    height: 32px;
     padding: 0 6px;
     border-left-width: 3px;
     border-left-color: #505050;
@@ -172,8 +177,13 @@
 }
 
 .detail-content {
-    padding: 8px;
+    padding: 0;
     flex-grow: 1;
+}
+
+.detail-scroll {
+    flex-grow: 1;
+    padding: 8px;
 }
 
 .detail-help-label {
@@ -185,17 +195,28 @@
     -unity-text-align: middle-center;
 }
 
-.detail-property {
-    flex-grow: 1;
+/* 详情字段行 */
+.detail-field-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 4px;
+    padding: 2px 0;
 }
 
-/* === 旧版兼容（可移除）=== */
-.main-toolbar { display: none; }
-.step-foldout { display: none; }
-.step-button-row { display: none; }
-.step-details { display: none; }
-.container { display: none; }
-.spacer { display: none; }
-.timeline-container { display: none; }
-.timeline-label { display: none; }
-.help-label { display: none; }
+.detail-field-label {
+    font-size: 11px;
+    color: #AAAAAA;
+    width: 90px;
+    flex-shrink: 0;
+}
+
+.detail-field-value {
+    flex-grow: 1;
+    margin-left: 4px;
+}
+
+.detail-separator {
+    height: 1px;
+    background-color: #404040;
+    margin: 6px 0;
+}

@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using DG.Tweening;
@@ -16,6 +15,7 @@ namespace CNoom.DOTweenVisual.Editor
     /// <summary>
     /// DOTween 可视化编辑器主窗口
     /// 布局：顶部工具栏+状态栏 | 左侧步骤概览 | 右侧步骤详情
+    /// ListView 采用纯手动 itemsSource 管理，不使用 BindProperty
     /// </summary>
     [InitializeOnLoad]
     public class DOTweenVisualEditorWindow : EditorWindow
@@ -46,9 +46,8 @@ namespace CNoom.DOTweenVisual.Editor
 
         private const string USS_PATH = "Assets/Plugins/DOTweenVisualEditor/Editor/USS/DOTweenVisualEditor.uss";
         private const bool DEBUG_MODE = false;
-        private const float FixedItemHeight = 36f;
+        private const float FixedItemHeight = 32f;
         private const float LeftPanelMinWidth = 220f;
-        private const float RightPanelMinWidth = 260f;
 
         #endregion
 
@@ -68,12 +67,12 @@ namespace CNoom.DOTweenVisual.Editor
 
         // 左侧概览
         private ListView stepListView;
-        private Button addStepButton;
+        private List<int> stepIndices = new List<int>();
 
         // 右侧详情
         private VisualElement detailPanel;
         private Label detailHelpLabel;
-        private PropertyField detailPropertyField;
+        private ScrollView detailScrollView;
 
         #endregion
 
@@ -308,15 +307,16 @@ namespace CNoom.DOTweenVisual.Editor
 
             stepListView = new ListView
             {
-                reorderable = true,
                 fixedItemHeight = FixedItemHeight,
                 makeItem = MakeStepItem,
                 bindItem = BindStepItem,
+                unbindItem = UnbindStepItem,
                 selectionType = SelectionType.Single,
                 showBorder = false,
                 showFoldoutHeader = false,
                 showAddRemoveFooter = false,
-                virtualizationMethod = CollectionVirtualizationMethod.FixedHeight
+                virtualizationMethod = CollectionVirtualizationMethod.FixedHeight,
+                reorderMode = ListViewReorderMode.Animated
             };
             stepListView.AddToClassList("step-list");
             stepListView.style.flexGrow = 1;
@@ -335,6 +335,12 @@ namespace CNoom.DOTweenVisual.Editor
             var rightTitle = new Label("步骤详情");
             rightTitle.AddToClassList("panel-title");
             rightHeader.Add(rightTitle);
+
+            // 同步按钮
+            var syncButton = new Button(OnSyncClicked) { text = "同步当前值" };
+            syncButton.AddToClassList("sync-button");
+            rightHeader.Add(syncButton);
+
             rightPanel.Add(rightHeader);
 
             detailPanel = new VisualElement();
@@ -345,10 +351,10 @@ namespace CNoom.DOTweenVisual.Editor
             detailHelpLabel.AddToClassList("detail-help-label");
             detailPanel.Add(detailHelpLabel);
 
-            detailPropertyField = new PropertyField { name = "detail-property" };
-            detailPropertyField.AddToClassList("detail-property");
-            detailPropertyField.style.display = DisplayStyle.None;
-            detailPanel.Add(detailPropertyField);
+            detailScrollView = new ScrollView(ScrollViewMode.Vertical);
+            detailScrollView.AddToClassList("detail-scroll");
+            detailScrollView.style.display = DisplayStyle.None;
+            detailPanel.Add(detailScrollView);
 
             rightPanel.Add(detailPanel);
             splitView.Add(rightPanel);
@@ -362,23 +368,31 @@ namespace CNoom.DOTweenVisual.Editor
 
         #endregion
 
-        #region 步骤列表
+        #region 步骤列表 - 纯手动管理
 
+        /// <summary>
+        /// 从 SerializedProperty 重建 stepIndices 并刷新 ListView
+        /// </summary>
         private void RefreshStepList()
         {
-            Log($"RefreshStepList - stepListView null: {stepListView == null}, stepsProperty null: {stepsProperty == null}");
+            Log($"RefreshStepList - stepListView null: {stepListView == null}");
 
             if (stepListView == null) return;
 
-            stepListView.Unbind();
-            stepListView.itemsSource = System.Array.Empty<object>();
-            stepListView.selectedIndex = -1;
+            stepIndices.Clear();
 
             if (stepsProperty != null && serializedObject != null)
             {
                 serializedObject.Update();
-                stepListView.BindProperty(stepsProperty);
+                for (int i = 0; i < stepsProperty.arraySize; i++)
+                {
+                    stepIndices.Add(i);
+                }
             }
+
+            stepListView.itemsSource = stepIndices;
+            stepListView.selectedIndex = -1;
+            stepListView.RefreshItems();
 
             UpdateButtonStates();
         }
@@ -395,14 +409,12 @@ namespace CNoom.DOTweenVisual.Editor
             enableToggle.AddToClassList("step-enable-toggle");
             enableToggle.RegisterValueChangedCallback(evt =>
             {
-                var property = item.userData as SerializedProperty;
-                if (property != null)
-                {
-                    property.FindPropertyRelative("IsEnabled").boolValue = evt.newValue;
-                    property.serializedObject.ApplyModifiedProperties();
-                    // 更新禁用样式
-                    item.EnableInClassList("step-disabled", !evt.newValue);
-                }
+                int index = (int)item.userData;
+                if (stepsProperty == null || index < 0 || index >= stepsProperty.arraySize) return;
+                var prop = stepsProperty.GetArrayElementAtIndex(index);
+                prop.FindPropertyRelative("IsEnabled").boolValue = evt.newValue;
+                prop.serializedObject.ApplyModifiedProperties();
+                item.EnableInClassList("step-disabled", !evt.newValue);
             });
             row.Add(enableToggle);
 
@@ -421,18 +433,12 @@ namespace CNoom.DOTweenVisual.Editor
             deleteButton.AddToClassList("step-delete-button");
             deleteButton.clickable = new Clickable(() =>
             {
-                var property = item.userData as SerializedProperty;
-                if (property != null && stepsProperty != null)
-                {
-                    int index = FindPropertyIndex(stepsProperty, property);
-                    if (index >= 0)
-                    {
-                        stepsProperty.DeleteArrayElementAtIndex(index);
-                        stepsProperty.serializedObject.ApplyModifiedProperties();
-                        RefreshStepList();
-                        RefreshDetailPanel();
-                    }
-                }
+                int index = (int)item.userData;
+                if (stepsProperty == null || index < 0 || index >= stepsProperty.arraySize) return;
+                stepsProperty.DeleteArrayElementAtIndex(index);
+                stepsProperty.serializedObject.ApplyModifiedProperties();
+                RefreshStepList();
+                RefreshDetailPanel();
             });
             row.Add(deleteButton);
 
@@ -442,13 +448,14 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void BindStepItem(VisualElement element, int index)
         {
-            Log($"BindStepItem index: {index}");
+            if (stepsProperty == null || index < 0 || index >= stepIndices.Count) return;
 
-            if (stepsProperty == null || index < 0 || index >= stepsProperty.arraySize) return;
+            int dataIndex = stepIndices[index];
+            if (dataIndex < 0 || dataIndex >= stepsProperty.arraySize) return;
 
-            var stepProperty = stepsProperty.GetArrayElementAtIndex(index);
-            element.userData = stepProperty;
+            element.userData = dataIndex;
 
+            var stepProperty = stepsProperty.GetArrayElementAtIndex(dataIndex);
             var typeProp = stepProperty.FindPropertyRelative("Type");
             var isEnabledProp = stepProperty.FindPropertyRelative("IsEnabled");
             var durationProp = stepProperty.FindPropertyRelative("Duration");
@@ -464,7 +471,7 @@ namespace CNoom.DOTweenVisual.Editor
                 string targetName = targetTransformProp.objectReferenceValue != null
                     ? targetTransformProp.objectReferenceValue.name
                     : "未指定";
-                titleLabel.text = $"{index + 1}. [{targetName}] {GetStepDisplayName(type)}";
+                titleLabel.text = $"{dataIndex + 1}. [{targetName}] {GetStepDisplayName(type)}";
             }
 
             // 摘要
@@ -482,55 +489,18 @@ namespace CNoom.DOTweenVisual.Editor
                 enableToggle.SetValueWithoutNotify(isEnabledProp.boolValue);
             }
 
-            // 禁用样式
+            // 样式
             element.EnableInClassList("step-disabled", !isEnabledProp.boolValue);
-
-            // 类型颜色标记
             element.ClearClassList();
             element.AddToClassList("step-item");
             element.AddToClassList(GetStepTypeCssClass(type));
             if (!isEnabledProp.boolValue) element.AddToClassList("step-disabled");
-
-            // 监听属性变化
-            element.TrackPropertyValue(typeProp, _ => UpdateStepTitle(element, index));
-            element.TrackPropertyValue(targetTransformProp, _ => UpdateStepTitle(element, index));
-            element.TrackPropertyValue(durationProp, _ => UpdateStepTitle(element, index));
-            element.TrackPropertyValue(easeProp, _ => UpdateStepTitle(element, index));
-            element.TrackPropertyValue(isEnabledProp, prop =>
-            {
-                element.EnableInClassList("step-disabled", !prop.boolValue);
-            });
         }
 
-        private void UpdateStepTitle(VisualElement element, int index)
+        private void UnbindStepItem(VisualElement element, int index)
         {
-            if (stepsProperty == null || index < 0 || index >= stepsProperty.arraySize) return;
-
-            serializedObject?.Update();
-
-            var stepProperty = stepsProperty.GetArrayElementAtIndex(index);
-            var typeProp = stepProperty.FindPropertyRelative("Type");
-            var targetTransformProp = stepProperty.FindPropertyRelative("TargetTransform");
-
-            var type = (TweenStepType)typeProp.enumValueIndex;
-            var titleLabel = element.Q<Label>("step-title");
-
-            if (titleLabel != null)
-            {
-                string targetName = targetTransformProp.objectReferenceValue != null
-                    ? targetTransformProp.objectReferenceValue.name
-                    : "未指定";
-                titleLabel.text = $"{index + 1}. [{targetName}] {GetStepDisplayName(type)}";
-            }
-
-            var durationProp = stepProperty.FindPropertyRelative("Duration");
-            var easeProp = stepProperty.FindPropertyRelative("Ease");
-            var summaryLabel = element.Q<Label>("step-summary");
-            if (summaryLabel != null)
-            {
-                var ease = (Ease)easeProp.enumValueIndex;
-                summaryLabel.text = $"{durationProp.floatValue:F1}s | {ease}";
-            }
+            // 清理状态
+            element.userData = -1;
         }
 
         private void OnStepSelectionChanged(IEnumerable<object> selectedItems)
@@ -541,15 +511,26 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnStepReordered(int oldIndex, int newIndex)
         {
             if (stepsProperty == null) return;
-            // 先解绑，避免绑定系统与手动修改冲突
-            stepListView.Unbind();
-            stepsProperty.MoveArrayElement(oldIndex, newIndex);
+
+            // 从 stepIndices 获取真实数据索引
+            int dataOld = stepIndices[oldIndex];
+            int dataNew = stepIndices[newIndex];
+
+            // 在 SerializedProperty 中移动
+            stepsProperty.MoveArrayElement(dataOld, dataNew);
             stepsProperty.serializedObject.ApplyModifiedProperties();
-            // 重新绑定
-            stepListView.BindProperty(stepsProperty);
-            // 排序后刷新详情面板
+
+            // 重建索引列表（数据已变，索引需全部重建）
+            RefreshStepList();
+
+            // 尝试恢复选中到新位置
+            stepListView.selectedIndex = newIndex;
             RefreshDetailPanel();
         }
+
+        #endregion
+
+        #region 步骤详情
 
         private void RefreshDetailPanel()
         {
@@ -557,75 +538,362 @@ namespace CNoom.DOTweenVisual.Editor
 
             var selectedIndex = stepListView?.selectedIndex ?? -1;
 
-            if (selectedIndex < 0 || stepsProperty == null || selectedIndex >= stepsProperty.arraySize)
+            if (selectedIndex < 0 || stepIndices == null || selectedIndex >= stepIndices.Count || stepsProperty == null)
             {
                 detailHelpLabel.style.display = DisplayStyle.Flex;
-                detailPropertyField.style.display = DisplayStyle.None;
-                detailPropertyField.Unbind();
+                detailScrollView.style.display = DisplayStyle.None;
+                detailScrollView.Clear();
+                return;
+            }
+
+            int dataIndex = stepIndices[selectedIndex];
+            if (dataIndex < 0 || dataIndex >= stepsProperty.arraySize)
+            {
+                detailHelpLabel.style.display = DisplayStyle.Flex;
+                detailScrollView.style.display = DisplayStyle.None;
+                detailScrollView.Clear();
                 return;
             }
 
             serializedObject?.Update();
-            var stepProperty = stepsProperty.GetArrayElementAtIndex(selectedIndex);
+            var stepProperty = stepsProperty.GetArrayElementAtIndex(dataIndex);
 
             detailHelpLabel.style.display = DisplayStyle.None;
-            detailPropertyField.style.display = DisplayStyle.Flex;
-            detailPropertyField.Unbind();
-            detailPropertyField.BindProperty(stepProperty);
+            detailScrollView.style.display = DisplayStyle.Flex;
+
+            // 重建详情字段
+            BuildDetailFields(stepProperty);
         }
 
-        private int FindPropertyIndex(SerializedProperty arrayProperty, SerializedProperty elementProperty)
+        /// <summary>
+        /// 手动构建详情字段，不使用 PropertyField，完全可控
+        /// </summary>
+        private void BuildDetailFields(SerializedProperty stepProperty)
         {
-            if (arrayProperty == null || elementProperty == null) return -1;
+            detailScrollView.Clear();
 
-            string path = elementProperty.propertyPath;
-            string arrayPath = arrayProperty.propertyPath;
-            if (path.StartsWith(arrayPath + ".Array.data["))
+            var typeProp = stepProperty.FindPropertyRelative("Type");
+            var isEnabledProp = stepProperty.FindPropertyRelative("IsEnabled");
+            var durationProp = stepProperty.FindPropertyRelative("Duration");
+            var delayProp = stepProperty.FindPropertyRelative("Delay");
+            var easeProp = stepProperty.FindPropertyRelative("Ease");
+            var executionModeProp = stepProperty.FindPropertyRelative("ExecutionMode");
+            var insertTimeProp = stepProperty.FindPropertyRelative("InsertTime");
+            var transformTargetProp = stepProperty.FindPropertyRelative("TransformTarget");
+            var targetTransformProp = stepProperty.FindPropertyRelative("TargetTransform");
+            var isRelativeProp = stepProperty.FindPropertyRelative("IsRelative");
+            var useStartValueProp = stepProperty.FindPropertyRelative("UseStartValue");
+            var startVectorProp = stepProperty.FindPropertyRelative("StartVector");
+            var targetVectorProp = stepProperty.FindPropertyRelative("TargetVector");
+            var useStartColorProp = stepProperty.FindPropertyRelative("UseStartColor");
+            var startColorProp = stepProperty.FindPropertyRelative("StartColor");
+            var targetColorProp = stepProperty.FindPropertyRelative("TargetColor");
+            var useStartFloatProp = stepProperty.FindPropertyRelative("UseStartFloat");
+            var startFloatProp = stepProperty.FindPropertyRelative("StartFloat");
+            var targetFloatProp = stepProperty.FindPropertyRelative("TargetFloat");
+            var useCustomCurveProp = stepProperty.FindPropertyRelative("UseCustomCurve");
+            var customCurveProp = stepProperty.FindPropertyRelative("CustomCurve");
+            var onCompleteProp = stepProperty.FindPropertyRelative("OnComplete");
+
+            var type = (TweenStepType)typeProp.enumValueIndex;
+
+            // --- 通用字段 ---
+            AddField("类型", CreateEnumField(typeProp, typeof(TweenStepType)));
+            AddField("启用", new Toggle { value = isEnabledProp.boolValue, userData = isEnabledProp });
+            AddField("时长", new FloatField { value = durationProp.floatValue, userData = durationProp });
+            AddField("延迟", new FloatField { value = delayProp.floatValue, userData = delayProp });
+
+            // --- 按类型显示 ---
+            bool isTransformType = type == TweenStepType.Move || type == TweenStepType.Rotate || type == TweenStepType.Scale;
+
+            if (isTransformType)
             {
-                int start = arrayPath.Length + ".Array.data[".Length;
-                int end = path.IndexOf(']', start);
-                if (end > start && int.TryParse(path.Substring(start, end - start), out int idx))
+                AddField("目标类型", CreateEnumField(transformTargetProp, typeof(TransformTarget)));
+                AddField("目标物体", new ObjectField { objectType = typeof(Transform), value = targetTransformProp.objectReferenceValue, userData = targetTransformProp });
+                AddField("相对模式", new Toggle { value = isRelativeProp.boolValue, userData = isRelativeProp });
+
+                AddSeparator();
+
+                var useStartToggle = new Toggle { value = useStartValueProp.boolValue, userData = useStartValueProp };
+                AddField("使用起始值", useStartToggle);
+
+                var startVecField = new Vector3Field { value = startVectorProp.vector3Value, userData = startVectorProp };
+                startVecField.SetEnabled(useStartValueProp.boolValue);
+                AddField("起始值", startVecField);
+
+                // 旋转用欧拉角标签
+                string targetLabel = type == TweenStepType.Rotate ? "目标值 (欧拉角)" : "目标值";
+                AddField(targetLabel, new Vector3Field { value = targetVectorProp.vector3Value, userData = targetVectorProp });
+            }
+            else if (type == TweenStepType.Color)
+            {
+                AddField("目标物体", new ObjectField { objectType = typeof(Transform), value = targetTransformProp.objectReferenceValue, userData = targetTransformProp });
+
+                AddSeparator();
+
+                var useStartColorToggle = new Toggle { value = useStartColorProp.boolValue, userData = useStartColorProp };
+                AddField("使用起始颜色", useStartColorToggle);
+
+                var startColorField = new ColorField { value = startColorProp.colorValue, userData = startColorProp };
+                startColorField.SetEnabled(useStartColorProp.boolValue);
+                AddField("起始颜色", startColorField);
+
+                AddField("目标颜色", new ColorField { value = targetColorProp.colorValue, userData = targetColorProp });
+            }
+            else if (type == TweenStepType.Fade)
+            {
+                AddField("目标物体", new ObjectField { objectType = typeof(Transform), value = targetTransformProp.objectReferenceValue, userData = targetTransformProp });
+
+                AddSeparator();
+
+                var useStartFloatToggle = new Toggle { value = useStartFloatProp.boolValue, userData = useStartFloatProp };
+                AddField("使用起始透明度", useStartFloatToggle);
+
+                var startFloatField = new FloatField { value = startFloatProp.floatValue, userData = startFloatProp };
+                startFloatField.SetEnabled(useStartFloatProp.boolValue);
+                startFloatField.label = "0~1";
+                AddField("起始透明度", startFloatField);
+
+                var targetFloatField = new FloatField { value = targetFloatProp.floatValue, userData = targetFloatProp };
+                targetFloatField.label = "0~1";
+                AddField("目标透明度", targetFloatField);
+            }
+            else if (type == TweenStepType.Callback)
+            {
+                // Callback 无额外字段
+            }
+            // Delay 仅有时长和延迟，已显示
+
+            AddSeparator();
+
+            // --- 缓动 ---
+            AddField("执行模式", CreateEnumField(executionModeProp, typeof(ExecutionMode)));
+            if ((ExecutionMode)executionModeProp.enumValueIndex == ExecutionMode.Insert)
+            {
+                AddField("插入时间", new FloatField { value = insertTimeProp.floatValue, userData = insertTimeProp });
+            }
+
+            AddField("缓动", CreateEnumField(easeProp, typeof(Ease)));
+
+            var useCurveToggle = new Toggle { value = useCustomCurveProp.boolValue, userData = useCustomCurveProp };
+            AddField("自定义曲线", useCurveToggle);
+
+            if (useCustomCurveProp.boolValue && customCurveProp != null)
+            {
+                AddField("曲线", new CurveField { value = customCurveProp.animationCurveValue, userData = customCurveProp });
+            }
+
+            // --- 回调 ---
+            if (type == TweenStepType.Callback && onCompleteProp != null)
+            {
+                AddSeparator();
+                // 事件字段用 PropertyField 处理
+                var eventField = new PropertyField(onCompleteProp);
+                eventField.BindProperty(onCompleteProp);
+                detailScrollView.Add(eventField);
+            }
+
+            // --- 绑定所有字段的值变化回调 ---
+            BindDetailFieldCallbacks(detailScrollView);
+        }
+
+        private void AddField(string label, VisualElement field)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("detail-field-row");
+
+            var labelEl = new Label(label);
+            labelEl.AddToClassList("detail-field-label");
+            row.Add(labelEl);
+
+            field.AddToClassList("detail-field-value");
+            row.Add(field);
+
+            detailScrollView.Add(row);
+        }
+
+        private void AddSeparator()
+        {
+            var sep = new VisualElement();
+            sep.AddToClassList("detail-separator");
+            detailScrollView.Add(sep);
+        }
+
+        private EnumField CreateEnumField(SerializedProperty prop, Type enumType)
+        {
+            var field = new EnumField((Enum)Enum.GetValues(enumType).GetValue(prop.enumValueIndex));
+            field.userData = prop;
+            return field;
+        }
+
+        /// <summary>
+        /// 递归绑定所有输入字段的值变化回调，同步到 SerializedProperty
+        /// </summary>
+        private void BindDetailFieldCallbacks(VisualElement root)
+        {
+            foreach (var child in root.Children())
+            {
+                BindFieldCallback(child);
+
+                // 递归子元素
+                if (child.childCount > 0)
                 {
-                    return idx;
+                    BindDetailFieldCallbacks(child);
                 }
             }
+        }
 
-            for (int i = 0; i < arrayProperty.arraySize; i++)
+        private void BindFieldCallback(VisualElement field)
+        {
+            if (field is Toggle toggle && toggle.userData is SerializedProperty toggleProp)
             {
-                if (arrayProperty.GetArrayElementAtIndex(i).propertyPath == elementProperty.propertyPath)
-                    return i;
+                toggle.RegisterValueChangedCallback(evt =>
+                {
+                    if (toggleProp != null)
+                    {
+                        toggleProp.boolValue = evt.newValue;
+                        toggleProp.serializedObject.ApplyModifiedProperties();
+                        // 某些字段切换后需要重建详情（如 UseStartValue 影响其他字段可用性）
+                        RefreshDetailPanel();
+                    }
+                });
             }
-            return -1;
+            else if (field is FloatField floatField && floatField.userData is SerializedProperty floatProp)
+            {
+                floatField.RegisterValueChangedCallback(evt =>
+                {
+                    if (floatProp != null)
+                    {
+                        floatProp.floatValue = evt.newValue;
+                        floatProp.serializedObject.ApplyModifiedProperties();
+                    }
+                });
+            }
+            else if (field is Vector3Field vec3Field && vec3Field.userData is SerializedProperty vec3Prop)
+            {
+                vec3Field.RegisterValueChangedCallback(evt =>
+                {
+                    if (vec3Prop != null)
+                    {
+                        vec3Prop.vector3Value = evt.newValue;
+                        vec3Prop.serializedObject.ApplyModifiedProperties();
+                    }
+                });
+            }
+            else if (field is ColorField colorField && colorField.userData is SerializedProperty colorProp)
+            {
+                colorField.RegisterValueChangedCallback(evt =>
+                {
+                    if (colorProp != null)
+                    {
+                        colorProp.colorValue = evt.newValue;
+                        colorProp.serializedObject.ApplyModifiedProperties();
+                    }
+                });
+            }
+            else if (field is EnumField enumField && enumField.userData is SerializedProperty enumProp)
+            {
+                enumField.RegisterValueChangedCallback(evt =>
+                {
+                    if (enumProp != null)
+                    {
+                        enumProp.enumValueIndex = Convert.ToInt32(evt.newValue);
+                        enumProp.serializedObject.ApplyModifiedProperties();
+                        // 枚举变化可能影响显示的字段，重建详情
+                        RefreshDetailPanel();
+                        // 也刷新列表行
+                        RefreshStepList();
+                    }
+                });
+            }
+            else if (field is ObjectField objField && objField.userData is SerializedProperty objProp)
+            {
+                objField.objectType = typeof(UnityEngine.Object);
+                objField.RegisterValueChangedCallback(evt =>
+                {
+                    if (objProp != null)
+                    {
+                        objProp.objectReferenceValue = evt.newValue;
+                        objProp.serializedObject.ApplyModifiedProperties();
+                        RefreshStepList();
+                    }
+                });
+            }
+            else if (field is CurveField curveField && curveField.userData is SerializedProperty curveProp)
+            {
+                curveField.RegisterValueChangedCallback(evt =>
+                {
+                    if (curveProp != null)
+                    {
+                        curveProp.animationCurveValue = evt.newValue;
+                        curveProp.serializedObject.ApplyModifiedProperties();
+                    }
+                });
+            }
         }
 
-        private string GetStepDisplayName(TweenStepType type)
+        private void OnSyncClicked()
         {
-            return type switch
-            {
-                TweenStepType.Move => "Move",
-                TweenStepType.Rotate => "Rotate",
-                TweenStepType.Scale => "Scale",
-                TweenStepType.Color => "Color",
-                TweenStepType.Fade => "Fade",
-                TweenStepType.Delay => "Delay",
-                TweenStepType.Callback => "Callback",
-                _ => type.ToString()
-            };
-        }
+            var selectedIndex = stepListView?.selectedIndex ?? -1;
+            if (selectedIndex < 0 || stepIndices == null || selectedIndex >= stepIndices.Count || stepsProperty == null) return;
 
-        private string GetStepTypeCssClass(TweenStepType type)
-        {
-            return type switch
+            int dataIndex = stepIndices[selectedIndex];
+            if (dataIndex < 0 || dataIndex >= stepsProperty.arraySize) return;
+
+            serializedObject?.Update();
+            var stepProperty = stepsProperty.GetArrayElementAtIndex(dataIndex);
+            var type = (TweenStepType)stepProperty.FindPropertyRelative("Type").enumValueIndex;
+            var targetTransformProp = stepProperty.FindPropertyRelative("TargetTransform");
+            var target = targetTransformProp.objectReferenceValue as Transform;
+            if (target == null && targetPlayer != null) target = targetPlayer.transform;
+            if (target == null) return;
+
+            switch (type)
             {
-                TweenStepType.Move => "step-move",
-                TweenStepType.Rotate => "step-rotate",
-                TweenStepType.Scale => "step-scale",
-                TweenStepType.Color => "step-color",
-                TweenStepType.Fade => "step-fade",
-                TweenStepType.Delay => "step-delay",
-                TweenStepType.Callback => "step-callback",
-                _ => ""
-            };
+                case TweenStepType.Move:
+                    var moveTarget = (TransformTarget)stepProperty.FindPropertyRelative("TransformTarget").enumValueIndex;
+                    var moveVecProp = stepProperty.FindPropertyRelative("TargetVector");
+                    moveVecProp.vector3Value = moveTarget == TransformTarget.LocalPosition
+                        ? target.localPosition
+                        : target.position;
+                    break;
+                case TweenStepType.Rotate:
+                    var rotTarget = (TransformTarget)stepProperty.FindPropertyRelative("TransformTarget").enumValueIndex;
+                    var rotVecProp = stepProperty.FindPropertyRelative("TargetVector");
+                    rotVecProp.vector3Value = rotTarget == TransformTarget.LocalRotation
+                        ? target.localRotation.eulerAngles
+                        : target.rotation.eulerAngles;
+                    break;
+                case TweenStepType.Scale:
+                    stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.localScale;
+                    break;
+                case TweenStepType.Color:
+                    var renderer = target.GetComponent<Renderer>();
+                    if (renderer != null && renderer.material != null)
+                    {
+                        stepProperty.FindPropertyRelative("TargetColor").colorValue = renderer.material.color;
+                    }
+                    break;
+                case TweenStepType.Fade:
+                    var canvasGroup = target.GetComponent<CanvasGroup>();
+                    if (canvasGroup != null)
+                    {
+                        stepProperty.FindPropertyRelative("TargetFloat").floatValue = canvasGroup.alpha;
+                    }
+                    else
+                    {
+                        var rend = target.GetComponent<Renderer>();
+                        if (rend != null && rend.material != null)
+                        {
+                            stepProperty.FindPropertyRelative("TargetFloat").floatValue = rend.material.color.a;
+                        }
+                    }
+                    break;
+            }
+
+            stepsProperty.serializedObject.ApplyModifiedProperties();
+            RefreshDetailPanel();
+            RefreshStepList();
         }
 
         #endregion
@@ -684,7 +952,7 @@ namespace CNoom.DOTweenVisual.Editor
             // 自动选中新添加的步骤
             if (stepListView != null)
             {
-                stepListView.selectedIndex = stepsProperty.arraySize - 1;
+                stepListView.selectedIndex = stepIndices.Count - 1;
             }
             RefreshDetailPanel();
         }
@@ -1202,6 +1470,40 @@ namespace CNoom.DOTweenVisual.Editor
         }
 
         #endregion
+
+        #endregion
+
+        #region 工具方法
+
+        private string GetStepDisplayName(TweenStepType type)
+        {
+            return type switch
+            {
+                TweenStepType.Move => "Move",
+                TweenStepType.Rotate => "Rotate",
+                TweenStepType.Scale => "Scale",
+                TweenStepType.Color => "Color",
+                TweenStepType.Fade => "Fade",
+                TweenStepType.Delay => "Delay",
+                TweenStepType.Callback => "Callback",
+                _ => type.ToString()
+            };
+        }
+
+        private string GetStepTypeCssClass(TweenStepType type)
+        {
+            return type switch
+            {
+                TweenStepType.Move => "step-move",
+                TweenStepType.Rotate => "step-rotate",
+                TweenStepType.Scale => "step-scale",
+                TweenStepType.Color => "step-color",
+                TweenStepType.Fade => "step-fade",
+                TweenStepType.Delay => "step-delay",
+                TweenStepType.Callback => "step-callback",
+                _ => ""
+            };
+        }
 
         #endregion
 
