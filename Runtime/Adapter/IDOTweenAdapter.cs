@@ -25,9 +25,14 @@ namespace CNoom.DOTweenVisual.Adapter
         void Initialize();
 
         /// <summary>
-        /// 创建移动 Tween
+        /// 创建世界坐标移动 Tween
         /// </summary>
         TweenerAdapter CreateMoveTween(Transform target, Vector3 endValue, float duration);
+
+        /// <summary>
+        /// 创建本地坐标移动 Tween
+        /// </summary>
+        TweenerAdapter CreateLocalMoveTween(Transform target, Vector3 endValue, float duration);
 
         /// <summary>
         /// 创建相对移动 Tween
@@ -35,14 +40,34 @@ namespace CNoom.DOTweenVisual.Adapter
         TweenerAdapter CreateMoveTweenRelative(Transform target, Vector3 delta, float duration);
 
         /// <summary>
-        /// 创建旋转 Tween（欧拉角）
+        /// 创建世界旋转 Tween（四元数）
         /// </summary>
-        TweenerAdapter CreateRotateTween(Transform target, Vector3 endValue, float duration);
+        TweenerAdapter CreateRotateTween(Transform target, Quaternion endValue, float duration);
+
+        /// <summary>
+        /// 创建本地旋转 Tween（四元数）
+        /// </summary>
+        TweenerAdapter CreateLocalRotateTween(Transform target, Quaternion endValue, float duration);
 
         /// <summary>
         /// 创建缩放 Tween
         /// </summary>
         TweenerAdapter CreateScaleTween(Transform target, Vector3 endValue, float duration);
+
+        /// <summary>
+        /// 创建颜色 Tween（Material）
+        /// </summary>
+        TweenerAdapter CreateColorTween(Material material, Color endValue, float duration);
+
+        /// <summary>
+        /// 创建透明度 Tween（CanvasGroup）
+        /// </summary>
+        TweenerAdapter CreateFadeTween(CanvasGroup canvasGroup, float endValue, float duration);
+
+        /// <summary>
+        /// 创建透明度 Tween（Material）
+        /// </summary>
+        TweenerAdapter CreateFadeTween(Material material, float endValue, float duration);
 
         /// <summary>
         /// 创建序列
