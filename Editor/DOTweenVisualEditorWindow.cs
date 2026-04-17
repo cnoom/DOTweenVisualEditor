@@ -353,6 +353,9 @@ namespace CNoom.DOTweenVisual.Editor
 
             if (stepListView == null) return;
 
+            // 先清空数据源和选中状态，避免虚拟化控制器索引越界
+            stepListView.Unbind();
+            stepListView.itemsSource = System.Array.Empty<object>();
             stepListView.selectedIndex = -1;
 
             if (helpLabel != null)
@@ -363,13 +366,7 @@ namespace CNoom.DOTweenVisual.Editor
             if (stepsProperty != null && serializedObject != null)
             {
                 serializedObject.Update();
-                stepListView.Unbind();
                 stepListView.BindProperty(stepsProperty);
-            }
-            else
-            {
-                stepListView.Unbind();
-                stepListView.itemsSource = System.Array.Empty<object>();
             }
 
             UpdateButtonStates();
