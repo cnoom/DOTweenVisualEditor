@@ -228,6 +228,18 @@ namespace CNoom.DOTweenVisual.Components
                 return;
             }
 
+            // 检查是否有启用的步骤
+            bool hasEnabledSteps = false;
+            foreach (var step in _steps)
+            {
+                if (step.IsEnabled) { hasEnabledSteps = true; break; }
+            }
+            if (!hasEnabledSteps)
+            {
+                if (_debugMode) Debug.LogWarning($"[{nameof(DOTweenVisualPlayer)}] 没有启用的动画步骤");
+                return;
+            }
+
             KillSequence();
 
             // 创建序列
@@ -263,6 +275,9 @@ namespace CNoom.DOTweenVisual.Components
 
         private void AppendStepToSequence(TweenStepData step)
         {
+            // 保护 Duration 最小值，避免 DOTween 行为未定义
+            step.Duration = Mathf.Max(0.001f, step.Duration);
+            
             Tweener tweener = null;
 
             switch (step.Type)
@@ -325,7 +340,7 @@ namespace CNoom.DOTweenVisual.Components
                     _currentSequence.Join(tweener);
                     break;
                 case ExecutionMode.Insert:
-                    _currentSequence.Insert(step.InsertTime, tweener);
+                    _currentSequence.Insert(Mathf.Max(0f, step.InsertTime), tweener);
                     break;
             }
         }
@@ -333,6 +348,7 @@ namespace CNoom.DOTweenVisual.Components
         private Tweener CreateMoveTween(TweenStepData step)
         {
             var target = step.TargetTransform != null ? step.TargetTransform : transform;
+            if (target == null) return null;
             
             switch (step.TransformTarget)
             {
@@ -362,6 +378,7 @@ namespace CNoom.DOTweenVisual.Components
         private Tweener CreateRotateTween(TweenStepData step)
         {
             var target = step.TargetTransform != null ? step.TargetTransform : transform;
+            if (target == null) return null;
             
             switch (step.TransformTarget)
             {
@@ -391,6 +408,7 @@ namespace CNoom.DOTweenVisual.Components
         private Tweener CreateScaleTween(TweenStepData step)
         {
             var target = step.TargetTransform != null ? step.TargetTransform : transform;
+            if (target == null) return null;
             
             if (step.IsRelative)
             {

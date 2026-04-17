@@ -1062,7 +1062,15 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void AppendStepToPreview(TweenStepData step)
         {
+            // 保护 Duration 最小值，避免 DOTween 行为未定义
+            step.Duration = Mathf.Max(0.001f, step.Duration);
+            
             var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
+            if (target == null)
+            {
+                Log($"Warning: target is null for {step.Type}, skipping");
+                return;
+            }
             Log($"AppendStep: {step.Type} | Target: {target.name} | Value: {step.TargetValue} | Duration: {step.Duration}");
             
             Tweener tweener = null;
@@ -1113,7 +1121,7 @@ namespace CNoom.DOTweenVisual.Editor
                     previewSequence.Join(tweener);
                     break;
                 case ExecutionMode.Insert:
-                    previewSequence.Insert(step.InsertTime, tweener);
+                    previewSequence.Insert(Mathf.Max(0f, step.InsertTime), tweener);
                     break;
             }
             
