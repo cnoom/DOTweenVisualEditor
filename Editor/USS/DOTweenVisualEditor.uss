@@ -138,7 +138,7 @@
     align-items: center;
     color: #808080;
     font-size: 12px;
-    unity-text-align: middle-center;
+    -unity-text-align: middle-center;
 }
 
 /* 步骤类型颜色标记 */
