@@ -91,29 +91,49 @@
     padding: 2px 8px;
 }
 
-/* === 步骤列表 === */
-.step-list {
+/* === 步骤列表 (ScrollView) === */
+.step-scroll {
     flex-grow: 1;
     background-color: #2D2D2D;
+    padding: 0;
 }
 
 .step-item {
     flex-direction: row;
     align-items: center;
-    height: 32px;
+    height: 28px;
     padding: 0 6px;
     border-left-width: 3px;
     border-left-color: #505050;
     border-bottom-width: 1px;
     border-bottom-color: #383838;
-}
-
-.step-item:selected {
-    background-color: #3A5A7C;
+    cursor: link;
 }
 
 .step-item:hover {
     background-color: #404040;
+}
+
+.step-item.step-selected {
+    background-color: #3A5A7C;
+}
+
+/* 排序按钮栏 */
+.reorder-bar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    background-color: #333333;
+    border-top-width: 1px;
+    border-top-color: #404040;
+    padding: 0 4px;
+}
+
+.reorder-button {
+    font-size: 10px;
+    padding: 2px 12px;
+    margin: 0 2px;
 }
 
 .step-row {
