@@ -7,6 +7,7 @@ namespace CNoom.DOTweenVisual.Data
 {
     /// <summary>
     /// 动画步骤数据
+    /// 使用多值组方案：不同类型步骤使用对应值组，PropertyDrawer 按类型过滤显示
     /// </summary>
     [Serializable]
     public class TweenStepData
@@ -28,7 +29,7 @@ namespace CNoom.DOTweenVisual.Data
         #region 时长控制
 
         [Tooltip("动画时长（秒）")]
-        [Min(0f)]
+        [Min(0.001f)]
         public float Duration = 1f;
 
         [Tooltip("延迟时间（秒）")]
@@ -50,7 +51,7 @@ namespace CNoom.DOTweenVisual.Data
 
         #endregion
 
-        #region Transform 相关参数
+        #region Transform 值组
 
         [Tooltip("目标物体（为null时使用组件所在物体）")]
         public Transform TargetTransform = null;
@@ -58,11 +59,45 @@ namespace CNoom.DOTweenVisual.Data
         [Tooltip("Transform 目标类型")]
         public TransformTarget TransformTarget = TransformTarget.Position;
 
-        [Tooltip("目标值")]
-        public Vector3 TargetValue = Vector3.zero;
+        [Tooltip("是否使用起始值（为false时使用物体当前值）")]
+        public bool UseStartValue = false;
+
+        [Tooltip("起始值（Move/Rotate/Scale 使用）")]
+        public Vector3 StartVector = Vector3.zero;
+
+        [Tooltip("目标值（Move/Rotate/Scale 使用，旋转以欧拉角编辑内部转四元数）")]
+        public Vector3 TargetVector = Vector3.zero;
 
         [Tooltip("是否为相对值")]
         public bool IsRelative = false;
+
+        #endregion
+
+        #region Color 值组
+
+        [Tooltip("是否使用起始颜色（为false时使用物体当前颜色）")]
+        public bool UseStartColor = false;
+
+        [Tooltip("起始颜色")]
+        public Color StartColor = Color.white;
+
+        [Tooltip("目标颜色")]
+        public Color TargetColor = Color.white;
+
+        #endregion
+
+        #region Float 值组
+
+        [Tooltip("是否使用起始浮点值（为false时使用物体当前值）")]
+        public bool UseStartFloat = false;
+
+        [Tooltip("起始浮点值（透明度等）")]
+        [Range(0f, 1f)]
+        public float StartFloat = 1f;
+
+        [Tooltip("目标浮点值（透明度等）")]
+        [Range(0f, 1f)]
+        public float TargetFloat = 0f;
 
         #endregion
 
@@ -84,16 +119,19 @@ namespace CNoom.DOTweenVisual.Data
 
         #endregion
 
-        #region 预留字段（Property 动画用）
+        #region 兼容性属性
 
-        [Tooltip("属性名称")]
-        public string PropertyName = "";
-
-        [Tooltip("属性起始值")]
-        public float PropertyValueFrom = 0f;
-
-        [Tooltip("属性目标值")]
-        public float PropertyValueTo = 1f;
+        /// <summary>
+        /// 向后兼容：获取目标值
+        /// Move/Rotate/Scale → TargetVector
+        /// Fade → TargetFloat 的 Vector3 包装
+        /// </summary>
+        [Obsolete("请使用对应值组字段（TargetVector/TargetColor/TargetFloat）")]
+        public Vector3 TargetValue
+        {
+            get => TargetVector;
+            set => TargetVector = value;
+        }
 
         #endregion
     }

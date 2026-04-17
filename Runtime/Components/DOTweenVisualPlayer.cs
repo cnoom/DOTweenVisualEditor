@@ -64,7 +64,6 @@ namespace CNoom.DOTweenVisual.Components
 
         private void Start()
         {
-            // 确保 DOTween 已初始化
             DOTweenAdapter.Instance.Initialize();
 
             if (_playOnStart)
@@ -75,15 +74,13 @@ namespace CNoom.DOTweenVisual.Components
 
         private void OnDestroy()
         {
-            // 先标记非播放状态，防止 OnDisable 中 Pause 访问已销毁的 Sequence
             _isPlaying = false;
             KillSequence();
         }
 
         private void OnDisable()
         {
-            // 仅在存活期间暂停，避免 Destroy 时访问已 Kill 的 Sequence
-            if (_currentSequence != null && _isPlaying)
+            if (_isPlaying)
             {
                 Pause();
             }
@@ -222,48 +219,42 @@ namespace CNoom.DOTweenVisual.Components
 
         private void BuildAndPlay()
         {
-            if (_steps.Count == 0)
-            {
-                if (_debugMode) Debug.LogWarning($"[{nameof(DOTweenVisualPlayer)}] 没有动画步骤可播放");
-                return;
-            }
-
             // 检查是否有启用的步骤
             bool hasEnabledSteps = false;
             foreach (var step in _steps)
             {
-                if (step.IsEnabled) { hasEnabledSteps = true; break; }
+                if (step.IsEnabled)
+                {
+                    hasEnabledSteps = true;
+                    break;
+                }
             }
+
             if (!hasEnabledSteps)
             {
-                if (_debugMode) Debug.LogWarning($"[{nameof(DOTweenVisualPlayer)}] 没有启用的动画步骤");
+                if (_debugMode) Debug.LogWarning($"[{nameof(DOTweenVisualPlayer)}] 没有启用的动画步骤可播放");
                 return;
             }
 
             KillSequence();
 
-            // 创建序列
             _currentSequence = DOTween.Sequence();
             _currentSequence.SetTarget(this);
 
-            // 构建序列
             foreach (var step in _steps)
             {
                 if (!step.IsEnabled) continue;
                 AppendStepToSequence(step);
             }
 
-            // 设置循环
             _currentSequence.SetLoops(_loops, _loopType);
 
-            // 播放完成回调
             _currentSequence.OnComplete(() =>
             {
                 _isPlaying = false;
                 if (_debugMode) Debug.Log($"[{nameof(DOTweenVisualPlayer)}] 动画播放完成");
             });
 
-            // 开始播放
             _currentSequence.Play();
             _isPlaying = true;
 
@@ -275,9 +266,6 @@ namespace CNoom.DOTweenVisual.Components
 
         private void AppendStepToSequence(TweenStepData step)
         {
-            // 保护 Duration 最小值，避免 DOTween 行为未定义
-            step.Duration = Mathf.Max(0.001f, step.Duration);
-            
             Tweener tweener = null;
 
             switch (step.Type)
@@ -291,21 +279,18 @@ namespace CNoom.DOTweenVisual.Components
                 case TweenStepType.Scale:
                     tweener = CreateScaleTween(step);
                     break;
+                case TweenStepType.Color:
+                    tweener = CreateColorTween(step);
+                    break;
+                case TweenStepType.Fade:
+                    tweener = CreateFadeTween(step);
+                    break;
                 case TweenStepType.Delay:
-                    // Delay 使用 AppendInterval
-                    _currentSequence.AppendInterval(step.Duration);
+                    _currentSequence.AppendInterval(Mathf.Max(0.001f, step.Duration));
                     return;
                 case TweenStepType.Callback:
-                    // Callback 使用 AppendCallback，捕获局部引用避免闭包问题
                     var callback = step.OnComplete;
                     _currentSequence.AppendCallback(() => callback?.Invoke());
-                    return;
-                case TweenStepType.Property:
-                    // Property 动画留待后续实现
-                    if (_debugMode)
-                    {
-                        Debug.LogWarning($"[{nameof(DOTweenVisualPlayer)}] Property 动画暂未实现");
-                    }
                     return;
             }
 
@@ -345,33 +330,36 @@ namespace CNoom.DOTweenVisual.Components
             }
         }
 
+        #region Transform Tweens
+
         private Tweener CreateMoveTween(TweenStepData step)
         {
             var target = step.TargetTransform != null ? step.TargetTransform : transform;
             if (target == null) return null;
-            
+
+            // 应用起始值
+            if (step.UseStartValue)
+            {
+                ApplyMoveValue(target, step.TransformTarget, step.StartVector);
+            }
+
+            float duration = Mathf.Max(0.001f, step.Duration);
+
             switch (step.TransformTarget)
             {
-                case TransformTarget.Position:
-                    if (step.IsRelative)
-                    {
-                        return target.DOMove(step.TargetValue, step.Duration).From(isRelative: true);
-                    }
-                    return target.DOMove(step.TargetValue, step.Duration);
-                    
                 case TransformTarget.LocalPosition:
                     if (step.IsRelative)
                     {
-                        return target.DOLocalMove(step.TargetValue, step.Duration).From(isRelative: true);
+                        return target.DOLocalMove(step.TargetVector, duration).From(isRelative: true);
                     }
-                    return target.DOLocalMove(step.TargetValue, step.Duration);
-                    
-                default:
+                    return target.DOLocalMove(step.TargetVector, duration);
+
+                default: // Position
                     if (step.IsRelative)
                     {
-                        return target.DOMove(step.TargetValue, step.Duration).From(isRelative: true);
+                        return target.DOMove(step.TargetVector, duration).From(isRelative: true);
                     }
-                    return target.DOMove(step.TargetValue, step.Duration);
+                    return target.DOMove(step.TargetVector, duration);
             }
         }
 
@@ -379,29 +367,43 @@ namespace CNoom.DOTweenVisual.Components
         {
             var target = step.TargetTransform != null ? step.TargetTransform : transform;
             if (target == null) return null;
-            
-            switch (step.TransformTarget)
+
+            // 旋转始终使用四元数插值，避免万向锁
+            Quaternion startQuat;
+            Quaternion targetQuat;
+
+            if (step.UseStartValue)
             {
-                case TransformTarget.Rotation:
-                    if (step.IsRelative)
-                    {
-                        return target.DORotate(step.TargetValue, step.Duration).From(isRelative: true);
-                    }
-                    return target.DORotate(step.TargetValue, step.Duration);
-                    
-                case TransformTarget.LocalRotation:
-                    if (step.IsRelative)
-                    {
-                        return target.DOLocalRotate(step.TargetValue, step.Duration).From(isRelative: true);
-                    }
-                    return target.DOLocalRotate(step.TargetValue, step.Duration);
-                    
-                default:
-                    if (step.IsRelative)
-                    {
-                        return target.DORotate(step.TargetValue, step.Duration).From(isRelative: true);
-                    }
-                    return target.DORotate(step.TargetValue, step.Duration);
+                startQuat = Quaternion.Euler(step.StartVector);
+                ApplyRotationValue(target, step.TransformTarget, startQuat);
+            }
+            else
+            {
+                // 获取当前旋转作为起始值
+                startQuat = step.TransformTarget == TransformTarget.LocalRotation
+                    ? target.localRotation
+                    : target.rotation;
+            }
+
+            targetQuat = Quaternion.Euler(step.TargetVector);
+
+            float duration = Mathf.Max(0.001f, step.Duration);
+
+            if (step.TransformTarget == TransformTarget.LocalRotation)
+            {
+                if (step.IsRelative)
+                {
+                    return target.DOLocalRotateQuaternion(startQuat * targetQuat, duration);
+                }
+                return target.DOLocalRotateQuaternion(targetQuat, duration);
+            }
+            else
+            {
+                if (step.IsRelative)
+                {
+                    return target.DORotateQuaternion(startQuat * targetQuat, duration);
+                }
+                return target.DORotateQuaternion(targetQuat, duration);
             }
         }
 
@@ -409,13 +411,114 @@ namespace CNoom.DOTweenVisual.Components
         {
             var target = step.TargetTransform != null ? step.TargetTransform : transform;
             if (target == null) return null;
-            
+
+            if (step.UseStartValue)
+            {
+                target.localScale = step.StartVector;
+            }
+
+            float duration = Mathf.Max(0.001f, step.Duration);
+
             if (step.IsRelative)
             {
-                return target.DOScale(step.TargetValue, step.Duration).From(isRelative: true);
+                return target.DOScale(step.TargetVector, duration).From(isRelative: true);
             }
-            return target.DOScale(step.TargetValue, step.Duration);
+            return target.DOScale(step.TargetVector, duration);
         }
+
+        #endregion
+
+        #region Color/Fade Tweens
+
+        private Tweener CreateColorTween(TweenStepData step)
+        {
+            var target = step.TargetTransform != null ? step.TargetTransform : transform;
+            if (target == null) return null;
+
+            // 尝试获取 Renderer 或 SpriteRenderer
+            var renderer = target.GetComponent<Renderer>();
+            if (renderer == null || renderer.material == null)
+            {
+                if (_debugMode) Debug.LogWarning($"[{nameof(DOTweenVisualPlayer)}] 目标物体没有 Renderer 组件，无法播放颜色动画");
+                return null;
+            }
+
+            // 应用起始颜色
+            if (step.UseStartColor)
+            {
+                renderer.material.color = step.StartColor;
+            }
+
+            float duration = Mathf.Max(0.001f, step.Duration);
+            return renderer.material.DOColor(step.TargetColor, duration);
+        }
+
+        private Tweener CreateFadeTween(TweenStepData step)
+        {
+            var target = step.TargetTransform != null ? step.TargetTransform : transform;
+            if (target == null) return null;
+
+            // 尝试获取 CanvasGroup（UI）或 Renderer（3D/Sprite）
+            var canvasGroup = target.GetComponent<CanvasGroup>();
+            var renderer = target.GetComponent<Renderer>();
+
+            if (canvasGroup != null)
+            {
+                if (step.UseStartFloat)
+                {
+                    canvasGroup.alpha = step.StartFloat;
+                }
+                float duration = Mathf.Max(0.001f, step.Duration);
+                return canvasGroup.DOFade(step.TargetFloat, duration);
+            }
+
+            if (renderer != null && renderer.material != null)
+            {
+                if (step.UseStartFloat)
+                {
+                    Color c = renderer.material.color;
+                    c.a = step.StartFloat;
+                    renderer.material.color = c;
+                }
+                float duration = Mathf.Max(0.001f, step.Duration);
+                return renderer.material.DOFade(step.TargetFloat, duration);
+            }
+
+            if (_debugMode) Debug.LogWarning($"[{nameof(DOTweenVisualPlayer)}] 目标物体没有 CanvasGroup 或 Renderer，无法播放透明度动画");
+            return null;
+        }
+
+        #endregion
+
+        #region 起始值应用
+
+        private void ApplyMoveValue(Transform target, TransformTarget transformTarget, Vector3 value)
+        {
+            switch (transformTarget)
+            {
+                case TransformTarget.Position:
+                    target.position = value;
+                    break;
+                case TransformTarget.LocalPosition:
+                    target.localPosition = value;
+                    break;
+            }
+        }
+
+        private void ApplyRotationValue(Transform target, TransformTarget transformTarget, Quaternion value)
+        {
+            switch (transformTarget)
+            {
+                case TransformTarget.Rotation:
+                    target.rotation = value;
+                    break;
+                case TransformTarget.LocalRotation:
+                    target.localRotation = value;
+                    break;
+            }
+        }
+
+        #endregion
 
         private void KillSequence()
         {

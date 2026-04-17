@@ -11,8 +11,9 @@ namespace CNoom.DOTweenVisual.Adapter
     /// </summary>
     public class DOTweenAdapter : IDOTweenAdapter
     {
-        private static DOTweenAdapter _instance;
         private static readonly object _lock = new();
+        private static DOTweenAdapter _instance;
+
         public static DOTweenAdapter Instance
         {
             get
@@ -45,12 +46,13 @@ namespace CNoom.DOTweenVisual.Adapter
                 return;
             }
 
-            // 初始化 DOTween
             DOTween.Init(true, true, LogBehaviour.Verbose);
             _initialized = true;
 
             Debug.Log($"[DOTweenVisual] DOTween 初始化完成 - {DOTweenCompatibility.GetVersionInfo()}");
         }
+
+        #region Transform Tweens
 
         public TweenerAdapter CreateMoveTween(Transform target, Vector3 endValue, float duration)
         {
@@ -60,6 +62,17 @@ namespace CNoom.DOTweenVisual.Adapter
                 return null;
             }
             var tweener = target.DOMove(endValue, duration).SetRecyclable(true);
+            return new TweenerWrapper(tweener);
+        }
+
+        public TweenerAdapter CreateLocalMoveTween(Transform target, Vector3 endValue, float duration)
+        {
+            if (target == null)
+            {
+                Debug.LogError("[DOTweenVisual] CreateLocalMoveTween: target 为 null");
+                return null;
+            }
+            var tweener = target.DOLocalMove(endValue, duration).SetRecyclable(true);
             return new TweenerWrapper(tweener);
         }
 
@@ -74,14 +87,25 @@ namespace CNoom.DOTweenVisual.Adapter
             return new TweenerWrapper(tweener);
         }
 
-        public TweenerAdapter CreateRotateTween(Transform target, Vector3 endValue, float duration)
+        public TweenerAdapter CreateRotateTween(Transform target, Quaternion endValue, float duration)
         {
             if (target == null)
             {
                 Debug.LogError("[DOTweenVisual] CreateRotateTween: target 为 null");
                 return null;
             }
-            var tweener = target.DORotate(endValue, duration).SetRecyclable(true);
+            var tweener = target.DORotateQuaternion(endValue, duration).SetRecyclable(true);
+            return new TweenerWrapper(tweener);
+        }
+
+        public TweenerAdapter CreateLocalRotateTween(Transform target, Quaternion endValue, float duration)
+        {
+            if (target == null)
+            {
+                Debug.LogError("[DOTweenVisual] CreateLocalRotateTween: target 为 null");
+                return null;
+            }
+            var tweener = target.DOLocalRotateQuaternion(endValue, duration).SetRecyclable(true);
             return new TweenerWrapper(tweener);
         }
 
@@ -95,6 +119,45 @@ namespace CNoom.DOTweenVisual.Adapter
             var tweener = target.DOScale(endValue, duration).SetRecyclable(true);
             return new TweenerWrapper(tweener);
         }
+
+        #endregion
+
+        #region Visual Tweens
+
+        public TweenerAdapter CreateColorTween(Material material, Color endValue, float duration)
+        {
+            if (material == null)
+            {
+                Debug.LogError("[DOTweenVisual] CreateColorTween: material 为 null");
+                return null;
+            }
+            var tweener = material.DOColor(endValue, duration).SetRecyclable(true);
+            return new TweenerWrapper(tweener);
+        }
+
+        public TweenerAdapter CreateFadeTween(CanvasGroup canvasGroup, float endValue, float duration)
+        {
+            if (canvasGroup == null)
+            {
+                Debug.LogError("[DOTweenVisual] CreateFadeTween: canvasGroup 为 null");
+                return null;
+            }
+            var tweener = canvasGroup.DOFade(endValue, duration).SetRecyclable(true);
+            return new TweenerWrapper(tweener);
+        }
+
+        public TweenerAdapter CreateFadeTween(Material material, float endValue, float duration)
+        {
+            if (material == null)
+            {
+                Debug.LogError("[DOTweenVisual] CreateFadeTween: material 为 null");
+                return null;
+            }
+            var tweener = material.DOFade(endValue, duration).SetRecyclable(true);
+            return new TweenerWrapper(tweener);
+        }
+
+        #endregion
 
         public SequenceAdapter CreateSequence()
         {
@@ -110,9 +173,6 @@ namespace CNoom.DOTweenVisual.Adapter
 
     #region Wrappers
 
-    /// <summary>
-    /// Tweener 包装器
-    /// </summary>
     public class TweenerWrapper : TweenerAdapter
     {
         internal Tweener _tweener;
@@ -135,9 +195,6 @@ namespace CNoom.DOTweenVisual.Adapter
         public bool IsComplete() => _tweener?.IsComplete() ?? true;
     }
 
-    /// <summary>
-    /// Sequence 包装器
-    /// </summary>
     public class SequenceWrapper : SequenceAdapter
     {
         private Sequence _sequence;

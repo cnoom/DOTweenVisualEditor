@@ -23,14 +23,12 @@ namespace CNoom.DOTweenVisual.Editor
 
         static DOTweenVisualEditorWindow()
         {
-            // 先取消订阅再订阅，防止域重载后重复订阅
             CompilationPipeline.compilationStarted -= OnCompilationStarted;
             CompilationPipeline.compilationStarted += OnCompilationStarted;
         }
 
         private static void OnCompilationStarted(object obj)
         {
-            // 查找所有打开的窗口实例并重置
             var windows = Resources.FindObjectsOfTypeAll<DOTweenVisualEditorWindow>();
             foreach (var window in windows)
             {
@@ -79,20 +77,18 @@ namespace CNoom.DOTweenVisual.Editor
 
         #region 预览状态
 
-        // 预览状态枚举
         private enum PreviewState
         {
-            None,       // 未播放
-            Playing,    // 播放中
-            Paused,     // 已暂停
-            Completed   // 播放完成
+            None,
+            Playing,
+            Paused,
+            Completed
         }
 
         private PreviewState previewState = PreviewState.None;
         private Sequence previewSequence;
         private Dictionary<Transform, TransformState> initialStates = new();
 
-        // 兼容旧代码的属性
         private bool isPreviewing => previewState == PreviewState.Playing;
         private bool isPaused => previewState == PreviewState.Paused;
         private bool hasPreviewed => previewState != PreviewState.None;
@@ -104,6 +100,8 @@ namespace CNoom.DOTweenVisual.Editor
             public Vector3 localPosition;
             public Quaternion localRotation;
             public Vector3 localScale;
+            public Color color;
+            public float alpha;
         }
 
         #endregion
@@ -122,7 +120,6 @@ namespace CNoom.DOTweenVisual.Editor
         {
             Log("OnEnable");
             EditorApplication.update += OnEditorUpdate;
-            // 监听播放模式切换，确保预览状态正确重置
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
@@ -132,18 +129,11 @@ namespace CNoom.DOTweenVisual.Editor
             EditorApplication.update -= OnEditorUpdate;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             StopPreview();
-            
-            // 清理 UI 元素，释放所有事件回调订阅
-            // （targetField、foldout、enableToggle 等的 RegisterValueChangedCallback）
-            if (rootVisualElement != null)
-            {
-                rootVisualElement.Clear();
-            }
+            rootVisualElement.Clear();
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            // 进入播放模式前重置预览状态
             if (state == PlayModeStateChange.ExitingEditMode)
             {
                 if (previewState != PreviewState.None)
@@ -155,7 +145,6 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void OnEditorUpdate()
         {
-            // 实时更新时间显示
             UpdateTimeDisplay();
         }
 
@@ -187,13 +176,12 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnTargetChanged(ChangeEvent<UnityEngine.Object> evt)
         {
             Log($"OnTargetChanged: {evt.newValue}");
-            
-            // 切换目标时先停止预览
+
             if (isPreviewing || isPaused)
             {
                 StopPreview();
             }
-            
+
             var player = evt.newValue as DOTweenVisualPlayer;
             SetTarget(player);
             UpdateButtonStates();
@@ -202,13 +190,13 @@ namespace CNoom.DOTweenVisual.Editor
         private void SetTarget(DOTweenVisualPlayer player)
         {
             Log($"SetTarget: {player}");
-            
+
             targetPlayer = player;
-            
+
             if (player != null)
             {
                 serializedObject = new SerializedObject(player);
-                stepsProperty = serializedObject.FindProperty("_steps");  // 使用私有字段名
+                stepsProperty = serializedObject.FindProperty("_steps");
                 Log($"stepsProperty: {stepsProperty}, arraySize: {stepsProperty?.arraySize}");
             }
             else
@@ -216,7 +204,7 @@ namespace CNoom.DOTweenVisual.Editor
                 serializedObject = null;
                 stepsProperty = null;
             }
-            
+
             RefreshStepList();
         }
 
@@ -227,17 +215,15 @@ namespace CNoom.DOTweenVisual.Editor
         private void CreateGUI()
         {
             Log("CreateGUI");
-            
+
             BuildUIManually();
-            
-            // 加载 USS
+
             var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(USS_PATH);
             if (styleSheet != null)
             {
                 rootVisualElement.styleSheets.Add(styleSheet);
             }
-            
-            // 如果已有目标，刷新列表
+
             if (targetPlayer != null)
             {
                 SetTarget(targetPlayer);
@@ -247,16 +233,15 @@ namespace CNoom.DOTweenVisual.Editor
         private void BuildUIManually()
         {
             rootVisualElement.Clear();
-            
+
             // 工具栏
             toolbar = new Toolbar();
             toolbar.AddToClassList("main-toolbar");
-            
-            // 目标物体选择器
+
             var targetLabel = new Label("目标物体:");
             targetLabel.style.marginRight = 4;
             toolbar.Add(targetLabel);
-            
+
             targetField = new ObjectField
             {
                 objectType = typeof(DOTweenVisualPlayer),
@@ -266,38 +251,38 @@ namespace CNoom.DOTweenVisual.Editor
             targetField.style.width = 200;
             targetField.RegisterValueChangedCallback(OnTargetChanged);
             toolbar.Add(targetField);
-            
+
             var spacer1 = new VisualElement();
             spacer1.style.flexGrow = 1;
             toolbar.Add(spacer1);
-            
+
             previewButton = new Button(OnPreviewClicked) { text = "预览" };
             previewButton.AddToClassList("toolbar-button");
             toolbar.Add(previewButton);
-            
+
             stopButton = new Button(OnStopClicked) { text = "停止" };
             stopButton.AddToClassList("toolbar-button");
             toolbar.Add(stopButton);
-            
+
             replayButton = new Button(OnReplayClicked) { text = "重播" };
             replayButton.AddToClassList("toolbar-button");
             toolbar.Add(replayButton);
-            
+
             resetButton = new Button(OnResetClicked) { text = "重置" };
             resetButton.AddToClassList("toolbar-button");
             toolbar.Add(resetButton);
-            
+
             var spacer2 = new VisualElement();
             spacer2.style.flexGrow = 1;
             toolbar.Add(spacer2);
-            
+
             addStepMenu = new ToolbarMenu { text = "添加步骤" };
             addStepMenu.AddToClassList("toolbar-menu");
             toolbar.Add(addStepMenu);
-            
+
             rootVisualElement.Add(toolbar);
-            
-            // 状态栏（显示预览状态和时间）
+
+            // 状态栏
             statusBar = new VisualElement();
             statusBar.AddToClassList("status-bar");
             statusBar.style.flexDirection = FlexDirection.Row;
@@ -306,30 +291,29 @@ namespace CNoom.DOTweenVisual.Editor
             statusBar.style.paddingTop = 4;
             statusBar.style.paddingBottom = 4;
             statusBar.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f, 1f);
-            
+
             stateLabel = new Label("● 未播放");
             stateLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
             stateLabel.style.color = new Color(0.6f, 0.6f, 0.6f);
             stateLabel.style.flexGrow = 1;
             statusBar.Add(stateLabel);
-            
+
             timeLabel = new Label("--:-- / --:--");
             timeLabel.style.color = new Color(0.8f, 0.8f, 0.8f);
             timeLabel.style.unityTextAlign = TextAnchor.MiddleRight;
             timeLabel.style.width = 140;
             statusBar.Add(timeLabel);
-            
+
             rootVisualElement.Add(statusBar);
-            
-            // 主内容区域（包含列表和帮助提示）
+
+            // 主内容区域
             var contentArea = new VisualElement();
             contentArea.style.flexGrow = 1;
             contentArea.style.position = Position.Relative;
-            
-            // 步骤列表
+
             stepListView = new ListView
             {
-                reorderable = false,  // 禁用拖拽，改用上移/下移按钮
+                reorderable = false,
                 makeItem = MakeStepItem,
                 bindItem = BindStepItem,
                 selectionType = SelectionType.Single,
@@ -341,10 +325,9 @@ namespace CNoom.DOTweenVisual.Editor
             stepListView.AddToClassList("step-list");
             stepListView.style.flexGrow = 1;
             stepListView.style.minHeight = 100;
-            
+
             contentArea.Add(stepListView);
-            
-            // 初始提示（覆盖在列表上方）
+
             helpLabel = new Label("请在上方指定目标物体（包含 DOTweenVisualPlayer 组件）");
             helpLabel.AddToClassList("help-label");
             helpLabel.style.position = Position.Absolute;
@@ -353,13 +336,10 @@ namespace CNoom.DOTweenVisual.Editor
             helpLabel.style.top = 0;
             helpLabel.style.bottom = 0;
             contentArea.Add(helpLabel);
-            
+
             rootVisualElement.Add(contentArea);
-            
-            // 构建添加步骤菜单
+
             BuildAddStepMenu();
-            
-            // 初始化按钮状态
             UpdateButtonStates();
         }
 
@@ -370,65 +350,53 @@ namespace CNoom.DOTweenVisual.Editor
         private void RefreshStepList()
         {
             Log($"RefreshStepList - stepListView null: {stepListView == null}, stepsProperty null: {stepsProperty == null}");
-            
+
             if (stepListView == null) return;
-            
-            // 先断开旧绑定，避免 BindProperty 时虚拟化控制器访问旧数据
-            stepListView.Unbind();
-            
-            // 清除选中状态，避免切换目标时索引越界
+
             stepListView.selectedIndex = -1;
-            
-            // 隐藏帮助提示
+
             if (helpLabel != null)
             {
                 helpLabel.style.display = stepsProperty != null ? DisplayStyle.None : DisplayStyle.Flex;
             }
-            
+
             if (stepsProperty != null && serializedObject != null)
             {
-                // 确保 serializedObject 是最新的
                 serializedObject.Update();
-                
-                Log($"Binding stepsProperty, arraySize: {stepsProperty.arraySize}");
-                
-                // 绑定属性
+                stepListView.Unbind();
                 stepListView.BindProperty(stepsProperty);
             }
             else
             {
-                Log("Unbinding and clearing list");
+                stepListView.Unbind();
                 stepListView.itemsSource = System.Array.Empty<object>();
             }
-            
-            // 更新按钮状态（步骤数量变化可能影响预览按钮可用性）
+
             UpdateButtonStates();
         }
 
         private VisualElement MakeStepItem()
         {
             Log("MakeStepItem");
-            
+
             var item = new VisualElement();
             item.AddToClassList("step-item");
-            
-            // 折叠箭头 + 标题行
+
             var headerRow = new VisualElement();
             headerRow.AddToClassList("step-header-row");
-            
+
             var foldout = new Foldout { value = false, name = "step-foldout" };
             foldout.AddToClassList("step-foldout");
-            
+
             var titleLabel = new Label { name = "step-title" };
             titleLabel.AddToClassList("step-title");
-            
+
             var summaryLabel = new Label { name = "step-summary" };
             summaryLabel.AddToClassList("step-summary");
-            
+
             var buttonRow = new VisualElement();
             buttonRow.AddToClassList("step-button-row");
-            
-            // 上移按钮
+
             var upButton = new Button { text = "↑", name = "up-button" };
             upButton.AddToClassList("move-button");
             upButton.clickable = new Clickable(() =>
@@ -443,8 +411,7 @@ namespace CNoom.DOTweenVisual.Editor
                         stepsProperty.MoveArrayElement(index, newIndex);
                         stepsProperty.serializedObject.ApplyModifiedProperties();
                         RefreshStepList();
-                        
-                        // 设置选中状态跟随移动的项
+
                         if (stepListView != null)
                         {
                             stepListView.selectedIndex = newIndex;
@@ -452,7 +419,7 @@ namespace CNoom.DOTweenVisual.Editor
                     }
                 }
             });
-            
+
             var downButton = new Button { text = "↓", name = "down-button" };
             downButton.AddToClassList("move-button");
             downButton.clickable = new Clickable(() =>
@@ -467,8 +434,7 @@ namespace CNoom.DOTweenVisual.Editor
                         stepsProperty.MoveArrayElement(index, newIndex);
                         stepsProperty.serializedObject.ApplyModifiedProperties();
                         RefreshStepList();
-                        
-                        // 设置选中状态跟随移动的项
+
                         if (stepListView != null)
                         {
                             stepListView.selectedIndex = newIndex;
@@ -476,10 +442,10 @@ namespace CNoom.DOTweenVisual.Editor
                     }
                 }
             });
-            
+
             var enableToggle = new Toggle { name = "enable-toggle", value = true };
             enableToggle.AddToClassList("enable-toggle");
-            enableToggle.RegisterValueChangedCallback(evt => 
+            enableToggle.RegisterValueChangedCallback(evt =>
             {
                 var property = item.userData as SerializedProperty;
                 if (property != null)
@@ -488,7 +454,7 @@ namespace CNoom.DOTweenVisual.Editor
                     property.serializedObject.ApplyModifiedProperties();
                 }
             });
-            
+
             var deleteButton = new Button { text = "删除", name = "delete-button" };
             deleteButton.AddToClassList("delete-button");
             deleteButton.clickable = new Clickable(() =>
@@ -505,54 +471,51 @@ namespace CNoom.DOTweenVisual.Editor
                     }
                 }
             });
-            
+
             buttonRow.Add(upButton);
             buttonRow.Add(downButton);
             buttonRow.Add(enableToggle);
             buttonRow.Add(deleteButton);
-            
+
             headerRow.Add(foldout);
             headerRow.Add(titleLabel);
             headerRow.Add(summaryLabel);
             headerRow.Add(buttonRow);
-            
+
             item.Add(headerRow);
-            
-            // 详情容器（在 Inspector 中编辑）
+
             var detailsContainer = new PropertyField { name = "step-details" };
             detailsContainer.AddToClassList("step-details");
             item.Add(detailsContainer);
-            
-            // 默认隐藏详情
+
             detailsContainer.style.display = DisplayStyle.None;
-            
-            // Foldout 折叠/展开控制
-            foldout.RegisterValueChangedCallback(evt => 
+
+            foldout.RegisterValueChangedCallback(evt =>
             {
                 detailsContainer.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
             });
-            
+
             return item;
         }
 
         private void BindStepItem(VisualElement element, int index)
         {
             Log($"BindStepItem index: {index}");
-            
+
             if (stepsProperty == null || index < 0 || index >= stepsProperty.arraySize) return;
-            
+
             var stepProperty = stepsProperty.GetArrayElementAtIndex(index);
             element.userData = stepProperty;
-            
+
             var typeProp = stepProperty.FindPropertyRelative("Type");
             var isEnabledProp = stepProperty.FindPropertyRelative("IsEnabled");
             var durationProp = stepProperty.FindPropertyRelative("Duration");
             var easeProp = stepProperty.FindPropertyRelative("Ease");
             var targetTransformProp = stepProperty.FindPropertyRelative("TargetTransform");
-            
+
             var type = (TweenStepType)typeProp.enumValueIndex;
-            
-            // 更新标题 - 显示目标物体名称和类型
+
+            // 更新标题
             var titleLabel = element.Q<Label>("step-title");
             if (titleLabel != null)
             {
@@ -563,7 +526,7 @@ namespace CNoom.DOTweenVisual.Editor
                 }
                 titleLabel.text = $"{index + 1}. [{targetName}] {GetStepDisplayName(type)}";
             }
-            
+
             // 更新摘要
             var summaryLabel = element.Q<Label>("step-summary");
             if (summaryLabel != null)
@@ -571,45 +534,41 @@ namespace CNoom.DOTweenVisual.Editor
                 var ease = (Ease)easeProp.enumValueIndex;
                 summaryLabel.text = $"{durationProp.floatValue:F1}s | {ease}";
             }
-            
+
             // 更新启用状态
             var enableToggle = element.Q<Toggle>("enable-toggle");
             if (enableToggle != null)
             {
                 enableToggle.SetValueWithoutNotify(isEnabledProp.boolValue);
             }
-            
+
             // 绑定详情
             var detailsField = element.Q<PropertyField>("step-details");
             if (detailsField != null)
             {
                 detailsField.BindProperty(stepProperty);
             }
-            
-            // 监听属性变化，刷新标题和摘要
+
+            // 监听属性变化
             element.TrackPropertyValue(typeProp, _ => UpdateStepTitle(element, index));
             element.TrackPropertyValue(targetTransformProp, _ => UpdateStepTitle(element, index));
             element.TrackPropertyValue(durationProp, _ => UpdateStepTitle(element, index));
             element.TrackPropertyValue(easeProp, _ => UpdateStepTitle(element, index));
         }
-        
-        /// <summary>
-        /// 更新步骤标题显示
-        /// </summary>
+
         private void UpdateStepTitle(VisualElement element, int index)
         {
             if (stepsProperty == null || index < 0 || index >= stepsProperty.arraySize) return;
-            
-            // 刷新数据
+
             serializedObject?.Update();
-            
+
             var stepProperty = stepsProperty.GetArrayElementAtIndex(index);
             var typeProp = stepProperty.FindPropertyRelative("Type");
             var targetTransformProp = stepProperty.FindPropertyRelative("TargetTransform");
-            
+
             var type = (TweenStepType)typeProp.enumValueIndex;
             var titleLabel = element.Q<Label>("step-title");
-            
+
             if (titleLabel != null)
             {
                 string targetName = "未指定";
@@ -619,8 +578,7 @@ namespace CNoom.DOTweenVisual.Editor
                 }
                 titleLabel.text = $"{index + 1}. [{targetName}] {GetStepDisplayName(type)}";
             }
-            
-            // 同时更新摘要
+
             var durationProp = stepProperty.FindPropertyRelative("Duration");
             var easeProp = stepProperty.FindPropertyRelative("Ease");
             var summaryLabel = element.Q<Label>("step-summary");
@@ -634,26 +592,22 @@ namespace CNoom.DOTweenVisual.Editor
         private int FindPropertyIndex(SerializedProperty arrayProperty, SerializedProperty elementProperty)
         {
             if (arrayProperty == null || elementProperty == null) return -1;
-            
-            // 优化：从 propertyPath 中提取索引，避免 O(n) 遍历
-            // propertyPath 格式为 "_steps.Array.data[INDEX].xxx"
-            const string prefix = "_steps.Array.data[";
+
+            // 优化：从 propertyPath 提取索引 O(1)
+            // 格式: _steps.Array.data[N]
             string path = elementProperty.propertyPath;
-            
-            if (path.StartsWith(prefix))
+            string arrayPath = arrayProperty.propertyPath;
+            if (path.StartsWith(arrayPath + ".Array.data["))
             {
-                int closeBracket = path.IndexOf(']', prefix.Length);
-                if (closeBracket > prefix.Length)
+                int start = arrayPath.Length + ".Array.data[".Length;
+                int end = path.IndexOf(']', start);
+                if (end > start && int.TryParse(path.Substring(start, end - start), out int idx))
                 {
-                    string indexStr = path.Substring(prefix.Length, closeBracket - prefix.Length);
-                    if (int.TryParse(indexStr, out int index) && index >= 0 && index < arrayProperty.arraySize)
-                    {
-                        return index;
-                    }
+                    return idx;
                 }
             }
-            
-            // 回退：路径格式不匹配时使用遍历
+
+            // 回退：遍历查找 O(n)
             for (int i = 0; i < arrayProperty.arraySize; i++)
             {
                 var item = arrayProperty.GetArrayElementAtIndex(i);
@@ -672,9 +626,10 @@ namespace CNoom.DOTweenVisual.Editor
                 TweenStepType.Move => "Move",
                 TweenStepType.Rotate => "Rotate",
                 TweenStepType.Scale => "Scale",
+                TweenStepType.Color => "Color",
+                TweenStepType.Fade => "Fade",
                 TweenStepType.Delay => "Delay",
                 TweenStepType.Callback => "Callback",
-                TweenStepType.Property => "Property",
                 _ => type.ToString()
             };
         }
@@ -686,12 +641,15 @@ namespace CNoom.DOTweenVisual.Editor
         private void BuildAddStepMenu()
         {
             if (addStepMenu == null) return;
-            
+
             addStepMenu.menu.AppendAction("Transform/Move (Position)", _ => AddStep(TweenStepType.Move, TransformTarget.Position));
             addStepMenu.menu.AppendAction("Transform/Move (LocalPosition)", _ => AddStep(TweenStepType.Move, TransformTarget.LocalPosition));
             addStepMenu.menu.AppendAction("Transform/Rotate (Rotation)", _ => AddStep(TweenStepType.Rotate, TransformTarget.Rotation));
             addStepMenu.menu.AppendAction("Transform/Rotate (LocalRotation)", _ => AddStep(TweenStepType.Rotate, TransformTarget.LocalRotation));
             addStepMenu.menu.AppendAction("Transform/Scale", _ => AddStep(TweenStepType.Scale, TransformTarget.Scale));
+            addStepMenu.menu.AppendSeparator();
+            addStepMenu.menu.AppendAction("Visual/Color", _ => AddStep(TweenStepType.Color));
+            addStepMenu.menu.AppendAction("Visual/Fade", _ => AddStep(TweenStepType.Fade));
             addStepMenu.menu.AppendSeparator();
             addStepMenu.menu.AppendAction("Other/Delay", _ => AddStep(TweenStepType.Delay));
             addStepMenu.menu.AppendAction("Other/Callback", _ => AddStep(TweenStepType.Callback));
@@ -704,17 +662,29 @@ namespace CNoom.DOTweenVisual.Editor
                 Debug.LogWarning("请先选择一个 DOTweenVisualPlayer 组件");
                 return;
             }
-            
+
             stepsProperty.InsertArrayElementAtIndex(stepsProperty.arraySize);
             var newStep = stepsProperty.GetArrayElementAtIndex(stepsProperty.arraySize - 1);
-            
+
             newStep.FindPropertyRelative("Type").enumValueIndex = (int)type;
             newStep.FindPropertyRelative("IsEnabled").boolValue = true;
             newStep.FindPropertyRelative("Duration").floatValue = 1f;
             newStep.FindPropertyRelative("Delay").floatValue = 0f;
             newStep.FindPropertyRelative("Ease").enumValueIndex = (int)Ease.OutQuad;
             newStep.FindPropertyRelative("TransformTarget").enumValueIndex = (int)transformTarget;
-            
+
+            // 根据类型设置默认值
+            switch (type)
+            {
+                case TweenStepType.Color:
+                    newStep.FindPropertyRelative("TargetColor").colorValue = Color.white;
+                    break;
+                case TweenStepType.Fade:
+                    newStep.FindPropertyRelative("TargetFloat").floatValue = 0f;
+                    newStep.FindPropertyRelative("StartFloat").floatValue = 1f;
+                    break;
+            }
+
             stepsProperty.serializedObject.ApplyModifiedProperties();
             RefreshStepList();
         }
@@ -729,30 +699,23 @@ namespace CNoom.DOTweenVisual.Editor
 
             if (previewState == PreviewState.Playing)
             {
-                // 正在播放 → 暂停
                 PausePreview();
             }
             else if (previewState == PreviewState.Paused)
             {
-                // 已暂停 → 继续
                 ResumePreview();
             }
             else if (previewState == PreviewState.None)
             {
-                // 未播放 → 开始预览
                 StartPreview();
             }
-            // Completed 状态不响应，由重播按钮处理
         }
 
         private void OnReplayClicked()
         {
             if (targetPlayer == null) return;
 
-            // 恢复初始状态
             RestoreInitialStates();
-
-            // 重新开始预览
             StartPreview();
         }
 
@@ -765,7 +728,6 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (targetPlayer == null) return;
 
-            // 清理预览序列和编辑器预览模式
             if (previewSequence != null)
             {
                 previewSequence.Kill();
@@ -775,7 +737,6 @@ namespace CNoom.DOTweenVisual.Editor
 
             RestoreInitialStates();
 
-            // 重置后清除状态，下次预览会重新保存初始状态
             previewState = PreviewState.None;
             initialStates.Clear();
             UpdateButtonStates();
@@ -789,7 +750,6 @@ namespace CNoom.DOTweenVisual.Editor
 
             Log("StartPreview");
 
-            // 清理旧序列
             if (previewSequence != null)
             {
                 previewSequence.Kill();
@@ -797,38 +757,29 @@ namespace CNoom.DOTweenVisual.Editor
             }
             DOTweenEditorPreview.Stop();
 
-            // 如果已有初始状态（播放完成后重新预览），先恢复初始状态
             if (initialStates.Count > 0)
             {
                 RestoreInitialStates();
             }
             else
             {
-                // 首次预览，保存初始状态
                 SaveInitialStates();
             }
 
-            // 启动编辑器预览模式
             DOTweenEditorPreview.Start();
 
             try
             {
-                // 创建预览序列
                 previewSequence = DOTween.Sequence();
 
-                // 构建预览序列
                 BuildPreviewSequence();
 
-                // 调试：检查序列状态
                 Log($"Preview sequence created, duration: {previewSequence.Duration()}");
 
-                // 为编辑器预览准备 Tween（必须在设置 OnComplete 之前调用）
                 DOTweenEditorPreview.PrepareTweenForPreview(previewSequence);
 
-                // 播放完成后设置状态（必须在 PrepareTweenForPreview 之后调用）
                 previewSequence.OnComplete(() =>
                 {
-                    // 窗口可能已在回调触发前被关闭
                     if (this == null) return;
                     Log("Preview completed");
                     previewState = PreviewState.Completed;
@@ -843,7 +794,6 @@ namespace CNoom.DOTweenVisual.Editor
             }
             catch (Exception e)
             {
-                // 异常时确保清理编辑器预览状态
                 Debug.LogError($"[DOTweenVisualEditor] 预览启动失败: {e.Message}");
                 DOTweenEditorPreview.Stop();
                 if (previewSequence != null)
@@ -891,53 +841,30 @@ namespace CNoom.DOTweenVisual.Editor
                 previewSequence = null;
             }
 
-            // 停止编辑器预览模式
             DOTweenEditorPreview.Stop();
 
-            // 停止后设置为 Completed 状态，保留初始状态供用户重置
             previewState = PreviewState.Completed;
             UpdateButtonStates();
         }
 
-        /// <summary>
-        /// 更新按钮状态，防止误触
-        /// </summary>
         private void UpdateButtonStates()
         {
-            // 目标物体是否存在
             bool hasTarget = targetPlayer != null;
-
-            // 步骤是否存在
             bool hasSteps = hasTarget && targetPlayer.StepCount > 0;
-
-            // 是否在预览中（播放或暂停）
             bool inPreview = isPreviewing || isPaused;
-
-            // 是否已播放完成
             bool isCompleted = previewState == PreviewState.Completed;
 
-            // --- 预览按钮 ---
-            // 仅在 None/Playing/Paused 状态启用
             previewButton.SetEnabled(hasSteps && !isCompleted);
             previewButton.text = isPreviewing ? "暂停" : (isPaused ? "继续" : "预览");
 
-            // --- 停止按钮 ---
-            // 仅在预览过程中（播放或暂停）启用
             stopButton.SetEnabled(inPreview);
 
-            // --- 重播按钮 ---
-            // 仅在播放完成后启用
             replayButton.SetEnabled(hasSteps && isCompleted);
 
-            // --- 重置按钮 ---
-            // 仅在播放完成后启用
             resetButton.SetEnabled(isCompleted);
 
-            // --- 添加步骤菜单 ---
-            // 预览过程中禁用，避免数据不一致
             addStepMenu.SetEnabled(hasTarget && !inPreview);
 
-            // --- 更新状态栏 ---
             UpdateStatusBar();
         }
 
@@ -968,10 +895,8 @@ namespace CNoom.DOTweenVisual.Editor
         {
             initialStates.Clear();
 
-            // 保存主物体状态
             SaveTransformState(targetPlayer.transform);
 
-            // 保存所有步骤中涉及的物体状态
             foreach (var step in targetPlayer.Steps)
             {
                 if (step.TargetTransform != null)
@@ -986,13 +911,32 @@ namespace CNoom.DOTweenVisual.Editor
             if (t == null) return;
             if (!initialStates.ContainsKey(t))
             {
+                // 尝试保存颜色和透明度
+                Color color = Color.white;
+                float alpha = 1f;
+
+                var renderer = t.GetComponent<Renderer>();
+                if (renderer != null && renderer.material != null)
+                {
+                    color = renderer.material.color;
+                    alpha = renderer.material.color.a;
+                }
+
+                var canvasGroup = t.GetComponent<CanvasGroup>();
+                if (canvasGroup != null)
+                {
+                    alpha = canvasGroup.alpha;
+                }
+
                 initialStates[t] = new TransformState
                 {
                     position = t.position,
                     rotation = t.rotation,
                     localPosition = t.localPosition,
                     localRotation = t.localRotation,
-                    localScale = t.localScale
+                    localScale = t.localScale,
+                    color = color,
+                    alpha = alpha
                 };
             }
         }
@@ -1006,8 +950,6 @@ namespace CNoom.DOTweenVisual.Editor
                 var t = kvp.Key;
                 var state = kvp.Value;
 
-                // Unity 中被 Destroy 的对象 != null 为 false，但访问会抛异常
-                // 使用 gameObject 检测是否真正存活
                 try
                 {
                     if (t != null && t.gameObject != null)
@@ -1018,6 +960,20 @@ namespace CNoom.DOTweenVisual.Editor
                         t.localPosition = state.localPosition;
                         t.localRotation = state.localRotation;
                         t.localScale = state.localScale;
+
+                        // 恢复颜色
+                        var renderer = t.GetComponent<Renderer>();
+                        if (renderer != null && renderer.material != null)
+                        {
+                            renderer.material.color = state.color;
+                        }
+
+                        // 恢复透明度
+                        var canvasGroup = t.GetComponent<CanvasGroup>();
+                        if (canvasGroup != null)
+                        {
+                            canvasGroup.alpha = state.alpha;
+                        }
                     }
                     else
                     {
@@ -1030,7 +986,6 @@ namespace CNoom.DOTweenVisual.Editor
                 }
             }
 
-            // 移除已销毁的 Transform
             foreach (var key in keysToRemove)
             {
                 initialStates.Remove(key);
@@ -1043,7 +998,7 @@ namespace CNoom.DOTweenVisual.Editor
         private void BuildPreviewSequence()
         {
             Log($"BuildPreviewSequence: step count = {targetPlayer.StepCount}");
-            
+
             int addedCount = 0;
             foreach (var step in targetPlayer.Steps)
             {
@@ -1052,42 +1007,42 @@ namespace CNoom.DOTweenVisual.Editor
                     Log($"Step skipped (disabled)");
                     continue;
                 }
-                
+
                 AppendStepToPreview(step);
                 addedCount++;
             }
-            
+
             Log($"Added {addedCount} steps to preview sequence");
         }
 
         private void AppendStepToPreview(TweenStepData step)
         {
-            // 保护 Duration 最小值，避免 DOTween 行为未定义
-            step.Duration = Mathf.Max(0.001f, step.Duration);
-            
             var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
-            if (target == null)
-            {
-                Log($"Warning: target is null for {step.Type}, skipping");
-                return;
-            }
-            Log($"AppendStep: {step.Type} | Target: {target.name} | Value: {step.TargetValue} | Duration: {step.Duration}");
-            
+            if (target == null) return;
+
+            Log($"AppendStep: {step.Type} | Target: {target.name} | Duration: {step.Duration}");
+
             Tweener tweener = null;
 
             switch (step.Type)
             {
                 case TweenStepType.Move:
-                    tweener = CreateMoveTween(step);
+                    tweener = CreatePreviewMoveTween(step, target);
                     break;
                 case TweenStepType.Rotate:
-                    tweener = CreateRotateTween(step);
+                    tweener = CreatePreviewRotateTween(step, target);
                     break;
                 case TweenStepType.Scale:
-                    tweener = CreateScaleTween(step);
+                    tweener = CreatePreviewScaleTween(step, target);
+                    break;
+                case TweenStepType.Color:
+                    tweener = CreatePreviewColorTween(step, target);
+                    break;
+                case TweenStepType.Fade:
+                    tweener = CreatePreviewFadeTween(step, target);
                     break;
                 case TweenStepType.Delay:
-                    previewSequence.AppendInterval(step.Duration);
+                    previewSequence.AppendInterval(Mathf.Max(0.001f, step.Duration));
                     return;
                 case TweenStepType.Callback:
                     var onComplete = step.OnComplete;
@@ -1124,74 +1079,149 @@ namespace CNoom.DOTweenVisual.Editor
                     previewSequence.Insert(Mathf.Max(0f, step.InsertTime), tweener);
                     break;
             }
-            
+
             Log($"Tweener added to sequence");
         }
 
-        private Tweener CreateMoveTween(TweenStepData step)
+        #region Preview Tween 创建
+
+        private Tweener CreatePreviewMoveTween(TweenStepData step, Transform target)
         {
-            var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
-            Tweener tweener = null;
+            // 应用起始值
+            if (step.UseStartValue)
+            {
+                switch (step.TransformTarget)
+                {
+                    case TransformTarget.Position:
+                        target.position = step.StartVector;
+                        break;
+                    case TransformTarget.LocalPosition:
+                        target.localPosition = step.StartVector;
+                        break;
+                }
+            }
+
+            float duration = Mathf.Max(0.001f, step.Duration);
 
             switch (step.TransformTarget)
             {
-                case TransformTarget.Position:
-                    tweener = target.DOMove(step.TargetValue, step.Duration);
-                    break;
                 case TransformTarget.LocalPosition:
-                    tweener = target.DOLocalMove(step.TargetValue, step.Duration);
-                    break;
+                    return step.IsRelative
+                        ? target.DOLocalMove(step.TargetVector, duration).From(isRelative: true)
+                        : target.DOLocalMove(step.TargetVector, duration);
                 default:
-                    tweener = target.DOMove(step.TargetValue, step.Duration);
-                    break;
+                    return step.IsRelative
+                        ? target.DOMove(step.TargetVector, duration).From(isRelative: true)
+                        : target.DOMove(step.TargetVector, duration);
             }
-
-            if (step.IsRelative)
-            {
-                tweener.SetRelative(true);
-            }
-
-            return tweener;
         }
 
-        private Tweener CreateRotateTween(TweenStepData step)
+        private Tweener CreatePreviewRotateTween(TweenStepData step, Transform target)
         {
-            var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
-            Tweener tweener = null;
+            // 旋转使用四元数插值
+            Quaternion startQuat;
+            Quaternion targetQuat;
 
-            switch (step.TransformTarget)
+            if (step.UseStartValue)
             {
-                case TransformTarget.Rotation:
-                    tweener = target.DORotate(step.TargetValue, step.Duration);
-                    break;
-                case TransformTarget.LocalRotation:
-                    tweener = target.DOLocalRotate(step.TargetValue, step.Duration);
-                    break;
-                default:
-                    tweener = target.DORotate(step.TargetValue, step.Duration);
-                    break;
+                startQuat = Quaternion.Euler(step.StartVector);
+                switch (step.TransformTarget)
+                {
+                    case TransformTarget.Rotation:
+                        target.rotation = startQuat;
+                        break;
+                    case TransformTarget.LocalRotation:
+                        target.localRotation = startQuat;
+                        break;
+                }
+            }
+            else
+            {
+                startQuat = step.TransformTarget == TransformTarget.LocalRotation
+                    ? target.localRotation
+                    : target.rotation;
             }
 
-            if (step.IsRelative)
-            {
-                tweener.SetRelative(true);
-            }
+            targetQuat = Quaternion.Euler(step.TargetVector);
+            float duration = Mathf.Max(0.001f, step.Duration);
 
-            return tweener;
+            if (step.TransformTarget == TransformTarget.LocalRotation)
+            {
+                return step.IsRelative
+                    ? target.DOLocalRotateQuaternion(startQuat * targetQuat, duration)
+                    : target.DOLocalRotateQuaternion(targetQuat, duration);
+            }
+            else
+            {
+                return step.IsRelative
+                    ? target.DORotateQuaternion(startQuat * targetQuat, duration)
+                    : target.DORotateQuaternion(targetQuat, duration);
+            }
         }
 
-        private Tweener CreateScaleTween(TweenStepData step)
+        private Tweener CreatePreviewScaleTween(TweenStepData step, Transform target)
         {
-            var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
-            var tweener = target.DOScale(step.TargetValue, step.Duration);
-
-            if (step.IsRelative)
+            if (step.UseStartValue)
             {
-                tweener.SetRelative(true);
+                target.localScale = step.StartVector;
             }
 
-            return tweener;
+            float duration = Mathf.Max(0.001f, step.Duration);
+
+            return step.IsRelative
+                ? target.DOScale(step.TargetVector, duration).From(isRelative: true)
+                : target.DOScale(step.TargetVector, duration);
         }
+
+        private Tweener CreatePreviewColorTween(TweenStepData step, Transform target)
+        {
+            var renderer = target.GetComponent<Renderer>();
+            if (renderer == null || renderer.material == null)
+            {
+                Debug.LogWarning("[DOTweenVisualEditor] 目标物体没有 Renderer，无法预览颜色动画");
+                return null;
+            }
+
+            if (step.UseStartColor)
+            {
+                renderer.material.color = step.StartColor;
+            }
+
+            float duration = Mathf.Max(0.001f, step.Duration);
+            return renderer.material.DOColor(step.TargetColor, duration);
+        }
+
+        private Tweener CreatePreviewFadeTween(TweenStepData step, Transform target)
+        {
+            float duration = Mathf.Max(0.001f, step.Duration);
+
+            var canvasGroup = target.GetComponent<CanvasGroup>();
+            if (canvasGroup != null)
+            {
+                if (step.UseStartFloat)
+                {
+                    canvasGroup.alpha = step.StartFloat;
+                }
+                return canvasGroup.DOFade(step.TargetFloat, duration);
+            }
+
+            var renderer = target.GetComponent<Renderer>();
+            if (renderer != null && renderer.material != null)
+            {
+                if (step.UseStartFloat)
+                {
+                    Color c = renderer.material.color;
+                    c.a = step.StartFloat;
+                    renderer.material.color = c;
+                }
+                return renderer.material.DOFade(step.TargetFloat, duration);
+            }
+
+            Debug.LogWarning("[DOTweenVisualEditor] 目标物体没有 CanvasGroup 或 Renderer，无法预览透明度动画");
+            return null;
+        }
+
+        #endregion
 
         #endregion
 

@@ -9,9 +9,9 @@ namespace CNoom.DOTweenVisual.Data
         Position,
         /// <summary>本地坐标位置</summary>
         LocalPosition,
-        /// <summary>世界旋转（欧拉角）</summary>
+        /// <summary>世界旋转（四元数插值，编辑器以欧拉角显示）</summary>
         Rotation,
-        /// <summary>本地旋转（欧拉角）</summary>
+        /// <summary>本地旋转（四元数插值，编辑器以欧拉角显示）</summary>
         LocalRotation,
         /// <summary>缩放</summary>
         Scale
