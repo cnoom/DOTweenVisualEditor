@@ -2,7 +2,8 @@
   "name": "CNoom.DOTweenVisual.Editor",
   "rootNamespace": "CNoom.DOTweenVisual.Editor",
   "references": [
-    "CNoom.DOTweenVisual.Runtime"
+    "CNoom.DOTweenVisual.Runtime",
+    "DOTween.Modules"
   ],
   "includePlatforms": [
     "Editor"
