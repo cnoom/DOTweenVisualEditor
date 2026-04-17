@@ -541,8 +541,14 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnStepReordered(int oldIndex, int newIndex)
         {
             if (stepsProperty == null) return;
+            // 先解绑，避免绑定系统与手动修改冲突
+            stepListView.Unbind();
             stepsProperty.MoveArrayElement(oldIndex, newIndex);
             stepsProperty.serializedObject.ApplyModifiedProperties();
+            // 重新绑定
+            stepListView.BindProperty(stepsProperty);
+            // 排序后刷新详情面板
+            RefreshDetailPanel();
         }
 
         private void RefreshDetailPanel()
