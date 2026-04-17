@@ -1,7 +1,9 @@
 {
   "name": "CNoom.DOTweenVisual.Runtime",
   "rootNamespace": "CNoom.DOTweenVisual",
-  "references": [],
+  "references": [
+    "DOTween"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
