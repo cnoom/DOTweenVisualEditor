@@ -12,7 +12,21 @@ namespace CNoom.DOTweenVisual.Adapter
     public class DOTweenAdapter : IDOTweenAdapter
     {
         private static DOTweenAdapter _instance;
-        public static DOTweenAdapter Instance => _instance ??= new DOTweenAdapter();
+        private static readonly object _lock = new();
+        public static DOTweenAdapter Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    lock (_lock)
+                    {
+                        _instance ??= new DOTweenAdapter();
+                    }
+                }
+                return _instance;
+            }
+        }
 
         private bool _initialized;
 

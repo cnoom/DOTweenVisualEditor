@@ -75,14 +75,18 @@ namespace CNoom.DOTweenVisual.Components
 
         private void OnDestroy()
         {
-            KillSequence();
-            // OnDestroy 时 DOTween 可能已清理，确保状态一致
+            // 先标记非播放状态，防止 OnDisable 中 Pause 访问已销毁的 Sequence
             _isPlaying = false;
+            KillSequence();
         }
 
         private void OnDisable()
         {
-            Pause();
+            // 仅在存活期间暂停，避免 Destroy 时访问已 Kill 的 Sequence
+            if (_currentSequence != null && _isPlaying)
+            {
+                Pause();
+            }
         }
 
         #endregion

@@ -366,6 +366,9 @@ namespace CNoom.DOTweenVisual.Editor
             
             if (stepListView == null) return;
             
+            // 先断开旧绑定，避免 BindProperty 时虚拟化控制器访问旧数据
+            stepListView.Unbind();
+            
             // 清除选中状态，避免切换目标时索引越界
             stepListView.selectedIndex = -1;
             
@@ -388,7 +391,6 @@ namespace CNoom.DOTweenVisual.Editor
             else
             {
                 Log("Unbinding and clearing list");
-                stepListView.Unbind();
                 stepListView.itemsSource = System.Array.Empty<object>();
             }
             
@@ -626,6 +628,25 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (arrayProperty == null || elementProperty == null) return -1;
             
+            // 优化：从 propertyPath 中提取索引，避免 O(n) 遍历
+            // propertyPath 格式为 "_steps.Array.data[INDEX].xxx"
+            const string prefix = "_steps.Array.data[";
+            string path = elementProperty.propertyPath;
+            
+            if (path.StartsWith(prefix))
+            {
+                int closeBracket = path.IndexOf(']', prefix.Length);
+                if (closeBracket > prefix.Length)
+                {
+                    string indexStr = path.Substring(prefix.Length, closeBracket - prefix.Length);
+                    if (int.TryParse(indexStr, out int index) && index >= 0 && index < arrayProperty.arraySize)
+                    {
+                        return index;
+                    }
+                }
+            }
+            
+            // 回退：路径格式不匹配时使用遍历
             for (int i = 0; i < arrayProperty.arraySize; i++)
             {
                 var item = arrayProperty.GetArrayElementAtIndex(i);
