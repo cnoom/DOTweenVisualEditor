@@ -9,6 +9,7 @@ using DG.DOTweenEditor;
 using UnityEditor.Compilation;
 using CNoom.DOTweenVisual.Components;
 using CNoom.DOTweenVisual.Data;
+using UnityEditor.UIElements;
 
 namespace CNoom.DOTweenVisual.Editor
 {
