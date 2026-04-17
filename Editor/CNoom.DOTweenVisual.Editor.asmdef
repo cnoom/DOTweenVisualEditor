@@ -2,17 +2,17 @@
   "name": "CNoom.DOTweenVisual.Editor",
   "rootNamespace": "CNoom.DOTweenVisual.Editor",
   "references": [
-    "CNoom.DOTweenVisual.Runtime",
-    "DOTween",
-    "DOTweenEditor"
+    "CNoom.DOTweenVisual.Runtime"
   ],
   "includePlatforms": [
     "Editor"
   ],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "DOTween.dll"
+  ],
   "autoReferenced": true,
   "defineConstraints": [],
   "versionDefines": [],
