@@ -132,6 +132,13 @@ namespace CNoom.DOTweenVisual.Editor
             EditorApplication.update -= OnEditorUpdate;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             StopPreview();
+            
+            // 清理 UI 元素，释放所有事件回调订阅
+            // （targetField、foldout、enableToggle 等的 RegisterValueChangedCallback）
+            if (rootVisualElement != null)
+            {
+                rootVisualElement.Clear();
+            }
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)

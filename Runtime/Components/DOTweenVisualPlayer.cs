@@ -328,13 +328,6 @@ namespace CNoom.DOTweenVisual.Components
                     _currentSequence.Insert(step.InsertTime, tweener);
                     break;
             }
-
-            // 完成回调，捕获局部引用避免闭包问题
-            var stepOnComplete = step.OnComplete;
-            if (stepOnComplete != null && stepOnComplete.GetPersistentEventCount() > 0)
-            {
-                tweener.OnComplete(() => stepOnComplete?.Invoke());
-            }
         }
 
         private Tweener CreateMoveTween(TweenStepData step)
