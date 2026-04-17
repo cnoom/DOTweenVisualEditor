@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -15,8 +16,8 @@ namespace CNoom.DOTweenVisual.Editor
 {
     /// <summary>
     /// DOTween 可视化编辑器主窗口
-    /// 布局：顶部工具栏+状态栏 | 左侧步骤概览(ScrollView) | 右侧步骤详情
-    /// 不使用 ListView，纯 ScrollView 手动管理，避免虚拟化/绑定/排序 bug
+    /// 布局：顶部工具栏+状态栏 | 左侧步骤概览(ListView) | 右侧步骤详情
+    /// 使用 ListView 实现步骤列表，内置拖拽排序和选择管理
     /// </summary>
     [InitializeOnLoad]
     public class DOTweenVisualEditorWindow : EditorWindow
@@ -45,7 +46,7 @@ namespace CNoom.DOTweenVisual.Editor
 
         #region 常量
 
-        private const string USS_PATH = "Assets/Plugins/DOTweenVisualEditor/Editor/USS/DOTweenVisualEditor.uss";
+        private const string USS_PATH = "Assets/Plugins/DoTweenVisualEditor/Editor/USS/DOTweenVisualEditor.uss";
         private const bool DEBUG_MODE = false;
         private const float LeftPanelMinWidth = 220f;
 
@@ -65,13 +66,9 @@ namespace CNoom.DOTweenVisual.Editor
         private Label stateLabel;
         private Label timeLabel;
 
-        // 左侧概览 - 纯 ScrollView，不用 ListView
-        private ScrollView stepScrollView;
+        // 左侧概览
+        private ListView stepListView;
         private int selectedStepIndex = -1;
-
-        // 排序按钮
-        private Button moveUpButton;
-        private Button moveDownButton;
 
         // 右侧详情
         private VisualElement detailPanel;
@@ -302,25 +299,26 @@ namespace CNoom.DOTweenVisual.Editor
             leftHeader.Add(addStepMenu);
             leftPanel.Add(leftHeader);
 
-            // 纯 ScrollView 替代 ListView
-            stepScrollView = new ScrollView(ScrollViewMode.Vertical);
-            stepScrollView.AddToClassList("step-scroll");
-            stepScrollView.style.flexGrow = 1;
-            leftPanel.Add(stepScrollView);
-
-            // 排序按钮栏
-            var reorderBar = new VisualElement();
-            reorderBar.AddToClassList("reorder-bar");
-
-            moveUpButton = new Button(MoveStepUp) { text = "▲ 上移" };
-            moveUpButton.AddToClassList("reorder-button");
-            reorderBar.Add(moveUpButton);
-
-            moveDownButton = new Button(MoveStepDown) { text = "▼ 下移" };
-            moveDownButton.AddToClassList("reorder-button");
-            reorderBar.Add(moveDownButton);
-
-            leftPanel.Add(reorderBar);
+            // ListView 步骤列表
+            stepListView = new ListView
+            {
+                selectionType = SelectionType.Single,
+                reorderable = true,
+                showAddRemoveFooter = false,
+                showBorder = false,
+                showFoldoutHeader = false,
+                virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight,
+            };
+            stepListView.AddToClassList("step-list");
+            stepListView.style.flexGrow = 1;
+            stepListView.makeItem = MakeStepItem;
+            stepListView.bindItem = BindStepItem;
+            stepListView.unbindItem = UnbindStepItem;
+            stepListView.destroyItem = DestroyStepItem;
+            stepListView.itemsRemoved += OnStepsRemoved;
+            stepListView.itemIndexChanged += OnStepIndexChanged;
+            stepListView.selectionChanged += OnStepSelectionChanged;
+            leftPanel.Add(stepListView);
 
             splitView.Add(leftPanel);
 
@@ -364,47 +362,116 @@ namespace CNoom.DOTweenVisual.Editor
 
         #endregion
 
-        #region 步骤列表 - 纯 ScrollView 手动管理
+        #region 步骤列表 - ListView
 
         /// <summary>
-        /// 完全重建步骤列表（从 SerializedProperty 读取）
+        /// 刷新列表数据源（重新绑定 SerializedProperty）
         /// </summary>
         private void RebuildStepList()
         {
-            if (stepScrollView == null) return;
-
-            // 清空所有旧元素
-            stepScrollView.Clear();
+            if (stepListView == null) return;
 
             if (stepsProperty == null || serializedObject == null)
             {
                 selectedStepIndex = -1;
-                UpdateReorderButtons();
+                stepListView.itemsSource = null;
                 return;
             }
 
             serializedObject.Update();
-            int count = stepsProperty.arraySize;
 
-            for (int i = 0; i < count; i++)
-            {
-                var item = CreateStepItem(i);
-                stepScrollView.Add(item);
-            }
+            // 使用 SerializedProperty 作为数据源
+            stepListView.itemsSource = new SerializedPropertyArray(stepsProperty);
+            stepListView.Rebuild();
 
-            // 确保 selectedStepIndex 合法
-            if (selectedStepIndex >= count) selectedStepIndex = -1;
-            if (selectedStepIndex >= 0) HighlightStepItem(selectedStepIndex);
+            // 恢复选中状态
+            if (selectedStepIndex >= stepsProperty.arraySize) selectedStepIndex = -1;
+            if (selectedStepIndex >= 0)
+                stepListView.SetSelection(selectedStepIndex);
+            else
+                stepListView.ClearSelection();
 
-            UpdateReorderButtons();
             UpdateButtonStates();
         }
 
         /// <summary>
-        /// 创建单个步骤行
+        /// 创建步骤行模板（可复用）
         /// </summary>
-        private VisualElement CreateStepItem(int index)
+        private VisualElement MakeStepItem()
         {
+            var item = new VisualElement();
+            item.AddToClassList("step-item");
+
+            var row = new VisualElement();
+            row.AddToClassList("step-row");
+
+            // 启用开关
+            var enableToggle = new Toggle();
+            enableToggle.AddToClassList("step-enable-toggle");
+            enableToggle.RegisterValueChangedCallback(evt =>
+            {
+                var data = item.userData as StepItemData;
+                if (data == null || data.Property == null) return;
+                var prop = data.Property;
+                int idx = data.OriginalIndex;
+                if (stepsProperty == null || idx < 0 || idx >= stepsProperty.arraySize) return;
+                var targetProp = stepsProperty.GetArrayElementAtIndex(idx);
+                targetProp.FindPropertyRelative("IsEnabled").boolValue = evt.newValue;
+                targetProp.serializedObject.ApplyModifiedProperties();
+                item.EnableInClassList("step-disabled", !evt.newValue);
+            });
+            enableToggle.RegisterCallback<ClickEvent>(e => e.StopPropagation());
+            row.Add(enableToggle);
+
+            // 标题
+            var titleLabel = new Label();
+            titleLabel.AddToClassList("step-title");
+            row.Add(titleLabel);
+
+            // 删除按钮
+            var deleteButton = new Button { text = "✕" };
+            deleteButton.AddToClassList("step-delete-button");
+            deleteButton.RegisterCallback<ClickEvent>(e =>
+            {
+                var data = item.userData as StepItemData;
+                if (data == null || data.Property == null) return;
+                int idx = data.OriginalIndex;
+                if (stepsProperty == null || idx < 0 || idx >= stepsProperty.arraySize) return;
+
+                stepsProperty.DeleteArrayElementAtIndex(idx);
+                stepsProperty.serializedObject.ApplyModifiedProperties();
+
+                if (selectedStepIndex == idx)
+                    selectedStepIndex = -1;
+                else if (selectedStepIndex > idx)
+                    selectedStepIndex--;
+
+                RebuildStepList();
+                RefreshDetailPanel();
+                e.StopPropagation();
+            });
+            row.Add(deleteButton);
+
+            item.Add(row);
+
+            // 摘要行
+            var summaryRow = new VisualElement();
+            summaryRow.AddToClassList("step-summary-row");
+            var summaryLabel = new Label();
+            summaryLabel.AddToClassList("step-summary");
+            summaryRow.Add(summaryLabel);
+            item.Add(summaryRow);
+
+            return item;
+        }
+
+        /// <summary>
+        /// 绑定数据到步骤行
+        /// </summary>
+        private void BindStepItem(VisualElement element, int index)
+        {
+            if (stepsProperty == null || index < 0 || index >= stepsProperty.arraySize) return;
+
             var stepProperty = stepsProperty.GetArrayElementAtIndex(index);
             var typeProp = stepProperty.FindPropertyRelative("Type");
             var isEnabledProp = stepProperty.FindPropertyRelative("IsEnabled");
@@ -414,142 +481,154 @@ namespace CNoom.DOTweenVisual.Editor
 
             var type = (TweenStepType)typeProp.enumValueIndex;
             var ease = (Ease)easeProp.enumValueIndex;
-
             string targetName = targetTransformProp.objectReferenceValue != null
                 ? targetTransformProp.objectReferenceValue.name
                 : "未指定";
 
-            var item = new VisualElement();
-            item.AddToClassList("step-item");
-            item.AddToClassList(GetStepTypeCssClass(type));
-            if (!isEnabledProp.boolValue) item.AddToClassList("step-disabled");
-            item.userData = index;
+            // 存储 userData 用于回调
+            element.userData = new StepItemData(stepProperty, index);
 
-            // 点击选中
-            item.RegisterCallback<ClickEvent>(_ =>
+            // 更新样式
+            element.ClearClassList();
+            element.AddToClassList("step-item");
+            element.AddToClassList(GetStepTypeCssClass(type));
+            if (!isEnabledProp.boolValue) element.AddToClassList("step-disabled");
+
+            // 绑定 Toggle
+            var toggle = element.Q<Toggle>(className: "step-enable-toggle");
+            if (toggle != null) toggle.SetValueWithoutNotify(isEnabledProp.boolValue);
+
+            // 绑定标题
+            var titleLabel = element.Q<Label>(className: "step-title");
+            if (titleLabel != null) titleLabel.text = $"{index + 1}. [{targetName}] {GetStepDisplayName(type)}";
+
+            // 绑定摘要
+            var summaryLabel = element.Q<Label>(className: "step-summary");
+            if (summaryLabel != null) summaryLabel.text = $"{durationProp.floatValue:F1}s | {ease}";
+        }
+
+        private void UnbindStepItem(VisualElement element, int index)
+        {
+            element.userData = null;
+        }
+
+        private void DestroyStepItem(VisualElement element)
+        {
+            element.userData = null;
+        }
+
+        /// <summary>
+        /// ListView 选择变化回调
+        /// </summary>
+        private void OnStepSelectionChanged(IEnumerable<object> selectedItems)
+        {
+            var enumerator = selectedItems?.GetEnumerator();
+            if (enumerator != null && enumerator.MoveNext())
             {
-                SelectStep((int)item.userData);
-            });
-
-            var row = new VisualElement();
-            row.AddToClassList("step-row");
-
-            // 启用开关
-            var enableToggle = new Toggle { value = isEnabledProp.boolValue };
-            enableToggle.AddToClassList("step-enable-toggle");
-            enableToggle.RegisterValueChangedCallback(evt =>
+                selectedStepIndex = stepListView.selectedIndex;
+            }
+            else
             {
-                int idx = (int)item.userData;
-                if (stepsProperty == null || idx < 0 || idx >= stepsProperty.arraySize) return;
-                var prop = stepsProperty.GetArrayElementAtIndex(idx);
-                prop.FindPropertyRelative("IsEnabled").boolValue = evt.newValue;
-                prop.serializedObject.ApplyModifiedProperties();
-                item.EnableInClassList("step-disabled", !evt.newValue);
-            });
-            // 阻止 Toggle 的点击冒泡到 item
-            enableToggle.RegisterCallback<ClickEvent>(e => e.StopPropagation());
-            row.Add(enableToggle);
+                selectedStepIndex = -1;
+            }
 
-            // 标题
-            var titleLabel = new Label { text = $"{index + 1}. [{targetName}] {GetStepDisplayName(type)}" };
-            titleLabel.AddToClassList("step-title");
-            row.Add(titleLabel);
+            RefreshDetailPanel();
+        }
 
-            // 摘要
-            var summaryLabel = new Label { text = $"{durationProp.floatValue:F1}s | {ease}" };
-            summaryLabel.AddToClassList("step-summary");
-            row.Add(summaryLabel);
+        /// <summary>
+        /// ListView 拖拽排序后同步到 SerializedProperty
+        /// </summary>
+        private void OnStepIndexChanged(int from, int to)
+        {
+            if (stepsProperty == null) return;
+            stepsProperty.MoveArrayElement(from, to);
+            stepsProperty.serializedObject.ApplyModifiedProperties();
 
-            var spacer = new VisualElement { style = { flexGrow = 1 } };
-            row.Add(spacer);
+            // 同步选中索引
+            if (selectedStepIndex == from)
+                selectedStepIndex = to;
+            else if (from < selectedStepIndex && to >= selectedStepIndex)
+                selectedStepIndex--;
+            else if (from > selectedStepIndex && to <= selectedStepIndex)
+                selectedStepIndex++;
 
-            // 删除按钮
-            var deleteButton = new Button { text = "✕" };
-            deleteButton.AddToClassList("step-delete-button");
-            deleteButton.clickable = new Clickable(() =>
+            RefreshDetailPanel();
+        }
+
+        /// <summary>
+        /// ListView 删除元素回调
+        /// </summary>
+        private void OnStepsRemoved(IEnumerable<int> removedIndices)
+        {
+            foreach (var idx in removedIndices)
             {
-                int idx = (int)item.userData;
-                if (stepsProperty == null || idx < 0 || idx >= stepsProperty.arraySize) return;
-                stepsProperty.DeleteArrayElementAtIndex(idx);
-                stepsProperty.serializedObject.ApplyModifiedProperties();
-
-                // 调整选中索引
                 if (selectedStepIndex == idx)
                     selectedStepIndex = -1;
                 else if (selectedStepIndex > idx)
                     selectedStepIndex--;
+            }
 
-                RebuildStepList();
-                RefreshDetailPanel();
-            });
-            deleteButton.RegisterCallback<ClickEvent>(e => e.StopPropagation());
-            row.Add(deleteButton);
-
-            item.Add(row);
-            return item;
+            RefreshDetailPanel();
         }
 
         /// <summary>
-        /// 选中某个步骤
+        /// 步骤行辅助数据
         /// </summary>
-        private void SelectStep(int index)
+        private class StepItemData
         {
-            if (stepsProperty == null || index < 0 || index >= stepsProperty.arraySize)
-            {
-                selectedStepIndex = -1;
-            }
-            else
-            {
-                selectedStepIndex = index;
-            }
+            public SerializedProperty Property { get; }
+            public int OriginalIndex { get; }
 
-            HighlightStepItem(selectedStepIndex);
-            RefreshDetailPanel();
-            UpdateReorderButtons();
+            public StepItemData(SerializedProperty property, int index)
+            {
+                Property = property;
+                OriginalIndex = index;
+            }
         }
 
         /// <summary>
-        /// 高亮选中的步骤行
+        /// 简易 SerializedProperty 数组包装，用作 ListView itemsSource
         /// </summary>
-        private void HighlightStepItem(int selectedIndex)
+        private class SerializedPropertyArray : IList
         {
-            if (stepScrollView == null) return;
+            private readonly SerializedProperty _property;
 
-            foreach (var child in stepScrollView.Children())
+            public SerializedPropertyArray(SerializedProperty property)
             {
-                int idx = (int)child.userData;
-                child.EnableInClassList("step-selected", idx == selectedIndex);
+                _property = property;
             }
-        }
 
-        private void MoveStepUp()
-        {
-            if (stepsProperty == null || selectedStepIndex <= 0) return;
+            public int Count => _property.isArray ? _property.arraySize : 0;
+            public bool IsFixedSize => false;
+            public bool IsReadOnly => true;
+            public bool IsSynchronized => false;
+            public object SyncRoot => this;
 
-            stepsProperty.MoveArrayElement(selectedStepIndex, selectedStepIndex - 1);
-            stepsProperty.serializedObject.ApplyModifiedProperties();
-            selectedStepIndex--;
-            RebuildStepList();
-            RefreshDetailPanel();
-        }
+            public object this[int index]
+            {
+                get => _property.GetArrayElementAtIndex(index);
+                set { }
+            }
 
-        private void MoveStepDown()
-        {
-            if (stepsProperty == null || selectedStepIndex < 0 || selectedStepIndex >= stepsProperty.arraySize - 1) return;
+            public IEnumerator GetEnumerator()
+            {
+                for (int i = 0; i < Count; i++)
+                    yield return _property.GetArrayElementAtIndex(i);
+            }
 
-            stepsProperty.MoveArrayElement(selectedStepIndex, selectedStepIndex + 1);
-            stepsProperty.serializedObject.ApplyModifiedProperties();
-            selectedStepIndex++;
-            RebuildStepList();
-            RefreshDetailPanel();
-        }
+            public int Add(object value) => -1;
+            public void Clear() { }
+            public bool Contains(object value) => false;
+            public int IndexOf(object value) => -1;
+            public void Insert(int index, object value) { }
+            public void Remove(object value) { }
+            public void RemoveAt(int index) { }
 
-        private void UpdateReorderButtons()
-        {
-            if (moveUpButton != null)
-                moveUpButton.SetEnabled(selectedStepIndex > 0);
-            if (moveDownButton != null)
-                moveDownButton.SetEnabled(stepsProperty != null && selectedStepIndex >= 0 && selectedStepIndex < stepsProperty.arraySize - 1);
+            public void CopyTo(Array array, int index)
+            {
+                for (int i = 0; i < Count; i++)
+                    array.SetValue(_property.GetArrayElementAtIndex(i), index + i);
+            }
         }
 
         #endregion
@@ -624,9 +703,11 @@ namespace CNoom.DOTweenVisual.Editor
 
                 AddDetailField("使用起始值", CreateToggle(useStartValueProp, OnToggleRebuild));
 
-                var startVecField = CreateVector3Field(startVectorProp);
-                startVecField.SetEnabled(useStartValueProp.boolValue);
-                AddDetailField("起始值", startVecField);
+                if (useStartValueProp.boolValue)
+                {
+                    string startLabel = type == TweenStepType.Rotate ? "起始旋转" : "起始值";
+                    AddDetailField(startLabel, CreateVector3Field(startVectorProp));
+                }
 
                 string targetLabel = type == TweenStepType.Rotate ? "目标值 (欧拉角)" : "目标值";
                 AddDetailField(targetLabel, CreateVector3Field(targetVectorProp));
@@ -639,9 +720,10 @@ namespace CNoom.DOTweenVisual.Editor
 
                 AddDetailField("使用起始颜色", CreateToggle(useStartColorProp, OnToggleRebuild));
 
-                var startColorField = CreateColorField(startColorProp);
-                startColorField.SetEnabled(useStartColorProp.boolValue);
-                AddDetailField("起始颜色", startColorField);
+                if (useStartColorProp.boolValue)
+                {
+                    AddDetailField("起始颜色", CreateColorField(startColorProp));
+                }
 
                 AddDetailField("目标颜色", CreateColorField(targetColorProp));
             }
@@ -653,9 +735,10 @@ namespace CNoom.DOTweenVisual.Editor
 
                 AddDetailField("使用起始透明度", CreateToggle(useStartFloatProp, OnToggleRebuild));
 
-                var startFloatField = CreateFloatField(startFloatProp);
-                startFloatField.SetEnabled(useStartFloatProp.boolValue);
-                AddDetailField("起始透明度", startFloatField);
+                if (useStartFloatProp.boolValue)
+                {
+                    AddDetailField("起始透明度", CreateFloatField(startFloatProp));
+                }
 
                 AddDetailField("目标透明度", CreateFloatField(targetFloatProp));
             }
@@ -916,6 +999,7 @@ namespace CNoom.DOTweenVisual.Editor
             stepsProperty.serializedObject.ApplyModifiedProperties();
             selectedStepIndex = stepsProperty.arraySize - 1;
             RebuildStepList();
+            // RebuildStepList 会调用 SetSelection，无需再次调用
             RefreshDetailPanel();
         }
 
@@ -1028,7 +1112,7 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (previewSequence != null) { previewSequence.Kill(); previewSequence = null; }
             DOTweenEditorPreview.Stop();
-            previewState = PreviewState.Completed;
+            previewState = PreviewState.None;
             UpdateButtonStates();
         }
 
@@ -1051,7 +1135,6 @@ namespace CNoom.DOTweenVisual.Editor
             if (addStepMenu != null) addStepMenu.SetEnabled(hasTarget && !inPreview);
 
             UpdateStatusBar();
-            UpdateReorderButtons();
         }
 
         private void UpdateStatusBar()
@@ -1121,8 +1204,6 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void RestoreInitialStates()
         {
-            var keysToRemove = new List<Transform>();
-
             foreach (var kvp in initialStates)
             {
                 var t = kvp.Key;
@@ -1130,36 +1211,25 @@ namespace CNoom.DOTweenVisual.Editor
 
                 try
                 {
-                    if (t != null && t.gameObject != null)
-                    {
-                        Undo.RecordObject(t, "Reset Preview State");
-                        t.position = state.position;
-                        t.rotation = state.rotation;
-                        t.localPosition = state.localPosition;
-                        t.localRotation = state.localRotation;
-                        t.localScale = state.localScale;
+                    if (t == null || t.gameObject == null) continue;
 
-                        var renderer = t.GetComponent<Renderer>();
-                        if (renderer != null && renderer.material != null)
-                            renderer.material.color = state.color;
+                    Undo.RecordObject(t, "Reset Preview State");
+                    t.position = state.position;
+                    t.rotation = state.rotation;
+                    t.localPosition = state.localPosition;
+                    t.localRotation = state.localRotation;
+                    t.localScale = state.localScale;
 
-                        var canvasGroup = t.GetComponent<CanvasGroup>();
-                        if (canvasGroup != null)
-                            canvasGroup.alpha = state.alpha;
-                    }
-                    else
-                    {
-                        keysToRemove.Add(t);
-                    }
+                    var renderer = t.GetComponent<Renderer>();
+                    if (renderer != null && renderer.material != null)
+                        renderer.material.color = state.color;
+
+                    var canvasGroup = t.GetComponent<CanvasGroup>();
+                    if (canvasGroup != null)
+                        canvasGroup.alpha = state.alpha;
                 }
-                catch (MissingReferenceException)
-                {
-                    keysToRemove.Add(t);
-                }
+                catch (MissingReferenceException) { }
             }
-
-            foreach (var key in keysToRemove)
-                initialStates.Remove(key);
 
             initialStates.Clear();
         }

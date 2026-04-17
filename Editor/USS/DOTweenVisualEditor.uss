@@ -91,18 +91,20 @@
     padding: 2px 8px;
 }
 
-/* === 步骤列表 (ScrollView) === */
-.step-scroll {
+/* === 步骤列表 (ListView) === */
+.step-list {
     flex-grow: 1;
     background-color: #2D2D2D;
-    padding: 0;
+}
+
+/* 覆盖 ListView 内部 ScrollView 背景 */
+.step-list > ScrollView {
+    background-color: #2D2D2D;
 }
 
 .step-item {
-    flex-direction: row;
-    align-items: center;
-    height: 28px;
-    padding: 0 6px;
+    flex-direction: column;
+    padding: 4px 6px;
     border-left-width: 3px;
     border-left-color: #505050;
     border-bottom-width: 1px;
@@ -114,26 +116,13 @@
     background-color: #404040;
 }
 
-.step-item.step-selected {
+/* ListView 选中行 */
+.step-list .unity-collection-view__item--selected {
     background-color: #3A5A7C;
 }
 
-/* 排序按钮栏 */
-.reorder-bar {
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    height: 24px;
-    background-color: #333333;
-    border-top-width: 1px;
-    border-top-color: #404040;
-    padding: 0 4px;
-}
-
-.reorder-button {
-    font-size: 10px;
-    padding: 2px 12px;
-    margin: 0 2px;
+.step-list .unity-collection-view__item--selected .step-item {
+    background-color: transparent;
 }
 
 .step-row {
@@ -150,8 +139,7 @@
 .step-title {
     font-size: 11px;
     color: #C0C0C0;
-    margin-right: 6px;
-    flex-shrink: 1;
+    flex-grow: 1;
     overflow: hidden;
 }
 
@@ -159,6 +147,13 @@
     font-size: 10px;
     color: #808080;
     flex-shrink: 0;
+    margin-left: auto;
+}
+
+.step-summary-row {
+    flex-direction: row;
+    align-items: center;
+    padding-left: 22px;
 }
 
 .step-delete-button {
@@ -206,8 +201,14 @@
     padding: 8px;
 }
 
+/* 防止水平溢出产生空滚动区域 */
+.detail-scroll .unity-scroll-view-content {
+    overflow: hidden;
+}
+
 .detail-help-label {
     flex-grow: 1;
+    align-self: stretch;
     justify-content: center;
     align-items: center;
     color: #707070;
@@ -226,13 +227,40 @@
 .detail-field-label {
     font-size: 11px;
     color: #AAAAAA;
-    width: 90px;
+    width: 80px;
     flex-shrink: 0;
 }
 
 .detail-field-value {
     flex-grow: 1;
+    flex-shrink: 1;
     margin-left: 4px;
+    overflow: hidden;
+}
+
+/* 强制字段自适应剩余宽度 */
+.detail-field-row .detail-field-value {
+    width: 0;
+}
+
+/* 复合字段（Vector3 等）内部自适应 */
+.detail-field-value .unity-base-field__label {
+    min-width: 10px;
+    font-size: 10px;
+    padding-right: 2px;
+}
+
+.detail-field-value .unity-base-field__input {
+    flex-grow: 1;
+    flex-shrink: 1;
+    width: 0;
+}
+
+.detail-field-value .unity-composite-field__field {
+    flex-grow: 1;
+    flex-shrink: 1;
+    width: 0;
+    min-width: 40px;
 }
 
 .detail-separator {
