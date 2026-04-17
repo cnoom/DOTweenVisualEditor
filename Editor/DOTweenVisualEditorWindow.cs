@@ -490,6 +490,8 @@ namespace CNoom.DOTweenVisual.Editor
             foldout.RegisterValueChangedCallback(evt =>
             {
                 detailsContainer.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
+                // 通知 DynamicHeight 虚拟化控制器重新计算 item 高度
+                stepListView.RefreshItems();
             });
 
             return item;
