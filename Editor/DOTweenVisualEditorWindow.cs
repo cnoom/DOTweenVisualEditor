@@ -351,6 +351,9 @@ namespace CNoom.DOTweenVisual.Editor
             
             if (stepListView == null) return;
             
+            // 清除选中状态，避免切换目标时索引越界
+            stepListView.selectedIndex = -1;
+            
             // 隐藏帮助提示
             if (helpLabel != null)
             {
