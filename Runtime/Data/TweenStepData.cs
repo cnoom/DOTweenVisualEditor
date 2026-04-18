@@ -95,9 +95,35 @@ namespace CNoom.DOTweenVisual.Data
         [Range(0f, 1f)]
         public float StartFloat = 1f;
 
-        [Tooltip("目标浮点值（透明度等）")]
+        [Tooltip("目标浮点值（透明度/填充量等）")]
         [Range(0f, 1f)]
         public float TargetFloat = 0f;
+
+        #endregion
+
+        #region 特效参数值组
+
+        [Tooltip("跳跃高度（Jump 使用）")]
+        public float JumpHeight = 1f;
+
+        [Tooltip("跳跃次数（Jump 使用）")]
+        [Min(1)]
+        public int JumpNum = 1;
+
+        [Tooltip("冲击/震动强度（Punch/Shake 使用）")]
+        public Vector3 Intensity = Vector3.one;
+
+        [Tooltip("震动随机性（Shake 使用，0~90）")]
+        [Range(0f, 90f)]
+        public float ShakeRandomness = 90f;
+
+        [Tooltip("弹性震荡次数（Punch/Shake 使用）")]
+        [Min(1)]
+        public int Vibrato = 10;
+
+        [Tooltip("弹性回弹程度（Punch/Shake 使用，0~1）")]
+        [Range(0f, 1f)]
+        public float Elasticity = 1f;
 
         #endregion
 

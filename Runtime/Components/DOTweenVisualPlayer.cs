@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 using CNoom.DOTweenVisual.Data;
-using CNoom.DOTweenVisual.Adapter;
 
 namespace CNoom.DOTweenVisual.Components
 {
@@ -64,7 +63,7 @@ namespace CNoom.DOTweenVisual.Components
 
         private void Start()
         {
-            DOTweenAdapter.Instance.Initialize();
+            DOTween.Init(true, true, LogBehaviour.Verbose);
 
             if (_playOnStart)
             {
@@ -244,7 +243,7 @@ namespace CNoom.DOTweenVisual.Components
             foreach (var step in _steps)
             {
                 if (!step.IsEnabled) continue;
-                AppendStepToSequence(step);
+                TweenFactory.AppendToSequence(_currentSequence, step, transform);
             }
 
             _currentSequence.SetLoops(_loops, _loopType);
@@ -263,262 +262,6 @@ namespace CNoom.DOTweenVisual.Components
                 Debug.Log($"[{nameof(DOTweenVisualPlayer)}] 开始播放 {_steps.Count} 个步骤");
             }
         }
-
-        private void AppendStepToSequence(TweenStepData step)
-        {
-            Tweener tweener = null;
-
-            switch (step.Type)
-            {
-                case TweenStepType.Move:
-                    tweener = CreateMoveTween(step);
-                    break;
-                case TweenStepType.Rotate:
-                    tweener = CreateRotateTween(step);
-                    break;
-                case TweenStepType.Scale:
-                    tweener = CreateScaleTween(step);
-                    break;
-                case TweenStepType.Color:
-                    tweener = CreateColorTween(step);
-                    break;
-                case TweenStepType.Fade:
-                    tweener = CreateFadeTween(step);
-                    break;
-                case TweenStepType.Delay:
-                    _currentSequence.AppendInterval(Mathf.Max(0.001f, step.Duration));
-                    return;
-                case TweenStepType.Callback:
-                    var callback = step.OnComplete;
-                    _currentSequence.AppendCallback(() => callback?.Invoke());
-                    return;
-            }
-
-            if (tweener == null) return;
-
-            // 设置缓动
-            if (step.UseCustomCurve && step.CustomCurve != null)
-            {
-                tweener.SetEase(step.CustomCurve);
-            }
-            else
-            {
-                tweener.SetEase(step.Ease);
-            }
-
-            // 设置延迟
-            if (step.Delay > 0)
-            {
-                tweener.SetDelay(step.Delay);
-            }
-
-            // 设置可回收
-            tweener.SetRecyclable(true);
-
-            // 添加到序列
-            switch (step.ExecutionMode)
-            {
-                case ExecutionMode.Append:
-                    _currentSequence.Append(tweener);
-                    break;
-                case ExecutionMode.Join:
-                    _currentSequence.Join(tweener);
-                    break;
-                case ExecutionMode.Insert:
-                    _currentSequence.Insert(Mathf.Max(0f, step.InsertTime), tweener);
-                    break;
-            }
-        }
-
-        #region Transform Tweens
-
-        private Tweener CreateMoveTween(TweenStepData step)
-        {
-            var target = step.TargetTransform != null ? step.TargetTransform : transform;
-            if (target == null) return null;
-
-            // 应用起始值
-            if (step.UseStartValue)
-            {
-                ApplyMoveValue(target, step.TransformTarget, step.StartVector);
-            }
-
-            float duration = Mathf.Max(0.001f, step.Duration);
-
-            switch (step.TransformTarget)
-            {
-                case TransformTarget.LocalPosition:
-                    if (step.IsRelative)
-                    {
-                        return target.DOLocalMove(step.TargetVector, duration).From(isRelative: true);
-                    }
-                    return target.DOLocalMove(step.TargetVector, duration);
-
-                default: // Position
-                    if (step.IsRelative)
-                    {
-                        return target.DOMove(step.TargetVector, duration).From(isRelative: true);
-                    }
-                    return target.DOMove(step.TargetVector, duration);
-            }
-        }
-
-        private Tweener CreateRotateTween(TweenStepData step)
-        {
-            var target = step.TargetTransform != null ? step.TargetTransform : transform;
-            if (target == null) return null;
-
-            // 旋转始终使用四元数插值，避免万向锁
-            Quaternion startQuat;
-            Quaternion targetQuat;
-
-            if (step.UseStartValue)
-            {
-                startQuat = Quaternion.Euler(step.StartVector);
-                ApplyRotationValue(target, step.TransformTarget, startQuat);
-            }
-            else
-            {
-                // 获取当前旋转作为起始值
-                startQuat = step.TransformTarget == TransformTarget.LocalRotation
-                    ? target.localRotation
-                    : target.rotation;
-            }
-
-            targetQuat = Quaternion.Euler(step.TargetVector);
-
-            float duration = Mathf.Max(0.001f, step.Duration);
-
-            if (step.TransformTarget == TransformTarget.LocalRotation)
-            {
-                if (step.IsRelative)
-                {
-                    return target.DOLocalRotateQuaternion(startQuat * targetQuat, duration);
-                }
-                return target.DOLocalRotateQuaternion(targetQuat, duration);
-            }
-            else
-            {
-                if (step.IsRelative)
-                {
-                    return target.DORotateQuaternion(startQuat * targetQuat, duration);
-                }
-                return target.DORotateQuaternion(targetQuat, duration);
-            }
-        }
-
-        private Tweener CreateScaleTween(TweenStepData step)
-        {
-            var target = step.TargetTransform != null ? step.TargetTransform : transform;
-            if (target == null) return null;
-
-            if (step.UseStartValue)
-            {
-                target.localScale = step.StartVector;
-            }
-
-            float duration = Mathf.Max(0.001f, step.Duration);
-
-            if (step.IsRelative)
-            {
-                return target.DOScale(step.TargetVector, duration).From(isRelative: true);
-            }
-            return target.DOScale(step.TargetVector, duration);
-        }
-
-        #endregion
-
-        #region Color/Fade Tweens
-
-        private Tweener CreateColorTween(TweenStepData step)
-        {
-            var target = step.TargetTransform != null ? step.TargetTransform : transform;
-            if (target == null) return null;
-
-            // 尝试获取 Renderer 或 SpriteRenderer
-            var renderer = target.GetComponent<Renderer>();
-            if (renderer == null || renderer.material == null)
-            {
-                if (_debugMode) Debug.LogWarning($"[{nameof(DOTweenVisualPlayer)}] 目标物体没有 Renderer 组件，无法播放颜色动画");
-                return null;
-            }
-
-            // 应用起始颜色
-            if (step.UseStartColor)
-            {
-                renderer.material.color = step.StartColor;
-            }
-
-            float duration = Mathf.Max(0.001f, step.Duration);
-            return renderer.material.DOColor(step.TargetColor, duration);
-        }
-
-        private Tweener CreateFadeTween(TweenStepData step)
-        {
-            var target = step.TargetTransform != null ? step.TargetTransform : transform;
-            if (target == null) return null;
-
-            // 尝试获取 CanvasGroup（UI）或 Renderer（3D/Sprite）
-            var canvasGroup = target.GetComponent<CanvasGroup>();
-            var renderer = target.GetComponent<Renderer>();
-
-            if (canvasGroup != null)
-            {
-                if (step.UseStartFloat)
-                {
-                    canvasGroup.alpha = step.StartFloat;
-                }
-                float duration = Mathf.Max(0.001f, step.Duration);
-                return canvasGroup.DOFade(step.TargetFloat, duration);
-            }
-
-            if (renderer != null && renderer.material != null)
-            {
-                if (step.UseStartFloat)
-                {
-                    Color c = renderer.material.color;
-                    c.a = step.StartFloat;
-                    renderer.material.color = c;
-                }
-                float duration = Mathf.Max(0.001f, step.Duration);
-                return renderer.material.DOFade(step.TargetFloat, duration);
-            }
-
-            if (_debugMode) Debug.LogWarning($"[{nameof(DOTweenVisualPlayer)}] 目标物体没有 CanvasGroup 或 Renderer，无法播放透明度动画");
-            return null;
-        }
-
-        #endregion
-
-        #region 起始值应用
-
-        private void ApplyMoveValue(Transform target, TransformTarget transformTarget, Vector3 value)
-        {
-            switch (transformTarget)
-            {
-                case TransformTarget.Position:
-                    target.position = value;
-                    break;
-                case TransformTarget.LocalPosition:
-                    target.localPosition = value;
-                    break;
-            }
-        }
-
-        private void ApplyRotationValue(Transform target, TransformTarget transformTarget, Quaternion value)
-        {
-            switch (transformTarget)
-            {
-                case TransformTarget.Rotation:
-                    target.rotation = value;
-                    break;
-                case TransformTarget.LocalRotation:
-                    target.localRotation = value;
-                    break;
-            }
-        }
-
-        #endregion
 
         private void KillSequence()
         {

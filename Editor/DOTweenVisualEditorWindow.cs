@@ -11,6 +11,7 @@ using UnityEditor.Compilation;
 using CNoom.DOTweenVisual.Components;
 using CNoom.DOTweenVisual.Data;
 using UnityEditor.UIElements;
+// 注意：UnityEngine.UI.Image 通过完全限定名使用，避免与 UIElements 冲突
 
 namespace CNoom.DOTweenVisual.Editor
 {
@@ -46,8 +47,8 @@ namespace CNoom.DOTweenVisual.Editor
 
         #region 常量
 
-        private const string USS_PATH = "Assets/Plugins/DoTweenVisualEditor/Editor/USS/DOTweenVisualEditor.uss";
-        private const bool DEBUG_MODE = false;
+        private const string USS_FILE_NAME = "DOTweenVisualEditor.uss";
+
         private const float LeftPanelMinWidth = 220f;
 
         #endregion
@@ -107,6 +108,9 @@ namespace CNoom.DOTweenVisual.Editor
             public Vector3 localScale;
             public Color color;
             public float alpha;
+            public Vector2 anchoredPosition;
+            public Vector2 sizeDelta;
+            public float fillAmount;
         }
 
         #endregion
@@ -214,7 +218,8 @@ namespace CNoom.DOTweenVisual.Editor
         {
             BuildUI();
 
-            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(USS_PATH);
+            // 动态查找 USS 文件，避免硬编码路径
+            var styleSheet = FindStyleSheet();
             if (styleSheet != null)
             {
                 rootVisualElement.styleSheets.Add(styleSheet);
@@ -641,7 +646,7 @@ namespace CNoom.DOTweenVisual.Editor
         /// </summary>
         private void OnStepSelectionChanged(IEnumerable<object> selectedItems)
         {
-            var enumerator = selectedItems?.GetEnumerator();
+            using var enumerator = selectedItems?.GetEnumerator();
             if (enumerator != null && enumerator.MoveNext())
             {
                 selectedStepIndex = stepListView.selectedIndex;
@@ -798,6 +803,12 @@ namespace CNoom.DOTweenVisual.Editor
             var useStartFloatProp = stepProperty.FindPropertyRelative("UseStartFloat");
             var startFloatProp = stepProperty.FindPropertyRelative("StartFloat");
             var targetFloatProp = stepProperty.FindPropertyRelative("TargetFloat");
+            var jumpHeightProp = stepProperty.FindPropertyRelative("JumpHeight");
+            var jumpNumProp = stepProperty.FindPropertyRelative("JumpNum");
+            var intensityProp = stepProperty.FindPropertyRelative("Intensity");
+            var vibratoProp = stepProperty.FindPropertyRelative("Vibrato");
+            var elasticityProp = stepProperty.FindPropertyRelative("Elasticity");
+            var shakeRandomnessProp = stepProperty.FindPropertyRelative("ShakeRandomness");
             var useCustomCurveProp = stepProperty.FindPropertyRelative("UseCustomCurve");
             var customCurveProp = stepProperty.FindPropertyRelative("CustomCurve");
             var onCompleteProp = stepProperty.FindPropertyRelative("OnComplete");
@@ -832,9 +843,29 @@ namespace CNoom.DOTweenVisual.Editor
                 string targetLabel = type == TweenStepType.Rotate ? "目标值 (欧拉角)" : "目标值";
                 AddDetailField(targetLabel, CreateVector3Field(targetVectorProp));
             }
+            else if (type == TweenStepType.AnchorMove || type == TweenStepType.SizeDelta)
+            {
+                AddDetailField("目标物体", CreateObjectField(targetTransformProp, typeof(Transform)));
+                AddValidationWarning(targetTransformProp, type);
+                AddDetailField("相对模式", CreateToggle(isRelativeProp));
+
+                AddSeparator();
+
+                AddDetailField("使用起始值", CreateToggle(useStartValueProp, OnToggleRebuild));
+
+                if (useStartValueProp.boolValue)
+                {
+                    string startLabel = type == TweenStepType.AnchorMove ? "起始锚点位置" : "起始尺寸";
+                    AddDetailField(startLabel, CreateVector3Field(startVectorProp));
+                }
+
+                string targetLabel = type == TweenStepType.AnchorMove ? "目标锚点位置" : "目标尺寸";
+                AddDetailField(targetLabel, CreateVector3Field(targetVectorProp));
+            }
             else if (type == TweenStepType.Color)
             {
                 AddDetailField("目标物体", CreateObjectField(targetTransformProp, typeof(Transform)));
+                AddValidationWarning(targetTransformProp, TweenStepType.Color);
 
                 AddSeparator();
 
@@ -850,6 +881,7 @@ namespace CNoom.DOTweenVisual.Editor
             else if (type == TweenStepType.Fade)
             {
                 AddDetailField("目标物体", CreateObjectField(targetTransformProp, typeof(Transform)));
+                AddValidationWarning(targetTransformProp, TweenStepType.Fade);
 
                 AddSeparator();
 
@@ -861,6 +893,65 @@ namespace CNoom.DOTweenVisual.Editor
                 }
 
                 AddDetailField("目标透明度", CreateFloatField(targetFloatProp));
+            }
+            else if (type == TweenStepType.Jump)
+            {
+                AddDetailField("目标物体", CreateObjectField(targetTransformProp, typeof(Transform)));
+
+                AddSeparator();
+
+                AddDetailField("使用起始位置", CreateToggle(useStartValueProp, OnToggleRebuild));
+
+                if (useStartValueProp.boolValue)
+                {
+                    AddDetailField("起始位置", CreateVector3Field(startVectorProp));
+                }
+
+                AddDetailField("目标位置", CreateVector3Field(targetVectorProp));
+
+                AddSeparator();
+
+                AddDetailField("跳跃高度", CreateFloatField(jumpHeightProp));
+                AddDetailField("跳跃次数", CreateIntegerField(jumpNumProp));
+            }
+            else if (type == TweenStepType.Punch)
+            {
+                AddDetailField("目标物体", CreateObjectField(targetTransformProp, typeof(Transform)));
+
+                AddSeparator();
+
+                AddDetailField("冲击目标", CreateEnumField(transformTargetProp, typeof(TransformTarget)));
+                AddDetailField("强度", CreateVector3Field(intensityProp));
+                AddDetailField("震荡次数", CreateIntegerField(vibratoProp));
+                AddDetailField("弹性", CreateFloatField(elasticityProp));
+            }
+            else if (type == TweenStepType.Shake)
+            {
+                AddDetailField("目标物体", CreateObjectField(targetTransformProp, typeof(Transform)));
+
+                AddSeparator();
+
+                AddDetailField("震动目标", CreateEnumField(transformTargetProp, typeof(TransformTarget)));
+                AddDetailField("强度", CreateVector3Field(intensityProp));
+                AddDetailField("震荡次数", CreateIntegerField(vibratoProp));
+                AddDetailField("弹性", CreateFloatField(elasticityProp));
+                AddDetailField("随机性", CreateFloatField(shakeRandomnessProp));
+            }
+            else if (type == TweenStepType.FillAmount)
+            {
+                AddDetailField("目标物体", CreateObjectField(targetTransformProp, typeof(Transform)));
+                AddValidationWarning(targetTransformProp, TweenStepType.FillAmount);
+
+                AddSeparator();
+
+                AddDetailField("使用起始填充量", CreateToggle(useStartFloatProp, OnToggleRebuild));
+
+                if (useStartFloatProp.boolValue)
+                {
+                    AddDetailField("起始填充量", CreateFloatField(startFloatProp));
+                }
+
+                AddDetailField("目标填充量", CreateFloatField(targetFloatProp));
             }
 
             AddSeparator();
@@ -959,6 +1050,7 @@ namespace CNoom.DOTweenVisual.Editor
                 prop.objectReferenceValue = evt.newValue;
                 prop.serializedObject.ApplyModifiedProperties();
                 RebuildStepList();
+                RefreshDetailPanel();
             });
             return field;
         }
@@ -969,6 +1061,17 @@ namespace CNoom.DOTweenVisual.Editor
             field.RegisterValueChangedCallback(evt =>
             {
                 prop.animationCurveValue = evt.newValue;
+                prop.serializedObject.ApplyModifiedProperties();
+            });
+            return field;
+        }
+
+        private IntegerField CreateIntegerField(SerializedProperty prop)
+        {
+            var field = new IntegerField { value = prop.intValue };
+            field.RegisterValueChangedCallback(evt =>
+            {
+                prop.intValue = evt.newValue;
                 prop.serializedObject.ApplyModifiedProperties();
             });
             return field;
@@ -1025,6 +1128,44 @@ namespace CNoom.DOTweenVisual.Editor
             detailScrollView.Add(sep);
         }
 
+        /// <summary>
+        /// 添加组件需求校验警告
+        /// 当目标物体不满足动画类型的组件需求时显示红色提示
+        /// </summary>
+        private void AddValidationWarning(SerializedProperty targetTransformProp, TweenStepType type)
+        {
+            var requirement = TweenStepRequirement.GetRequirementDescription(type);
+            if (requirement == null) return;
+
+            var target = targetTransformProp.objectReferenceValue as Transform;
+            if (target == null) return;
+
+            if (TweenStepRequirement.Validate(target, type, out string errorMessage))
+                return;
+
+            var warning = new VisualElement();
+            warning.AddToClassList("validation-warning");
+            warning.style.backgroundColor = new Color(0.6f, 0.15f, 0.15f, 0.5f);
+            warning.style.paddingTop = 4f;
+            warning.style.paddingBottom = 4f;
+            warning.style.paddingLeft = 8f;
+            warning.style.paddingRight = 8f;
+            warning.style.marginTop = 2f;
+            warning.style.marginBottom = 2f;
+            warning.style.borderTopLeftRadius = 3f;
+            warning.style.borderTopRightRadius = 3f;
+            warning.style.borderBottomLeftRadius = 3f;
+            warning.style.borderBottomRightRadius = 3f;
+
+            var label = new Label(errorMessage);
+            label.style.color = Color.yellow;
+            label.style.fontSize = 11f;
+            label.style.unityTextAlign = TextAnchor.MiddleLeft;
+            warning.Add(label);
+
+            detailScrollView.Add(warning);
+        }
+
         private void OnSyncClicked()
         {
             if (selectedStepIndex < 0 || stepsProperty == null || selectedStepIndex >= stepsProperty.arraySize) return;
@@ -1053,20 +1194,32 @@ namespace CNoom.DOTweenVisual.Editor
                     stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.localScale;
                     break;
                 case TweenStepType.Color:
-                    var renderer = target.GetComponent<Renderer>();
-                    if (renderer != null && renderer.material != null)
-                        stepProperty.FindPropertyRelative("TargetColor").colorValue = renderer.material.color;
+                    if (TweenStepRequirement.TryGetColor(target, out Color currentColor))
+                        stepProperty.FindPropertyRelative("TargetColor").colorValue = currentColor;
                     break;
                 case TweenStepType.Fade:
-                    var canvasGroup = target.GetComponent<CanvasGroup>();
-                    if (canvasGroup != null)
-                        stepProperty.FindPropertyRelative("TargetFloat").floatValue = canvasGroup.alpha;
-                    else
-                    {
-                        var rend = target.GetComponent<Renderer>();
-                        if (rend != null && rend.material != null)
-                            stepProperty.FindPropertyRelative("TargetFloat").floatValue = rend.material.color.a;
-                    }
+                    if (TweenStepRequirement.TryGetAlpha(target, out float currentAlpha))
+                        stepProperty.FindPropertyRelative("TargetFloat").floatValue = currentAlpha;
+                    break;
+                case TweenStepType.AnchorMove:
+                    var rectTransform = target as RectTransform;
+                    if (rectTransform == null) rectTransform = target.GetComponent<RectTransform>();
+                    if (rectTransform != null)
+                        stepProperty.FindPropertyRelative("TargetVector").vector3Value = rectTransform.anchoredPosition;
+                    break;
+                case TweenStepType.SizeDelta:
+                    var rt2 = target as RectTransform;
+                    if (rt2 == null) rt2 = target.GetComponent<RectTransform>();
+                    if (rt2 != null)
+                        stepProperty.FindPropertyRelative("TargetVector").vector3Value = rt2.sizeDelta;
+                    break;
+                case TweenStepType.Jump:
+                    stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.position;
+                    break;
+                case TweenStepType.FillAmount:
+                    var image = target.GetComponent<UnityEngine.UI.Image>();
+                    if (image != null)
+                        stepProperty.FindPropertyRelative("TargetFloat").floatValue = image.fillAmount;
                     break;
             }
 
@@ -1083,15 +1236,36 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (addStepMenu == null) return;
 
+            // Transform
             addStepMenu.menu.AppendAction("Move (Position)", _ => AddStep(TweenStepType.Move, TransformTarget.Position));
             addStepMenu.menu.AppendAction("Move (LocalPosition)", _ => AddStep(TweenStepType.Move, TransformTarget.LocalPosition));
             addStepMenu.menu.AppendAction("Rotate (Rotation)", _ => AddStep(TweenStepType.Rotate, TransformTarget.Rotation));
             addStepMenu.menu.AppendAction("Rotate (LocalRotation)", _ => AddStep(TweenStepType.Rotate, TransformTarget.LocalRotation));
             addStepMenu.menu.AppendAction("Scale", _ => AddStep(TweenStepType.Scale, TransformTarget.Scale));
             addStepMenu.menu.AppendSeparator();
+
+            // 视觉
             addStepMenu.menu.AppendAction("Color", _ => AddStep(TweenStepType.Color));
             addStepMenu.menu.AppendAction("Fade", _ => AddStep(TweenStepType.Fade));
             addStepMenu.menu.AppendSeparator();
+
+            // UI
+            addStepMenu.menu.AppendAction("Anchor Move", _ => AddStep(TweenStepType.AnchorMove));
+            addStepMenu.menu.AppendAction("Size Delta", _ => AddStep(TweenStepType.SizeDelta));
+            addStepMenu.menu.AppendSeparator();
+
+            // 特效
+            addStepMenu.menu.AppendAction("Jump", _ => AddStep(TweenStepType.Jump));
+            addStepMenu.menu.AppendAction("Punch (Position)", _ => AddStep(TweenStepType.Punch, TransformTarget.PunchPosition));
+            addStepMenu.menu.AppendAction("Punch (Rotation)", _ => AddStep(TweenStepType.Punch, TransformTarget.PunchRotation));
+            addStepMenu.menu.AppendAction("Punch (Scale)", _ => AddStep(TweenStepType.Punch, TransformTarget.PunchScale));
+            addStepMenu.menu.AppendAction("Shake (Position)", _ => AddStep(TweenStepType.Shake, TransformTarget.ShakePosition));
+            addStepMenu.menu.AppendAction("Shake (Rotation)", _ => AddStep(TweenStepType.Shake, TransformTarget.ShakeRotation));
+            addStepMenu.menu.AppendAction("Shake (Scale)", _ => AddStep(TweenStepType.Shake, TransformTarget.ShakeScale));
+            addStepMenu.menu.AppendAction("Fill Amount", _ => AddStep(TweenStepType.FillAmount));
+            addStepMenu.menu.AppendSeparator();
+
+            // 流程控制
             addStepMenu.menu.AppendAction("Delay", _ => AddStep(TweenStepType.Delay));
             addStepMenu.menu.AppendAction("Callback", _ => AddStep(TweenStepType.Callback));
         }
@@ -1122,6 +1296,25 @@ namespace CNoom.DOTweenVisual.Editor
                 case TweenStepType.Fade:
                     newStep.FindPropertyRelative("TargetFloat").floatValue = 0f;
                     newStep.FindPropertyRelative("StartFloat").floatValue = 1f;
+                    break;
+                case TweenStepType.FillAmount:
+                    newStep.FindPropertyRelative("TargetFloat").floatValue = 1f;
+                    newStep.FindPropertyRelative("StartFloat").floatValue = 0f;
+                    break;
+                case TweenStepType.Jump:
+                    newStep.FindPropertyRelative("JumpHeight").floatValue = 1f;
+                    newStep.FindPropertyRelative("JumpNum").intValue = 1;
+                    break;
+                case TweenStepType.Punch:
+                    newStep.FindPropertyRelative("Intensity").vector3Value = new Vector3(1f, 1f, 1f);
+                    newStep.FindPropertyRelative("Vibrato").intValue = 10;
+                    newStep.FindPropertyRelative("Elasticity").floatValue = 1f;
+                    break;
+                case TweenStepType.Shake:
+                    newStep.FindPropertyRelative("Intensity").vector3Value = new Vector3(1f, 1f, 1f);
+                    newStep.FindPropertyRelative("Vibrato").intValue = 10;
+                    newStep.FindPropertyRelative("Elasticity").floatValue = 0.5f;
+                    newStep.FindPropertyRelative("ShakeRandomness").floatValue = 90f;
                     break;
             }
 
@@ -1309,15 +1502,23 @@ namespace CNoom.DOTweenVisual.Editor
             Color color = Color.white;
             float alpha = 1f;
 
-            var renderer = t.GetComponent<Renderer>();
-            if (renderer != null && renderer.material != null)
-            {
-                color = renderer.material.color;
-                alpha = renderer.material.color.a;
-            }
+            // 使用统一工具方法获取颜色和透明度
+            TweenStepRequirement.TryGetColor(t, out color);
+            TweenStepRequirement.TryGetAlpha(t, out alpha);
 
-            var canvasGroup = t.GetComponent<CanvasGroup>();
-            if (canvasGroup != null) alpha = canvasGroup.alpha;
+            // UI 状态
+            Vector2 anchoredPos = Vector2.zero;
+            Vector2 sizeDelta = Vector2.zero;
+            float fillAmount = 0f;
+            var rectTransform = t as RectTransform;
+            if (rectTransform == null) rectTransform = t.GetComponent<RectTransform>();
+            if (rectTransform != null)
+            {
+                anchoredPos = rectTransform.anchoredPosition;
+                sizeDelta = rectTransform.sizeDelta;
+            }
+            var image = t.GetComponent<UnityEngine.UI.Image>();
+            if (image != null) fillAmount = image.fillAmount;
 
             initialStates[t] = new TransformState
             {
@@ -1327,7 +1528,10 @@ namespace CNoom.DOTweenVisual.Editor
                 localRotation = t.localRotation,
                 localScale = t.localScale,
                 color = color,
-                alpha = alpha
+                alpha = alpha,
+                anchoredPosition = anchoredPos,
+                sizeDelta = sizeDelta,
+                fillAmount = fillAmount
             };
         }
 
@@ -1349,13 +1553,20 @@ namespace CNoom.DOTweenVisual.Editor
                     t.localRotation = state.localRotation;
                     t.localScale = state.localScale;
 
-                    var renderer = t.GetComponent<Renderer>();
-                    if (renderer != null && renderer.material != null)
-                        renderer.material.color = state.color;
+                    // 使用统一工具方法恢复颜色和透明度
+                    TweenStepRequirement.TrySetColor(t, state.color);
+                    TweenStepRequirement.TrySetAlpha(t, state.alpha);
 
-                    var canvasGroup = t.GetComponent<CanvasGroup>();
-                    if (canvasGroup != null)
-                        canvasGroup.alpha = state.alpha;
+                    // 恢复 UI 状态
+                    var rectTransform = t as RectTransform;
+                    if (rectTransform == null) rectTransform = t.GetComponent<RectTransform>();
+                    if (rectTransform != null)
+                    {
+                        rectTransform.anchoredPosition = state.anchoredPosition;
+                        rectTransform.sizeDelta = state.sizeDelta;
+                    }
+                    var image = t.GetComponent<UnityEngine.UI.Image>();
+                    if (image != null) image.fillAmount = state.fillAmount;
                 }
                 catch (MissingReferenceException) { }
             }
@@ -1368,166 +1579,9 @@ namespace CNoom.DOTweenVisual.Editor
             foreach (var step in targetPlayer.Steps)
             {
                 if (!step.IsEnabled) continue;
-                AppendStepToPreview(step);
+                TweenFactory.AppendToSequence(previewSequence, step, targetPlayer.transform);
             }
         }
-
-        private void AppendStepToPreview(TweenStepData step)
-        {
-            var target = step.TargetTransform != null ? step.TargetTransform : targetPlayer.transform;
-            if (target == null) return;
-
-            Tweener tweener = null;
-
-            switch (step.Type)
-            {
-                case TweenStepType.Move:
-                    tweener = CreatePreviewMoveTween(step, target);
-                    break;
-                case TweenStepType.Rotate:
-                    tweener = CreatePreviewRotateTween(step, target);
-                    break;
-                case TweenStepType.Scale:
-                    tweener = CreatePreviewScaleTween(step, target);
-                    break;
-                case TweenStepType.Color:
-                    tweener = CreatePreviewColorTween(step, target);
-                    break;
-                case TweenStepType.Fade:
-                    tweener = CreatePreviewFadeTween(step, target);
-                    break;
-                case TweenStepType.Delay:
-                    previewSequence.AppendInterval(Mathf.Max(0.001f, step.Duration));
-                    return;
-                case TweenStepType.Callback:
-                    var onComplete = step.OnComplete;
-                    previewSequence.AppendCallback(() => onComplete?.Invoke());
-                    return;
-            }
-
-            if (tweener == null) return;
-
-            if (step.UseCustomCurve && step.CustomCurve != null)
-                tweener.SetEase(step.CustomCurve);
-            else
-                tweener.SetEase(step.Ease);
-
-            switch (step.ExecutionMode)
-            {
-                case ExecutionMode.Append:
-                    previewSequence.Append(tweener);
-                    break;
-                case ExecutionMode.Join:
-                    previewSequence.Join(tweener);
-                    break;
-                case ExecutionMode.Insert:
-                    previewSequence.Insert(Mathf.Max(0f, step.InsertTime), tweener);
-                    break;
-            }
-        }
-
-        #region Preview Tween 创建
-
-        private Tweener CreatePreviewMoveTween(TweenStepData step, Transform target)
-        {
-            if (step.UseStartValue)
-            {
-                if (step.TransformTarget == TransformTarget.LocalPosition)
-                    target.localPosition = step.StartVector;
-                else
-                    target.position = step.StartVector;
-            }
-
-            float duration = Mathf.Max(0.001f, step.Duration);
-
-            if (step.TransformTarget == TransformTarget.LocalPosition)
-                return step.IsRelative
-                    ? target.DOLocalMove(step.TargetVector, duration).From(isRelative: true)
-                    : target.DOLocalMove(step.TargetVector, duration);
-            else
-                return step.IsRelative
-                    ? target.DOMove(step.TargetVector, duration).From(isRelative: true)
-                    : target.DOMove(step.TargetVector, duration);
-        }
-
-        private Tweener CreatePreviewRotateTween(TweenStepData step, Transform target)
-        {
-            Quaternion startQuat;
-            Quaternion targetQuat;
-
-            if (step.UseStartValue)
-            {
-                startQuat = Quaternion.Euler(step.StartVector);
-                if (step.TransformTarget == TransformTarget.LocalRotation)
-                    target.localRotation = startQuat;
-                else
-                    target.rotation = startQuat;
-            }
-            else
-            {
-                startQuat = step.TransformTarget == TransformTarget.LocalRotation
-                    ? target.localRotation
-                    : target.rotation;
-            }
-
-            targetQuat = Quaternion.Euler(step.TargetVector);
-            float duration = Mathf.Max(0.001f, step.Duration);
-
-            if (step.TransformTarget == TransformTarget.LocalRotation)
-                return step.IsRelative
-                    ? target.DOLocalRotateQuaternion(startQuat * targetQuat, duration)
-                    : target.DOLocalRotateQuaternion(targetQuat, duration);
-            else
-                return step.IsRelative
-                    ? target.DORotateQuaternion(startQuat * targetQuat, duration)
-                    : target.DORotateQuaternion(targetQuat, duration);
-        }
-
-        private Tweener CreatePreviewScaleTween(TweenStepData step, Transform target)
-        {
-            if (step.UseStartValue) target.localScale = step.StartVector;
-            float duration = Mathf.Max(0.001f, step.Duration);
-            return step.IsRelative
-                ? target.DOScale(step.TargetVector, duration).From(isRelative: true)
-                : target.DOScale(step.TargetVector, duration);
-        }
-
-        private Tweener CreatePreviewColorTween(TweenStepData step, Transform target)
-        {
-            var renderer = target.GetComponent<Renderer>();
-            if (renderer == null || renderer.material == null) return null;
-            if (step.UseStartColor) renderer.material.color = step.StartColor;
-            float duration = Mathf.Max(0.001f, step.Duration);
-            return renderer.material.DOColor(step.TargetColor, duration);
-        }
-
-        private Tweener CreatePreviewFadeTween(TweenStepData step, Transform target)
-        {
-            float duration = Mathf.Max(0.001f, step.Duration);
-
-            var canvasGroup = target.GetComponent<CanvasGroup>();
-            if (canvasGroup != null)
-            {
-                if (step.UseStartFloat) canvasGroup.alpha = step.StartFloat;
-                return canvasGroup.DOFade(step.TargetFloat, duration);
-            }
-
-            var renderer = target.GetComponent<Renderer>();
-            if (renderer != null && renderer.material != null)
-            {
-                if (step.UseStartFloat)
-                {
-                    Color c = renderer.material.color;
-                    c.a = step.StartFloat;
-                    renderer.material.color = c;
-                }
-                return renderer.material.DOFade(step.TargetFloat, duration);
-            }
-
-            return null;
-        }
-
-        #endregion
 
         #endregion
 
@@ -1540,6 +1594,12 @@ namespace CNoom.DOTweenVisual.Editor
             TweenStepType.Scale => "Scale",
             TweenStepType.Color => "Color",
             TweenStepType.Fade => "Fade",
+            TweenStepType.AnchorMove => "AnchorMove",
+            TweenStepType.SizeDelta => "SizeDelta",
+            TweenStepType.Jump => "Jump",
+            TweenStepType.Punch => "Punch",
+            TweenStepType.Shake => "Shake",
+            TweenStepType.FillAmount => "FillAmount",
             TweenStepType.Delay => "Delay",
             TweenStepType.Callback => "Callback",
             _ => type.ToString()
@@ -1568,17 +1628,35 @@ namespace CNoom.DOTweenVisual.Editor
             TweenStepType.Scale => new Color(0.29f, 0.85f, 0.29f),   // #4AD94A 绿
             TweenStepType.Color => new Color(0.85f, 0.29f, 0.85f),   // #D94AD9 粉
             TweenStepType.Fade => new Color(0.60f, 0.60f, 0.85f),    // #9A9AD9 淡紫
+            TweenStepType.AnchorMove => new Color(0.29f, 0.75f, 0.85f),  // #4ABFD9 青蓝
+            TweenStepType.SizeDelta => new Color(0.29f, 0.85f, 0.65f),   // #4AD9A5 青绿
+            TweenStepType.Jump => new Color(0.85f, 0.85f, 0.29f),    // #D9D94A 黄
+            TweenStepType.Punch => new Color(0.85f, 0.45f, 0.29f),   // #D9734A 深橙
+            TweenStepType.Shake => new Color(0.85f, 0.29f, 0.29f),   // #D94A4A 红
+            TweenStepType.FillAmount => new Color(0.55f, 0.85f, 0.29f), // #8CD94A 黄绿
             TweenStepType.Delay => new Color(0.50f, 0.50f, 0.50f),   // 灰
             TweenStepType.Callback => new Color(0.85f, 0.29f, 0.60f),// #D94A9A 玫红
             _ => new Color(0.5f, 0.5f, 0.5f)
         };
 
-        private void Log(string message)
-        {
-            if (DEBUG_MODE) Debug.Log($"[DOTweenVisualEditor] {message}");
-        }
-
         #endregion
+
+        /// <summary>
+        /// 动态查找 USS 样式表文件，避免硬编码路径
+        /// </summary>
+        private StyleSheet FindStyleSheet()
+        {
+            var guids = AssetDatabase.FindAssets($"t:StyleSheet {USS_FILE_NAME}");
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (path.EndsWith(USS_FILE_NAME))
+                {
+                    return AssetDatabase.LoadAssetAtPath<StyleSheet>(path);
+                }
+            }
+            return null;
+        }
     }
 }
 #endif
