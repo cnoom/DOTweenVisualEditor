@@ -136,7 +136,7 @@ namespace CNoom.DOTweenVisual.Editor
             }
             catch (Exception e)
             {
-                Debug.LogError($"[DOTweenPreviewManager] 预览启动失败: {e.Message}");
+                DOTweenLog.Error($"预览启动失败: {e.Message}");
                 DOTweenEditorPreview.Stop();
                 CleanupSequence();
                 RestoreSnapshots();

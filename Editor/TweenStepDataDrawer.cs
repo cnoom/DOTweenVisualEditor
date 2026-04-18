@@ -583,7 +583,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             if (target == null)
             {
-                Debug.LogWarning("无法获取目标物体");
+                DOTweenLog.Warning("无法获取目标物体");
                 return;
             }
 
@@ -648,7 +648,7 @@ namespace CNoom.DOTweenVisual.Editor
             property.FindPropertyRelative("TargetVector").vector3Value = currentValue;
             property.serializedObject.ApplyModifiedProperties();
 
-            Debug.Log($"已同步 {target.name} 的 {type}.{transformTarget} = {currentValue}");
+            DOTweenLog.Info($"已同步 {target.name} 的 {type}.{transformTarget} = {currentValue}");
         }
 
         #endregion

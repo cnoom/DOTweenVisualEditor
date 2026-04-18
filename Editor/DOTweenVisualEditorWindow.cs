@@ -108,12 +108,14 @@ namespace CNoom.DOTweenVisual.Editor
             _previewManager.StateChanged += OnPreviewStateChanged;
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
         }
 
         private void OnDisable()
         {
             EditorApplication.update -= OnEditorUpdate;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             _previewManager.StateChanged -= OnPreviewStateChanged;
             _previewManager.Dispose();
             _previewManager = null;
@@ -129,6 +131,23 @@ namespace CNoom.DOTweenVisual.Editor
                     _previewManager.Reset();
                 }
             }
+        }
+
+        /// <summary>
+        /// Undo/Redo 执行后刷新 UI
+        /// </summary>
+        private void OnUndoRedoPerformed()
+        {
+            if (targetPlayer == null) return;
+
+            // 重新绑定 SerializedObject 以同步撤销/重做后的数据
+            if (serializedObject != null)
+            {
+                serializedObject.Update();
+            }
+
+            RebuildStepList();
+            RefreshDetailPanel();
         }
 
         private void OnEditorUpdate()
@@ -209,7 +228,7 @@ namespace CNoom.DOTweenVisual.Editor
             }
             else
             {
-                Debug.LogError("[DOTweenVisual] 样式表加载失败！请检查 Editor/USS/DOTweenVisualEditor.uss 是否存在且已被 Unity 导入");
+                DOTweenLog.Error("样式表加载失败！请检查 Editor/USS/DOTweenVisualEditor.uss 是否存在且已被 Unity 导入");
             }
 
             if (targetPlayer != null)
@@ -509,6 +528,8 @@ namespace CNoom.DOTweenVisual.Editor
                 int idx = data.OriginalIndex;
                 if (stepsProperty == null || idx < 0 || idx >= stepsProperty.arraySize) return;
 
+                Undo.RecordObject(targetPlayer, "删除动画步骤");
+                serializedObject.Update();
                 stepsProperty.DeleteArrayElementAtIndex(idx);
                 stepsProperty.serializedObject.ApplyModifiedProperties();
 
@@ -653,6 +674,8 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnStepIndexChanged(int from, int to)
         {
             if (stepsProperty == null) return;
+            Undo.RecordObject(targetPlayer, "调整步骤顺序");
+            serializedObject.Update();
             stepsProperty.MoveArrayElement(from, to);
             stepsProperty.serializedObject.ApplyModifiedProperties();
             CalculateStepTimings();
@@ -995,11 +1018,30 @@ namespace CNoom.DOTweenVisual.Editor
 
         #region 详情字段工厂
 
+        /// <summary>
+        /// 检查 SerializedProperty 是否仍然有效
+        /// 兼容 Unity 2021.3+（isValid 在 2022.1 才引入）
+        /// </summary>
+        private static bool IsValidProperty(SerializedProperty prop)
+        {
+            if (prop == null) return false;
+            try
+            {
+                _ = prop.type;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private Toggle CreateToggle(SerializedProperty prop, Action onChanged = null)
         {
             var toggle = new Toggle { value = prop.boolValue };
             toggle.RegisterValueChangedCallback(evt =>
             {
+                if (!IsValidProperty(prop)) return;
                 prop.boolValue = evt.newValue;
                 prop.serializedObject.ApplyModifiedProperties();
                 onChanged?.Invoke();
@@ -1012,6 +1054,7 @@ namespace CNoom.DOTweenVisual.Editor
             var field = new FloatField { value = prop.floatValue };
             field.RegisterValueChangedCallback(evt =>
             {
+                if (!IsValidProperty(prop)) return;
                 prop.floatValue = evt.newValue;
                 prop.serializedObject.ApplyModifiedProperties();
                 onChanged?.Invoke();
@@ -1024,6 +1067,7 @@ namespace CNoom.DOTweenVisual.Editor
             var field = new Vector3Field { value = prop.vector3Value };
             field.RegisterValueChangedCallback(evt =>
             {
+                if (!IsValidProperty(prop)) return;
                 prop.vector3Value = evt.newValue;
                 prop.serializedObject.ApplyModifiedProperties();
             });
@@ -1035,6 +1079,7 @@ namespace CNoom.DOTweenVisual.Editor
             var field = new ColorField { value = prop.colorValue };
             field.RegisterValueChangedCallback(evt =>
             {
+                if (!IsValidProperty(prop)) return;
                 prop.colorValue = evt.newValue;
                 prop.serializedObject.ApplyModifiedProperties();
             });
@@ -1046,6 +1091,7 @@ namespace CNoom.DOTweenVisual.Editor
             var field = new EnumField((Enum)Enum.GetValues(enumType).GetValue(prop.enumValueIndex));
             field.RegisterValueChangedCallback(evt =>
             {
+                if (!IsValidProperty(prop)) return;
                 prop.enumValueIndex = Convert.ToInt32(evt.newValue);
                 prop.serializedObject.ApplyModifiedProperties();
                 onChanged?.Invoke();
@@ -1058,6 +1104,7 @@ namespace CNoom.DOTweenVisual.Editor
             var field = new ObjectField { objectType = objType, value = prop.objectReferenceValue };
             field.RegisterValueChangedCallback(evt =>
             {
+                if (!IsValidProperty(prop)) return;
                 prop.objectReferenceValue = evt.newValue;
                 prop.serializedObject.ApplyModifiedProperties();
                 RebuildStepList();
@@ -1071,6 +1118,7 @@ namespace CNoom.DOTweenVisual.Editor
             var field = new CurveField { value = prop.animationCurveValue };
             field.RegisterValueChangedCallback(evt =>
             {
+                if (!IsValidProperty(prop)) return;
                 prop.animationCurveValue = evt.newValue;
                 prop.serializedObject.ApplyModifiedProperties();
             });
@@ -1082,6 +1130,7 @@ namespace CNoom.DOTweenVisual.Editor
             var field = new IntegerField { value = prop.intValue };
             field.RegisterValueChangedCallback(evt =>
             {
+                if (!IsValidProperty(prop)) return;
                 prop.intValue = evt.newValue;
                 prop.serializedObject.ApplyModifiedProperties();
             });
@@ -1180,6 +1229,7 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (selectedStepIndex < 0 || stepsProperty == null || selectedStepIndex >= stepsProperty.arraySize) return;
 
+            Undo.RecordObject(targetPlayer, "同步当前值");
             serializedObject?.Update();
             var stepProperty = stepsProperty.GetArrayElementAtIndex(selectedStepIndex);
             var type = (TweenStepType)stepProperty.FindPropertyRelative("Type").enumValueIndex;
@@ -1280,10 +1330,12 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (stepsProperty == null)
             {
-                Debug.LogWarning("请先选择一个 DOTweenVisualPlayer 组件");
+                DOTweenLog.Warning("请先选择一个 DOTweenVisualPlayer 组件");
                 return;
             }
 
+            Undo.RecordObject(targetPlayer, "添加动画步骤");
+            serializedObject.Update();
             stepsProperty.InsertArrayElementAtIndex(stepsProperty.arraySize);
             var newStep = stepsProperty.GetArrayElementAtIndex(stepsProperty.arraySize - 1);
 
@@ -1334,7 +1386,7 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (targetPlayer == null)
             {
-                Debug.LogWarning("请先选择一个 DOTweenVisualPlayer 组件");
+                DOTweenLog.Warning("请先选择一个 DOTweenVisualPlayer 组件");
                 return;
             }
 

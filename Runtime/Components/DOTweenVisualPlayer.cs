@@ -131,7 +131,7 @@ namespace CNoom.DOTweenVisual.Components
         {
             if (_isPlaying)
             {
-                if (_debugMode) Debug.Log($"[{nameof(DOTweenVisualPlayer)}] 已在播放中，忽略 Play 调用");
+                if (_debugMode) DOTweenLog.Debug("已在播放中，忽略 Play 调用");
                 return;
             }
 
@@ -144,7 +144,7 @@ namespace CNoom.DOTweenVisual.Components
         public void Stop()
         {
             KillSequence();
-            if (_debugMode) Debug.Log($"[{nameof(DOTweenVisualPlayer)}] 动画已停止");
+            if (_debugMode) DOTweenLog.Debug("动画已停止");
         }
 
         /// <summary>
@@ -155,7 +155,7 @@ namespace CNoom.DOTweenVisual.Components
             if (_currentSequence != null && _currentSequence.IsPlaying())
             {
                 _currentSequence.Pause();
-                if (_debugMode) Debug.Log($"[{nameof(DOTweenVisualPlayer)}] 动画已暂停");
+                if (_debugMode) DOTweenLog.Debug("动画已暂停");
             }
         }
 
@@ -167,7 +167,7 @@ namespace CNoom.DOTweenVisual.Components
             if (_currentSequence != null && !_currentSequence.IsPlaying())
             {
                 _currentSequence.Play();
-                if (_debugMode) Debug.Log($"[{nameof(DOTweenVisualPlayer)}] 动画已恢复");
+                if (_debugMode) DOTweenLog.Debug("动画已恢复");
             }
         }
 
@@ -266,7 +266,7 @@ namespace CNoom.DOTweenVisual.Components
 
             if (!hasEnabledSteps)
             {
-                if (_debugMode) Debug.LogWarning($"[{nameof(DOTweenVisualPlayer)}] 没有启用的动画步骤可播放");
+                if (_debugMode) DOTweenLog.Warning("没有启用的动画步骤可播放");
                 return;
             }
 
@@ -296,13 +296,13 @@ namespace CNoom.DOTweenVisual.Components
             _currentSequence.OnPlay(() =>
             {
                 _isPlaying = true;
-                if (_debugMode) Debug.Log($"[{nameof(DOTweenVisualPlayer)}] 开始播放 {_steps.Count} 个步骤");
+                if (_debugMode) DOTweenLog.Debug($"开始播放 {_steps.Count} 个步骤");
             });
 
             _currentSequence.OnComplete(() =>
             {
                 _isPlaying = false;
-                if (_debugMode) Debug.Log($"[{nameof(DOTweenVisualPlayer)}] 动画播放完成");
+                if (_debugMode) DOTweenLog.Debug("动画播放完成");
             });
 
             _currentSequence.Play();
