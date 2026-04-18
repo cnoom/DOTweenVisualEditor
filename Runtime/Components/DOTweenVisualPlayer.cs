@@ -52,6 +52,41 @@ namespace CNoom.DOTweenVisual.Components
 
         #endregion
 
+        #region 事件回调
+
+        private event TweenCallback _onStart;
+        private event TweenCallback _onComplete;
+        private event TweenCallback _onUpdate;
+
+        /// <summary>
+        /// 注册动画开始回调
+        /// </summary>
+        public DOTweenVisualPlayer OnStart(TweenCallback callback)
+        {
+            _onStart += callback;
+            return this;
+        }
+
+        /// <summary>
+        /// 注册动画完成回调
+        /// </summary>
+        public DOTweenVisualPlayer OnComplete(TweenCallback callback)
+        {
+            _onComplete += callback;
+            return this;
+        }
+
+        /// <summary>
+        /// 注册动画每帧更新回调
+        /// </summary>
+        public DOTweenVisualPlayer OnUpdate(TweenCallback callback)
+        {
+            _onUpdate += callback;
+            return this;
+        }
+
+        #endregion
+
         #region 私有字段
 
         private Sequence _currentSequence;
@@ -248,6 +283,22 @@ namespace CNoom.DOTweenVisual.Components
 
             _currentSequence.SetLoops(_loops, _loopType);
 
+            // 绑定事件回调
+            if (_onStart != null)
+                _currentSequence.OnStart(() => _onStart?.Invoke());
+
+            if (_onComplete != null)
+                _currentSequence.OnComplete(() => _onComplete?.Invoke());
+
+            if (_onUpdate != null)
+                _currentSequence.OnUpdate(() => _onUpdate?.Invoke());
+
+            _currentSequence.OnPlay(() =>
+            {
+                _isPlaying = true;
+                if (_debugMode) Debug.Log($"[{nameof(DOTweenVisualPlayer)}] 开始播放 {_steps.Count} 个步骤");
+            });
+
             _currentSequence.OnComplete(() =>
             {
                 _isPlaying = false;
@@ -255,12 +306,6 @@ namespace CNoom.DOTweenVisual.Components
             });
 
             _currentSequence.Play();
-            _isPlaying = true;
-
-            if (_debugMode)
-            {
-                Debug.Log($"[{nameof(DOTweenVisualPlayer)}] 开始播放 {_steps.Count} 个步骤");
-            }
         }
 
         private void KillSequence()

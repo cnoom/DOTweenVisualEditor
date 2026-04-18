@@ -206,9 +206,6 @@ namespace CNoom.DOTweenVisual.Editor
             if (styleSheet != null)
             {
                 rootVisualElement.styleSheets.Add(styleSheet);
-#if UNITY_2021_3_OR_NEWER
-                Debug.Log("[DOTweenVisual] 样式表加载成功");
-#endif
             }
             else
             {
@@ -947,29 +944,52 @@ namespace CNoom.DOTweenVisual.Editor
 
             AddSeparator();
 
-            // --- 执行 & 缓动 ---
-            AddDetailField("执行模式", CreateEnumField(executionModeProp, typeof(ExecutionMode), OnEnumRebuild));
-            if ((ExecutionMode)executionModeProp.enumValueIndex == ExecutionMode.Insert)
+            // --- 按类型显示执行 & 缓动 & 回调 ---
+            if (type == TweenStepType.Callback)
             {
-                AddDetailField("插入时间", CreateFloatField(insertTimeProp, OnTimingChanged));
+                // Callback：仅显示回调事件
+                if (onCompleteProp != null)
+                {
+                    var eventField = new PropertyField(onCompleteProp);
+                    eventField.BindProperty(onCompleteProp);
+                    detailScrollView.Add(eventField);
+                }
             }
-
-            AddDetailField("缓动", CreateEnumField(easeProp, typeof(Ease)));
-
-            AddDetailField("自定义曲线", CreateToggle(useCustomCurveProp, OnToggleRebuild));
-
-            if (useCustomCurveProp.boolValue && customCurveProp != null)
+            else if (type == TweenStepType.Delay)
             {
-                AddDetailField("曲线", CreateCurveField(customCurveProp));
+                // Delay：仅执行模式（无需缓动）
+                AddDetailField("执行模式", CreateEnumField(executionModeProp, typeof(ExecutionMode), OnEnumRebuild));
+                if ((ExecutionMode)executionModeProp.enumValueIndex == ExecutionMode.Insert)
+                {
+                    AddDetailField("插入时间", CreateFloatField(insertTimeProp, OnTimingChanged));
+                }
             }
-
-            // --- 回调 ---
-            if (type == TweenStepType.Callback && onCompleteProp != null)
+            else
             {
-                AddSeparator();
-                var eventField = new PropertyField(onCompleteProp);
-                eventField.BindProperty(onCompleteProp);
-                detailScrollView.Add(eventField);
+                // 动画类型：完整执行模式 + 缓动
+                AddDetailField("执行模式", CreateEnumField(executionModeProp, typeof(ExecutionMode), OnEnumRebuild));
+                if ((ExecutionMode)executionModeProp.enumValueIndex == ExecutionMode.Insert)
+                {
+                    AddDetailField("插入时间", CreateFloatField(insertTimeProp, OnTimingChanged));
+                }
+
+                AddDetailField("缓动", CreateEnumField(easeProp, typeof(Ease)));
+
+                AddDetailField("自定义曲线", CreateToggle(useCustomCurveProp, OnToggleRebuild));
+
+                if (useCustomCurveProp.boolValue && customCurveProp != null)
+                {
+                    AddDetailField("曲线", CreateCurveField(customCurveProp));
+                }
+
+                // 所有动画类型也支持完成回调
+                if (onCompleteProp != null)
+                {
+                    AddSeparator();
+                    var eventField = new PropertyField(onCompleteProp);
+                    eventField.BindProperty(onCompleteProp);
+                    detailScrollView.Add(eventField);
+                }
             }
         }
 

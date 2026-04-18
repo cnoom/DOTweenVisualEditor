@@ -144,21 +144,5 @@ namespace CNoom.DOTweenVisual.Data
         public UnityEvent OnComplete = new UnityEvent();
 
         #endregion
-
-        #region 兼容性属性
-
-        /// <summary>
-        /// 向后兼容：获取目标值
-        /// Move/Rotate/Scale → TargetVector
-        /// Fade → TargetFloat 的 Vector3 包装
-        /// </summary>
-        [Obsolete("请使用对应值组字段（TargetVector/TargetColor/TargetFloat）")]
-        public Vector3 TargetValue
-        {
-            get => TargetVector;
-            set => TargetVector = value;
-        }
-
-        #endregion
     }
 }
