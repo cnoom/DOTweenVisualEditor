@@ -201,10 +201,18 @@ namespace CNoom.DOTweenVisual.Editor
         {
             BuildUI();
 
+            // 加载 USS 样式表（必须确保加载成功）
             var styleSheet = DOTweenEditorStyle.FindStyleSheet();
             if (styleSheet != null)
             {
                 rootVisualElement.styleSheets.Add(styleSheet);
+#if UNITY_2021_3_OR_NEWER
+                Debug.Log("[DOTweenVisual] 样式表加载成功");
+#endif
+            }
+            else
+            {
+                Debug.LogError("[DOTweenVisual] 样式表加载失败！请检查 Editor/USS/DOTweenVisualEditor.uss 是否存在且已被 Unity 导入");
             }
 
             if (targetPlayer != null)
@@ -562,25 +570,9 @@ namespace CNoom.DOTweenVisual.Editor
             // 存储 userData 用于回调
             element.userData = new StepItemData(stepProperty, index);
 
-            // 更新样式
+            // 更新样式（注意：ClearClassList 后需重新添加基础类）
             element.ClearClassList();
             element.AddToClassList("step-item");
-
-            // 执行模式颜色
-            Color modeColor;
-            if (type == TweenStepType.Delay || type == TweenStepType.Callback)
-            {
-                modeColor = new Color(0.44f, 0.44f, 0.44f);
-                element.AddToClassList("mode-default");
-            }
-            else
-            {
-                var executionMode = (ExecutionMode)stepProperty.FindPropertyRelative("ExecutionMode").enumValueIndex;
-                element.AddToClassList(DOTweenEditorStyle.GetExecutionModeCssClass(executionMode));
-                modeColor = DOTweenEditorStyle.GetExecutionModeColor(executionMode);
-            }
-
-            element.style.borderLeftColor = modeColor;
 
             if (!isEnabledProp.boolValue) element.AddToClassList("step-disabled");
 
@@ -596,7 +588,15 @@ namespace CNoom.DOTweenVisual.Editor
             var summaryLabel = element.Q<Label>(className: "step-summary");
             if (summaryLabel != null) summaryLabel.text = $"{durationProp.floatValue:F1}s | {ease}";
 
-            // 时间轴位置
+            // 时间轴位置（通过内联样式确保可见性，不依赖 USS 加载状态）
+            var timelineTrack = element.Q<VisualElement>(className: "step-timeline-track");
+            if (timelineTrack != null)
+            {
+                timelineTrack.style.height = 4f;
+                timelineTrack.style.position = Position.Relative;
+                timelineTrack.style.marginTop = 3f;
+            }
+
             var timelineBar = element.Q<VisualElement>(className: "step-timeline-bar");
             if (timelineBar != null && stepStartTimes != null && index < stepStartTimes.Length)
             {
@@ -604,8 +604,21 @@ namespace CNoom.DOTweenVisual.Editor
                 float dur = durationProp.floatValue;
                 float total = Mathf.Max(0.001f, totalSequenceDuration);
 
+                timelineBar.style.position = Position.Absolute;
+                timelineBar.style.height = Length.Percent(100f);
                 timelineBar.style.left = Length.Percent(Mathf.Min(start / total * 100f, 97f));
                 timelineBar.style.width = Length.Percent(Mathf.Max(3f, dur / total * 100f));
+
+                // 根据执行模式设置时间轴颜色
+                Color barColor;
+                if (type == TweenStepType.Delay || type == TweenStepType.Callback)
+                    barColor = new Color(0.44f, 0.44f, 0.44f);
+                else
+                {
+                    var execMode = (ExecutionMode)stepProperty.FindPropertyRelative("ExecutionMode").enumValueIndex;
+                    barColor = DOTweenEditorStyle.GetExecutionModeColor(execMode);
+                }
+                timelineBar.style.backgroundColor = barColor;
             }
         }
 

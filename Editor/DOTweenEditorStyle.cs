@@ -72,11 +72,12 @@ namespace CNoom.DOTweenVisual.Editor
 #region 资源查找
 
         /// <summary>
-        /// 动态查找 USS 样式表文件，避免硬编码路径
+        /// 查找并加载 USS 样式表文件
+        /// 搜索所有 StyleSheet 资源，按文件名匹配目标 USS
         /// </summary>
         public static StyleSheet FindStyleSheet()
         {
-            var guids = AssetDatabase.FindAssets($"t:StyleSheet {USS_FILE_NAME}");
+            var guids = AssetDatabase.FindAssets($"t:StyleSheet");
             foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
