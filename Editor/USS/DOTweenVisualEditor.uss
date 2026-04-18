@@ -150,6 +150,9 @@
     color: #C0C0C0;
     flex-grow: 1;
     overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-width: 60px;
 }
 
 .step-summary {
@@ -306,4 +309,9 @@
 
 .step-item.step-active .step-title {
     color: #7CB8F2;
+}
+
+/* === 路径点编辑器 === */
+.path-waypoints-container {
+    margin-top: 4px;
 }

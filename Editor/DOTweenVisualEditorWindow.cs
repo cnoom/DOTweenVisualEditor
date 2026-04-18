@@ -1023,15 +1023,14 @@ namespace CNoom.DOTweenVisual.Editor
                     AddDetailField("起始位置", CreateVector3Field(startVectorProp));
                 }
 
-                // 路径点数量提示
+                // 路径点列表（支持在界面中增删改）
                 var waypointsProp = stepProperty.FindPropertyRelative("PathWaypoints");
-                int waypointCount = waypointsProp != null && waypointsProp.isArray ? waypointsProp.arraySize : 0;
-                AddDetailField("路径点数", new Label($"{waypointCount} 个（在 Inspector 中编辑）"));
+                AddPathWaypointsEditor(waypointsProp);
 
                 AddSeparator();
 
-                AddDetailField("路径类型 (0=Linear,1=CatmullRom)", CreateIntegerField(stepProperty.FindPropertyRelative("PathType")));
-                AddDetailField("路径模式 (0=3D,1=TopDown2D,2=SideScroll2D)", CreateIntegerField(stepProperty.FindPropertyRelative("PathMode")));
+                AddDetailField("路径类型", CreatePathTypeEnumField(stepProperty.FindPropertyRelative("PathType")));
+                AddDetailField("路径模式", CreatePathModeEnumField(stepProperty.FindPropertyRelative("PathMode")));
                 AddDetailField("路径分辨率", CreateIntegerField(stepProperty.FindPropertyRelative("PathResolution")));
             }
 
@@ -1207,6 +1206,59 @@ namespace CNoom.DOTweenVisual.Editor
             return field;
         }
 
+        /// <summary>
+        /// 创建路径类型下拉选择器（0=Linear, 1=CatmullRom, 2=CubicBezier）
+        /// </summary>
+        private VisualElement CreatePathTypeEnumField(SerializedProperty prop)
+        {
+            var options = new System.Collections.Generic.List<string> { "Linear (直线)", "CatmullRom (曲线)", "CubicBezier (贝塞尔)" };
+            int idx = Mathf.Clamp(prop.intValue, 0, options.Count - 1);
+            var field = new PopupField<string>(options, options[idx]);
+            field.style.flexGrow = 1;
+            field.RegisterValueChangedCallback(evt =>
+            {
+                if (!IsValidProperty(prop)) return;
+                prop.intValue = options.IndexOf(evt.newValue);
+                if (prop.intValue < 0) prop.intValue = 0;
+                prop.serializedObject.ApplyModifiedProperties();
+            });
+            return field;
+        }
+
+        /// <summary>
+        /// 创建路径模式下拉选择器（0=3D, 1=TopDown2D, 2=SideScroll2D）
+        /// </summary>
+        private VisualElement CreatePathModeEnumField(SerializedProperty prop)
+        {
+            var options = new System.Collections.Generic.List<string> { "3D (三维)", "TopDown2D (俯视)", "SideScroll2D (横版)" };
+            int idx = Mathf.Clamp(prop.intValue, 0, options.Count - 1);
+            var field = new PopupField<string>(options, options[idx]);
+            field.style.flexGrow = 1;
+            field.RegisterValueChangedCallback(evt =>
+            {
+                if (!IsValidProperty(prop)) return;
+                prop.intValue = options.IndexOf(evt.newValue);
+                if (prop.intValue < 0) prop.intValue = 0;
+                prop.serializedObject.ApplyModifiedProperties();
+            });
+            return field;
+        }
+
+        /// <summary>
+        /// 创建路径点坐标的紧凑 FloatField（使用 FloatField 内置 label）
+        /// </summary>
+        private FloatField CreatePathCoordFloatField(string label, float value, Action<float> onValueChanged)
+        {
+            var field = new FloatField(label) { value = value };
+            field.labelElement.style.fontSize = 9f;
+            field.labelElement.style.color = new Color(0.6f, 0.8f, 1f);
+            field.labelElement.style.minWidth = 14f;
+            field.labelElement.style.width = 14f;
+            field.labelElement.style.marginRight = 1f;
+            field.RegisterValueChangedCallback(evt => onValueChanged(evt.newValue));
+            return field;
+        }
+
         /// <summary>类型枚举变化：重建列表+详情</summary>
         private void OnTypeChanged()
         {
@@ -1256,6 +1308,172 @@ namespace CNoom.DOTweenVisual.Editor
             var sep = new VisualElement();
             sep.AddToClassList("detail-separator");
             detailScrollView.Add(sep);
+        }
+
+        /// <summary>
+        /// 添加路径点列表编辑器（支持增删改路径点）
+        /// </summary>
+        private void AddPathWaypointsEditor(SerializedProperty waypointsProp)
+        {
+            if (waypointsProp == null || !waypointsProp.isArray) return;
+
+            // 路径点容器
+            var container = new VisualElement();
+            container.AddToClassList("path-waypoints-container");
+
+            // 标题行：显示数量 + 添加按钮
+            var headerRow = new VisualElement();
+            headerRow.style.flexDirection = FlexDirection.Row;
+            headerRow.style.alignItems = Align.Center;
+            headerRow.style.marginBottom = 4f;
+
+            var countLabel = new Label($"路径点 ({waypointsProp.arraySize} 个)");
+            countLabel.style.fontSize = 11f;
+            countLabel.style.color = new Color(0.85f, 0.75f, 0.5f);
+            countLabel.style.flexGrow = 1;
+            headerRow.Add(countLabel);
+
+            var addButton = new Button(() => AddPathWaypoint(waypointsProp, countLabel)) { text = "＋ 添加" };
+            addButton.style.fontSize = 10f;
+            addButton.style.paddingLeft = 6f;
+            addButton.style.paddingRight = 6f;
+            headerRow.Add(addButton);
+
+            container.Add(headerRow);
+
+            // 路径点列表
+            for (int i = 0; i < waypointsProp.arraySize; i++)
+            {
+                int idx = i; // 闭包捕获副本
+                var wp = waypointsProp.GetArrayElementAtIndex(idx);
+
+                var pointRow = new VisualElement();
+                pointRow.style.flexDirection = FlexDirection.Row;
+                pointRow.style.alignItems = Align.Center;
+                pointRow.style.marginBottom = 2f;
+                pointRow.style.paddingLeft = 4f;
+                pointRow.style.paddingRight = 2f;
+                pointRow.style.backgroundColor = new Color(0.25f, 0.25f, 0.25f);
+
+                // 序号标签
+                var idxLabel = new Label($"{idx + 1}.");
+                idxLabel.style.fontSize = 9f;
+                idxLabel.style.color = new Color(0.7f, 0.7f, 0.7f);
+                idxLabel.style.width = 18f;
+                idxLabel.style.flexShrink = 0;
+                pointRow.Add(idxLabel);
+
+                // X / Y / Z 紧凑 FloatField（固定宽度）
+                Vector3 currentVal = wp.vector3Value;
+
+                // X 字段
+                var xField = CreatePathCoordFloatField("X", currentVal.x,
+                    val =>
+                    {
+                        if (!IsValidProperty(wp)) return;
+                        Undo.RecordObject(targetPlayer, "修改路径点");
+                        serializedObject.Update();
+                        var v = waypointsProp.GetArrayElementAtIndex(idx).vector3Value;
+                        v.x = val;
+                        waypointsProp.GetArrayElementAtIndex(idx).vector3Value = v;
+                        waypointsProp.serializedObject.ApplyModifiedProperties();
+                    });
+                xField.style.width = Length.Percent(32f);
+                xField.style.marginRight = 1f;
+                pointRow.Add(xField);
+
+                // Y 字段
+                var yField = CreatePathCoordFloatField("Y", currentVal.y,
+                    val =>
+                    {
+                        if (!IsValidProperty(wp)) return;
+                        Undo.RecordObject(targetPlayer, "修改路径点");
+                        serializedObject.Update();
+                        var v = waypointsProp.GetArrayElementAtIndex(idx).vector3Value;
+                        v.y = val;
+                        waypointsProp.GetArrayElementAtIndex(idx).vector3Value = v;
+                        waypointsProp.serializedObject.ApplyModifiedProperties();
+                    });
+                yField.style.width = Length.Percent(32f);
+                yField.style.marginRight = 1f;
+                pointRow.Add(yField);
+
+                // Z 字段
+                var zField = CreatePathCoordFloatField("Z", currentVal.z,
+                    val =>
+                    {
+                        if (!IsValidProperty(wp)) return;
+                        Undo.RecordObject(targetPlayer, "修改路径点");
+                        serializedObject.Update();
+                        var v = waypointsProp.GetArrayElementAtIndex(idx).vector3Value;
+                        v.z = val;
+                        waypointsProp.GetArrayElementAtIndex(idx).vector3Value = v;
+                        waypointsProp.serializedObject.ApplyModifiedProperties();
+                    });
+                zField.style.width = Length.Percent(32f);
+                pointRow.Add(zField);
+
+                // 删除按钮
+                var delBtn = new Button(() =>
+                {
+                    RemovePathWaypoint(waypointsProp, idx, container, countLabel);
+                }) { text = "✕" };
+                delBtn.style.fontSize = 9f;
+                delBtn.style.color = new Color(0.9f, 0.4f, 0.4f);
+                delBtn.style.width = 18f;
+                delBtn.style.height = 18f;
+                delBtn.style.flexShrink = 0;
+                delBtn.style.marginLeft = 2f;
+                pointRow.Add(delBtn);
+
+                container.Add(pointRow);
+            }
+
+            detailScrollView.Add(container);
+        }
+
+        /// <summary>
+        /// 添加一个新路径点
+        /// </summary>
+        private void AddPathWaypoint(SerializedProperty waypointsProp, Label countLabel)
+        {
+            if (waypointsProp == null) return;
+            Undo.RecordObject(targetPlayer, "添加路径点");
+            serializedObject.Update();
+
+            // 在末尾添加默认位置点
+            Vector3 lastPos = Vector3.zero;
+            if (waypointsProp.arraySize > 0)
+            {
+                lastPos = waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value;
+            }
+            
+            waypointsProp.InsertArrayElementAtIndex(waypointsProp.arraySize);
+            var newWp = waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1);
+            newWp.vector3Value = lastPos + new Vector3(1f, 0f, 0f);
+            waypointsProp.serializedObject.ApplyModifiedProperties();
+
+            RefreshDetailPanel();
+        }
+
+        /// <summary>
+        /// 移除指定索引的路径点
+        /// </summary>
+        private void RemovePathWaypoint(SerializedProperty waypointsProp, int index, VisualElement container, Label countLabel)
+        {
+            if (waypointsProp == null || index < 0 || index >= waypointsProp.arraySize) return;
+            if (waypointsProp.arraySize <= 1)
+            {
+                DOTweenLog.Warning("至少需要保留一个路径点");
+                return;
+            }
+
+            Undo.RecordObject(targetPlayer, "删除路径点");
+            serializedObject.Update();
+            waypointsProp.DeleteArrayElementAtIndex(index);
+            waypointsProp.serializedObject.ApplyModifiedProperties();
+
+            RefreshDetailPanel();
         }
 
         /// <summary>
