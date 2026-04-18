@@ -6,7 +6,6 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using DG.Tweening;
-using DG.DOTweenEditor;
 using UnityEditor.Compilation;
 using CNoom.DOTweenVisual.Components;
 using CNoom.DOTweenVisual.Data;
@@ -19,6 +18,7 @@ namespace CNoom.DOTweenVisual.Editor
     /// DOTween 可视化编辑器主窗口
     /// 布局：顶部工具栏+状态栏 | 左侧步骤概览(ListView) | 右侧步骤详情
     /// 使用 ListView 实现步骤列表，内置拖拽排序和选择管理
+    /// 预览逻辑委托给 DOTweenPreviewManager，样式配置委托给 DOTweenEditorStyle
     /// </summary>
     [InitializeOnLoad]
     public class DOTweenVisualEditorWindow : EditorWindow
@@ -36,9 +36,9 @@ namespace CNoom.DOTweenVisual.Editor
             var windows = Resources.FindObjectsOfTypeAll<DOTweenVisualEditorWindow>();
             foreach (var window in windows)
             {
-                if (window.previewState != PreviewState.None)
+                if (window._previewManager != null && window._previewManager.State != DOTweenPreviewManager.PreviewState.None)
                 {
-                    window.OnResetClicked();
+                    window._previewManager.Reset();
                 }
             }
         }
@@ -46,8 +46,6 @@ namespace CNoom.DOTweenVisual.Editor
         #endregion
 
         #region 常量
-
-        private const string USS_FILE_NAME = "DOTweenVisualEditor.uss";
 
         private const float LeftPanelMinWidth = 220f;
 
@@ -88,30 +86,9 @@ namespace CNoom.DOTweenVisual.Editor
 
         #endregion
 
-        #region 预览状态
+        #region 预览管理
 
-        private enum PreviewState { None, Playing, Paused, Completed }
-
-        private PreviewState previewState = PreviewState.None;
-        private Sequence previewSequence;
-        private Dictionary<Transform, TransformState> initialStates = new();
-
-        private bool isPreviewing => previewState == PreviewState.Playing;
-        private bool isPaused => previewState == PreviewState.Paused;
-
-        private struct TransformState
-        {
-            public Vector3 position;
-            public Quaternion rotation;
-            public Vector3 localPosition;
-            public Quaternion localRotation;
-            public Vector3 localScale;
-            public Color color;
-            public float alpha;
-            public Vector2 anchoredPosition;
-            public Vector2 sizeDelta;
-            public float fillAmount;
-        }
+        private DOTweenPreviewManager _previewManager;
 
         #endregion
 
@@ -127,6 +104,8 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void OnEnable()
         {
+            _previewManager = new DOTweenPreviewManager();
+            _previewManager.StateChanged += OnPreviewStateChanged;
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
@@ -135,7 +114,9 @@ namespace CNoom.DOTweenVisual.Editor
         {
             EditorApplication.update -= OnEditorUpdate;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            StopPreview();
+            _previewManager.StateChanged -= OnPreviewStateChanged;
+            _previewManager.Dispose();
+            _previewManager = null;
             rootVisualElement.Clear();
         }
 
@@ -143,9 +124,9 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (state == PlayModeStateChange.ExitingEditMode)
             {
-                if (previewState != PreviewState.None)
+                if (_previewManager != null && _previewManager.State != DOTweenPreviewManager.PreviewState.None)
                 {
-                    OnResetClicked();
+                    _previewManager.Reset();
                 }
             }
         }
@@ -159,14 +140,15 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (timeLabel == null) return;
 
-            if (previewSequence == null)
+            var sequence = _previewManager?.PreviewSequence;
+            if (sequence == null)
             {
                 timeLabel.text = "--:-- / --:--";
                 return;
             }
 
-            float currentTime = previewSequence.Elapsed(false);
-            float totalTime = previewSequence.Duration(false);
+            float currentTime = sequence.Elapsed(false);
+            float totalTime = sequence.Duration(false);
             timeLabel.text = $"{FormatTime(currentTime)} / {FormatTime(totalTime)}";
         }
 
@@ -180,9 +162,9 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void OnTargetChanged(ChangeEvent<UnityEngine.Object> evt)
         {
-            if (isPreviewing || isPaused)
+            if (_previewManager.IsPlaying || _previewManager.IsPaused)
             {
-                StopPreview();
+                _previewManager.StopPreview();
             }
 
             var player = evt.newValue as DOTweenVisualPlayer;
@@ -193,6 +175,7 @@ namespace CNoom.DOTweenVisual.Editor
         private void SetTarget(DOTweenVisualPlayer player)
         {
             targetPlayer = player;
+            _previewManager?.SetTarget(player);
 
             if (player != null)
             {
@@ -218,8 +201,7 @@ namespace CNoom.DOTweenVisual.Editor
         {
             BuildUI();
 
-            // 动态查找 USS 文件，避免硬编码路径
-            var styleSheet = FindStyleSheet();
+            var styleSheet = DOTweenEditorStyle.FindStyleSheet();
             if (styleSheet != null)
             {
                 rootVisualElement.styleSheets.Add(styleSheet);
@@ -584,25 +566,21 @@ namespace CNoom.DOTweenVisual.Editor
             element.ClearClassList();
             element.AddToClassList("step-item");
 
-            // 执行模式颜色（内联样式确保覆盖 .step-item 的默认边框色）
+            // 执行模式颜色
             Color modeColor;
             if (type == TweenStepType.Delay || type == TweenStepType.Callback)
             {
-                modeColor = new Color(0.44f, 0.44f, 0.44f); // 灰色
+                modeColor = new Color(0.44f, 0.44f, 0.44f);
                 element.AddToClassList("mode-default");
             }
             else
             {
                 var executionMode = (ExecutionMode)stepProperty.FindPropertyRelative("ExecutionMode").enumValueIndex;
-                element.AddToClassList(GetExecutionModeCssClass(executionMode));
-                modeColor = GetExecutionModeColor(executionMode);
+                element.AddToClassList(DOTweenEditorStyle.GetExecutionModeCssClass(executionMode));
+                modeColor = DOTweenEditorStyle.GetExecutionModeColor(executionMode);
             }
 
             element.style.borderLeftColor = modeColor;
-
-            // 步骤类型色块颜色
-            var typeDot = element.Q<VisualElement>(className: "step-type-dot");
-            if (typeDot != null) typeDot.style.backgroundColor = GetStepTypeColor(type);
 
             if (!isEnabledProp.boolValue) element.AddToClassList("step-disabled");
 
@@ -612,7 +590,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 绑定标题
             var titleLabel = element.Q<Label>(className: "step-title");
-            if (titleLabel != null) titleLabel.text = $"{index + 1}. [{targetName}] {GetStepDisplayName(type)}";
+            if (titleLabel != null) titleLabel.text = $"{index + 1}. [{targetName}] {DOTweenEditorStyle.GetStepDisplayName(type)}";
 
             // 绑定摘要
             var summaryLabel = element.Q<Label>(className: "step-summary");
@@ -1130,7 +1108,6 @@ namespace CNoom.DOTweenVisual.Editor
 
         /// <summary>
         /// 添加组件需求校验警告
-        /// 当目标物体不满足动画类型的组件需求时显示红色提示
         /// </summary>
         private void AddValidationWarning(SerializedProperty targetTransformProp, TweenStepType type)
         {
@@ -1194,23 +1171,19 @@ namespace CNoom.DOTweenVisual.Editor
                     stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.localScale;
                     break;
                 case TweenStepType.Color:
-                    if (TweenStepRequirement.TryGetColor(target, out Color currentColor))
+                    if (TweenValueHelper.TryGetColor(target, out Color currentColor))
                         stepProperty.FindPropertyRelative("TargetColor").colorValue = currentColor;
                     break;
                 case TweenStepType.Fade:
-                    if (TweenStepRequirement.TryGetAlpha(target, out float currentAlpha))
+                    if (TweenValueHelper.TryGetAlpha(target, out float currentAlpha))
                         stepProperty.FindPropertyRelative("TargetFloat").floatValue = currentAlpha;
                     break;
                 case TweenStepType.AnchorMove:
-                    var rectTransform = target as RectTransform;
-                    if (rectTransform == null) rectTransform = target.GetComponent<RectTransform>();
-                    if (rectTransform != null)
-                        stepProperty.FindPropertyRelative("TargetVector").vector3Value = rectTransform.anchoredPosition;
+                    if (TweenValueHelper.TryGetRectTransform(target, out var rt1))
+                        stepProperty.FindPropertyRelative("TargetVector").vector3Value = rt1.anchoredPosition;
                     break;
                 case TweenStepType.SizeDelta:
-                    var rt2 = target as RectTransform;
-                    if (rt2 == null) rt2 = target.GetComponent<RectTransform>();
-                    if (rt2 != null)
+                    if (TweenValueHelper.TryGetRectTransform(target, out var rt2))
                         stepProperty.FindPropertyRelative("TargetVector").vector3Value = rt2.sizeDelta;
                     break;
                 case TweenStepType.Jump:
@@ -1321,7 +1294,6 @@ namespace CNoom.DOTweenVisual.Editor
             stepsProperty.serializedObject.ApplyModifiedProperties();
             selectedStepIndex = stepsProperty.arraySize - 1;
             RebuildStepList();
-            // RebuildStepList 会调用 SetSelection，无需再次调用
             RefreshDetailPanel();
         }
 
@@ -1333,122 +1305,55 @@ namespace CNoom.DOTweenVisual.Editor
                 return;
             }
 
-            if (previewState == PreviewState.Playing)
-                PausePreview();
-            else if (previewState == PreviewState.Paused)
-                ResumePreview();
-            else if (previewState == PreviewState.None)
-                StartPreview();
+            if (_previewManager.IsPlaying)
+                _previewManager.PausePreview();
+            else if (_previewManager.IsPaused)
+                _previewManager.ResumePreview();
+            else
+                _previewManager.StartPreview();
         }
 
         private void OnReplayClicked()
         {
             if (targetPlayer == null) return;
-            RestoreInitialStates();
-            StartPreview();
+            _previewManager.Replay();
         }
 
-        private void OnStopClicked() => StopPreview();
+        private void OnStopClicked() => _previewManager.StopPreview();
 
         private void OnResetClicked()
         {
             if (targetPlayer == null) return;
-
-            if (previewSequence != null)
-            {
-                previewSequence.Kill();
-                previewSequence = null;
-            }
-            DOTweenEditorPreview.Stop();
-            RestoreInitialStates();
-            previewState = PreviewState.None;
-            initialStates.Clear();
-            UpdateButtonStates();
+            _previewManager.Reset();
         }
 
         #endregion
 
-        #region 预览逻辑
+        #region 状态更新
 
-        private void StartPreview()
+        /// <summary>
+        /// 预览状态变更回调，更新 UI 按钮和状态栏
+        /// </summary>
+        private void OnPreviewStateChanged()
         {
-            if (targetPlayer == null || targetPlayer.StepCount == 0) return;
-
-            if (previewSequence != null) { previewSequence.Kill(); previewSequence = null; }
-            DOTweenEditorPreview.Stop();
-
-            if (initialStates.Count > 0) RestoreInitialStates();
-            else SaveInitialStates();
-
-            DOTweenEditorPreview.Start();
-
-            try
-            {
-                previewSequence = DOTween.Sequence();
-                BuildPreviewSequence();
-                DOTweenEditorPreview.PrepareTweenForPreview(previewSequence);
-
-                previewSequence.OnComplete(() =>
-                {
-                    if (this == null) return;
-                    previewState = PreviewState.Completed;
-                    UpdateButtonStates();
-                });
-
-                previewSequence.Play();
-                previewState = PreviewState.Playing;
-                UpdateButtonStates();
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[DOTweenVisualEditor] 预览启动失败: {e.Message}");
-                DOTweenEditorPreview.Stop();
-                if (previewSequence != null) { previewSequence.Kill(); previewSequence = null; }
-                RestoreInitialStates();
-                previewState = PreviewState.None;
-                UpdateButtonStates();
-            }
-        }
-
-        private void PausePreview()
-        {
-            if (previewSequence != null && previewSequence.IsPlaying())
-            {
-                previewSequence.Pause();
-                previewState = PreviewState.Paused;
-                UpdateButtonStates();
-            }
-        }
-
-        private void ResumePreview()
-        {
-            if (previewSequence != null && !previewSequence.IsPlaying())
-            {
-                previewSequence.Play();
-                previewState = PreviewState.Playing;
-                UpdateButtonStates();
-            }
-        }
-
-        private void StopPreview()
-        {
-            if (previewSequence != null) { previewSequence.Kill(); previewSequence = null; }
-            DOTweenEditorPreview.Stop();
-            previewState = PreviewState.None;
             UpdateButtonStates();
         }
 
         private void UpdateButtonStates()
         {
+            var state = _previewManager?.State ?? DOTweenPreviewManager.PreviewState.None;
             bool hasTarget = targetPlayer != null;
             bool hasSteps = hasTarget && targetPlayer.StepCount > 0;
-            bool inPreview = isPreviewing || isPaused;
-            bool isCompleted = previewState == PreviewState.Completed;
+            bool inPreview = state == DOTweenPreviewManager.PreviewState.Playing
+                          || state == DOTweenPreviewManager.PreviewState.Paused;
+            bool isCompleted = state == DOTweenPreviewManager.PreviewState.Completed;
 
             if (previewButton != null)
             {
                 previewButton.SetEnabled(hasSteps && !isCompleted);
-                previewButton.text = isPreviewing ? "暂停" : (isPaused ? "继续" : "预览");
+                previewButton.text = state == DOTweenPreviewManager.PreviewState.Playing
+                    ? "暂停"
+                    : (state == DOTweenPreviewManager.PreviewState.Paused ? "继续" : "预览");
             }
 
             if (stopButton != null) stopButton.SetEnabled(inPreview);
@@ -1463,200 +1368,30 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (stateLabel == null) return;
 
-            switch (previewState)
+            var state = _previewManager?.State ?? DOTweenPreviewManager.PreviewState.None;
+
+            switch (state)
             {
-                case PreviewState.None:
+                case DOTweenPreviewManager.PreviewState.None:
                     stateLabel.text = "● 未播放";
                     stateLabel.style.color = new Color(0.6f, 0.6f, 0.6f);
                     break;
-                case PreviewState.Playing:
+                case DOTweenPreviewManager.PreviewState.Playing:
                     stateLabel.text = "● 播放中";
                     stateLabel.style.color = new Color(0.3f, 0.8f, 0.3f);
                     break;
-                case PreviewState.Paused:
+                case DOTweenPreviewManager.PreviewState.Paused:
                     stateLabel.text = "● 已暂停";
                     stateLabel.style.color = new Color(1f, 0.7f, 0f);
                     break;
-                case PreviewState.Completed:
+                case DOTweenPreviewManager.PreviewState.Completed:
                     stateLabel.text = "● 播放完成";
                     stateLabel.style.color = new Color(0.3f, 0.6f, 1f);
                     break;
             }
         }
 
-        private void SaveInitialStates()
-        {
-            initialStates.Clear();
-            SaveTransformState(targetPlayer.transform);
-            foreach (var step in targetPlayer.Steps)
-            {
-                if (step.TargetTransform != null)
-                    SaveTransformState(step.TargetTransform);
-            }
-        }
-
-        private void SaveTransformState(Transform t)
-        {
-            if (t == null || initialStates.ContainsKey(t)) return;
-
-            Color color = Color.white;
-            float alpha = 1f;
-
-            // 使用统一工具方法获取颜色和透明度
-            TweenStepRequirement.TryGetColor(t, out color);
-            TweenStepRequirement.TryGetAlpha(t, out alpha);
-
-            // UI 状态
-            Vector2 anchoredPos = Vector2.zero;
-            Vector2 sizeDelta = Vector2.zero;
-            float fillAmount = 0f;
-            var rectTransform = t as RectTransform;
-            if (rectTransform == null) rectTransform = t.GetComponent<RectTransform>();
-            if (rectTransform != null)
-            {
-                anchoredPos = rectTransform.anchoredPosition;
-                sizeDelta = rectTransform.sizeDelta;
-            }
-            var image = t.GetComponent<UnityEngine.UI.Image>();
-            if (image != null) fillAmount = image.fillAmount;
-
-            initialStates[t] = new TransformState
-            {
-                position = t.position,
-                rotation = t.rotation,
-                localPosition = t.localPosition,
-                localRotation = t.localRotation,
-                localScale = t.localScale,
-                color = color,
-                alpha = alpha,
-                anchoredPosition = anchoredPos,
-                sizeDelta = sizeDelta,
-                fillAmount = fillAmount
-            };
-        }
-
-        private void RestoreInitialStates()
-        {
-            foreach (var kvp in initialStates)
-            {
-                var t = kvp.Key;
-                var state = kvp.Value;
-
-                try
-                {
-                    if (t == null || t.gameObject == null) continue;
-
-                    Undo.RecordObject(t, "Reset Preview State");
-                    t.position = state.position;
-                    t.rotation = state.rotation;
-                    t.localPosition = state.localPosition;
-                    t.localRotation = state.localRotation;
-                    t.localScale = state.localScale;
-
-                    // 使用统一工具方法恢复颜色和透明度
-                    TweenStepRequirement.TrySetColor(t, state.color);
-                    TweenStepRequirement.TrySetAlpha(t, state.alpha);
-
-                    // 恢复 UI 状态
-                    var rectTransform = t as RectTransform;
-                    if (rectTransform == null) rectTransform = t.GetComponent<RectTransform>();
-                    if (rectTransform != null)
-                    {
-                        rectTransform.anchoredPosition = state.anchoredPosition;
-                        rectTransform.sizeDelta = state.sizeDelta;
-                    }
-                    var image = t.GetComponent<UnityEngine.UI.Image>();
-                    if (image != null) image.fillAmount = state.fillAmount;
-                }
-                catch (MissingReferenceException) { }
-            }
-
-            initialStates.Clear();
-        }
-
-        private void BuildPreviewSequence()
-        {
-            foreach (var step in targetPlayer.Steps)
-            {
-                if (!step.IsEnabled) continue;
-                TweenFactory.AppendToSequence(previewSequence, step, targetPlayer.transform);
-            }
-        }
-
         #endregion
-
-        #region 工具方法
-
-        private string GetStepDisplayName(TweenStepType type) => type switch
-        {
-            TweenStepType.Move => "Move",
-            TweenStepType.Rotate => "Rotate",
-            TweenStepType.Scale => "Scale",
-            TweenStepType.Color => "Color",
-            TweenStepType.Fade => "Fade",
-            TweenStepType.AnchorMove => "AnchorMove",
-            TweenStepType.SizeDelta => "SizeDelta",
-            TweenStepType.Jump => "Jump",
-            TweenStepType.Punch => "Punch",
-            TweenStepType.Shake => "Shake",
-            TweenStepType.FillAmount => "FillAmount",
-            TweenStepType.Delay => "Delay",
-            TweenStepType.Callback => "Callback",
-            _ => type.ToString()
-        };
-
-        private string GetExecutionModeCssClass(ExecutionMode mode) => mode switch
-        {
-            ExecutionMode.Append => "mode-append",
-            ExecutionMode.Join => "mode-join",
-            ExecutionMode.Insert => "mode-insert",
-            _ => "mode-append"
-        };
-
-        private Color GetExecutionModeColor(ExecutionMode mode) => mode switch
-        {
-            ExecutionMode.Append => new Color(0.29f, 0.56f, 0.85f),  // #4A90D9
-            ExecutionMode.Join => new Color(0.29f, 0.85f, 0.29f),    // #4AD94A
-            ExecutionMode.Insert => new Color(0.85f, 0.60f, 0.29f),  // #D99A4A
-            _ => new Color(0.44f, 0.44f, 0.44f)
-        };
-
-        private Color GetStepTypeColor(TweenStepType type) => type switch
-        {
-            TweenStepType.Move => new Color(0.29f, 0.56f, 0.85f),    // #4A90D9 蓝
-            TweenStepType.Rotate => new Color(0.85f, 0.60f, 0.29f),  // #D99A4A 橙
-            TweenStepType.Scale => new Color(0.29f, 0.85f, 0.29f),   // #4AD94A 绿
-            TweenStepType.Color => new Color(0.85f, 0.29f, 0.85f),   // #D94AD9 粉
-            TweenStepType.Fade => new Color(0.60f, 0.60f, 0.85f),    // #9A9AD9 淡紫
-            TweenStepType.AnchorMove => new Color(0.29f, 0.75f, 0.85f),  // #4ABFD9 青蓝
-            TweenStepType.SizeDelta => new Color(0.29f, 0.85f, 0.65f),   // #4AD9A5 青绿
-            TweenStepType.Jump => new Color(0.85f, 0.85f, 0.29f),    // #D9D94A 黄
-            TweenStepType.Punch => new Color(0.85f, 0.45f, 0.29f),   // #D9734A 深橙
-            TweenStepType.Shake => new Color(0.85f, 0.29f, 0.29f),   // #D94A4A 红
-            TweenStepType.FillAmount => new Color(0.55f, 0.85f, 0.29f), // #8CD94A 黄绿
-            TweenStepType.Delay => new Color(0.50f, 0.50f, 0.50f),   // 灰
-            TweenStepType.Callback => new Color(0.85f, 0.29f, 0.60f),// #D94A9A 玫红
-            _ => new Color(0.5f, 0.5f, 0.5f)
-        };
-
-        #endregion
-
-        /// <summary>
-        /// 动态查找 USS 样式表文件，避免硬编码路径
-        /// </summary>
-        private StyleSheet FindStyleSheet()
-        {
-            var guids = AssetDatabase.FindAssets($"t:StyleSheet {USS_FILE_NAME}");
-            foreach (var guid in guids)
-            {
-                var path = AssetDatabase.GUIDToAssetPath(guid);
-                if (path.EndsWith(USS_FILE_NAME))
-                {
-                    return AssetDatabase.LoadAssetAtPath<StyleSheet>(path);
-                }
-            }
-            return null;
-        }
     }
 }
 #endif

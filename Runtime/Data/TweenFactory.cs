@@ -1,9 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
-using CNoom.DOTweenVisual.Data;
 
-namespace CNoom.DOTweenVisual.Components
+namespace CNoom.DOTweenVisual.Data
 {
     /// <summary>
     /// Tween 创建工厂
@@ -133,35 +132,34 @@ namespace CNoom.DOTweenVisual.Components
                 case TweenStepType.Color:
                     if (step.UseStartColor)
                     {
-                        TweenStepRequirement.TrySetColor(target, step.StartColor);
+                        TweenValueHelper.TrySetColor(target, step.StartColor);
                     }
                     break;
 
                 case TweenStepType.Fade:
+                    if (step.UseStartFloat)
+                    {
+                        TweenValueHelper.TrySetAlpha(target, step.StartFloat);
+                    }
+                    break;
+
                 case TweenStepType.FillAmount:
                     if (step.UseStartFloat)
                     {
-                        if (step.Type == TweenStepType.Fade)
-                        {
-                            TweenStepRequirement.TrySetAlpha(target, step.StartFloat);
-                        }
-                        else
-                        {
-                            var image = target.GetComponent<Image>();
-                            if (image != null) image.fillAmount = step.StartFloat;
-                        }
+                        var image = target.GetComponent<Image>();
+                        if (image != null) image.fillAmount = step.StartFloat;
                     }
                     break;
 
                 case TweenStepType.AnchorMove:
-                    if (step.UseStartValue && TryGetRectTransform(target, out var rt1))
+                    if (step.UseStartValue && TweenValueHelper.TryGetRectTransform(target, out var rt1))
                     {
                         rt1.anchoredPosition = step.StartVector;
                     }
                     break;
 
                 case TweenStepType.SizeDelta:
-                    if (step.UseStartValue && TryGetRectTransform(target, out var rt2))
+                    if (step.UseStartValue && TweenValueHelper.TryGetRectTransform(target, out var rt2))
                     {
                         rt2.sizeDelta = step.StartVector;
                     }
@@ -257,11 +255,11 @@ namespace CNoom.DOTweenVisual.Components
 
             if (step.UseStartColor)
             {
-                TweenStepRequirement.TrySetColor(target, step.StartColor);
+                TweenValueHelper.TrySetColor(target, step.StartColor);
             }
 
             float duration = Mathf.Max(0.001f, step.Duration);
-            return TweenStepRequirement.CreateColorTween(target, step.TargetColor, duration);
+            return TweenValueHelper.CreateColorTween(target, step.TargetColor, duration);
         }
 
         private static Tweener CreateFadeTween(TweenStepData step, Transform target)
@@ -270,11 +268,11 @@ namespace CNoom.DOTweenVisual.Components
 
             if (step.UseStartFloat)
             {
-                TweenStepRequirement.TrySetAlpha(target, step.StartFloat);
+                TweenValueHelper.TrySetAlpha(target, step.StartFloat);
             }
 
             float duration = Mathf.Max(0.001f, step.Duration);
-            return TweenStepRequirement.CreateFadeTween(target, step.TargetFloat, duration);
+            return TweenValueHelper.CreateFadeTween(target, step.TargetFloat, duration);
         }
 
         #endregion
@@ -283,7 +281,7 @@ namespace CNoom.DOTweenVisual.Components
 
         private static Tweener CreateAnchorMoveTween(TweenStepData step, Transform target)
         {
-            if (!TryGetRectTransform(target, out var rectTransform)) return null;
+            if (!TweenValueHelper.TryGetRectTransform(target, out var rectTransform)) return null;
 
             if (step.UseStartValue)
             {
@@ -299,7 +297,7 @@ namespace CNoom.DOTweenVisual.Components
 
         private static Tweener CreateSizeDeltaTween(TweenStepData step, Transform target)
         {
-            if (!TryGetRectTransform(target, out var rectTransform)) return null;
+            if (!TweenValueHelper.TryGetRectTransform(target, out var rectTransform)) return null;
 
             if (step.UseStartValue)
             {
@@ -398,13 +396,6 @@ namespace CNoom.DOTweenVisual.Components
                     target.localRotation = value;
                     break;
             }
-        }
-
-        private static bool TryGetRectTransform(Transform target, out RectTransform rectTransform)
-        {
-            rectTransform = target as RectTransform;
-            if (rectTransform == null) rectTransform = target.GetComponent<RectTransform>();
-            return rectTransform != null;
         }
 
         #endregion
