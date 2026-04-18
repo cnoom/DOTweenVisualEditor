@@ -37,6 +37,7 @@ namespace CNoom.DOTweenVisual.Data
                 case TweenStepType.Jump:
                 case TweenStepType.Punch:
                 case TweenStepType.Shake:
+                case TweenStepType.DOPath:
                     // Transform 类型无额外要求
                     return true;
 

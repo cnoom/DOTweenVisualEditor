@@ -127,6 +127,26 @@ namespace CNoom.DOTweenVisual.Data
 
         #endregion
 
+        #region 路径动画值组
+
+        [Tooltip("路径点列表（DOPath 使用）")]
+        public Vector3[] PathWaypoints = new Vector3[] { new Vector3(1f, 0f, 0f), new Vector3(2f, 1f, 0f) };
+
+        [Tooltip("路径类型（Linear/CatmullRom/CubicBezier）")]
+        public int PathType = 0;
+
+        [Tooltip("路径模式（3D/TopDown2D/SideScroll2D）")]
+        public int PathMode = 0;
+
+        [Tooltip("路径分辨率（CatmullRom 时有效）")]
+        [Min(1)]
+        public int PathResolution = 10;
+
+        [Tooltip("路径颜色（仅编辑器调试）")]
+        public Color PathGizmoColor = new Color(1f, 0.5f, 0f);
+
+        #endregion
+
         #region 执行模式
 
         [Tooltip("执行模式")]

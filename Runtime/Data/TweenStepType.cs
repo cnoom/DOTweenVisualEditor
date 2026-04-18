@@ -35,6 +35,10 @@ namespace CNoom.DOTweenVisual.Data
         /// <summary>Image 填充量动画</summary>
         FillAmount,
 
+        // --- 路径 ---
+        /// <summary>路径移动动画</summary>
+        DOPath,
+
         // --- 流程控制 ---
         /// <summary>延迟等待</summary>
         Delay,

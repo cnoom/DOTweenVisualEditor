@@ -36,6 +36,7 @@ namespace CNoom.DOTweenVisual.Data
                 TweenStepType.Punch => CreatePunchTween(step, target),
                 TweenStepType.Shake => CreateShakeTween(step, target),
                 TweenStepType.FillAmount => CreateFillAmountTween(step, target),
+                TweenStepType.DOPath => CreateDOPathTween(step, target),
                 _ => null
             };
         }
@@ -162,6 +163,13 @@ namespace CNoom.DOTweenVisual.Data
                     if (step.UseStartValue && TweenValueHelper.TryGetRectTransform(target, out var rt2))
                     {
                         rt2.sizeDelta = step.StartVector;
+                    }
+                    break;
+
+                case TweenStepType.DOPath:
+                    if (step.UseStartValue)
+                    {
+                        target.position = step.StartVector;
                     }
                     break;
 
@@ -366,6 +374,22 @@ namespace CNoom.DOTweenVisual.Data
 
             float duration = Mathf.Max(0.001f, step.Duration);
             return image.DOFillAmount(step.TargetFloat, duration);
+        }
+
+        private static Tweener CreateDOPathTween(TweenStepData step, Transform target)
+        {
+            if (step.PathWaypoints == null || step.PathWaypoints.Length < 2) return null;
+
+            if (step.UseStartValue)
+            {
+                target.position = step.StartVector;
+            }
+
+            float duration = Mathf.Max(0.001f, step.Duration);
+            var pathType = (PathType)step.PathType;
+            var pathMode = (PathMode)step.PathMode;
+
+            return target.DOPath(step.PathWaypoints, duration, pathType, pathMode, step.PathResolution);
         }
 
         #endregion

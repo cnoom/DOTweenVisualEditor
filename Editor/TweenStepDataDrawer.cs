@@ -62,6 +62,11 @@ namespace CNoom.DOTweenVisual.Editor
                     height += GetCommonFieldsHeight(property);
                     break;
 
+                case TweenStepType.DOPath:
+                    height += GetDOPathFieldsHeight(property);
+                    height += GetCommonFieldsHeight(property);
+                    break;
+
                 case TweenStepType.Delay:
                     height += GetDelayFieldsHeight();
                     break;
@@ -122,6 +127,11 @@ namespace CNoom.DOTweenVisual.Editor
                 case TweenStepType.Punch:
                 case TweenStepType.Shake:
                     DrawPunchShakeFields(ref rect, property, type);
+                    DrawCommonFields(ref rect, property);
+                    break;
+
+                case TweenStepType.DOPath:
+                    DrawDOPathFields(ref rect, property);
                     DrawCommonFields(ref rect, property);
                     break;
 
@@ -223,6 +233,36 @@ namespace CNoom.DOTweenVisual.Editor
                 height += LineHeight + Spacing;  // ShakeRandomness
             }
 
+            return height;
+        }
+
+        private float GetDOPathFieldsHeight(SerializedProperty property)
+        {
+            float height = LineHeight + Spacing; // TargetTransform
+            height += LineHeight + Spacing;      // UseStartValue
+
+            var useStartValueProp = property.FindPropertyRelative("UseStartValue");
+            if (useStartValueProp.boolValue)
+            {
+                height += LineHeight + Spacing;
+            }
+
+            height += LineHeight + Spacing;      // PathType
+            height += LineHeight + Spacing;      // PathMode
+            height += LineHeight + Spacing;      // PathResolution
+
+            // 路径点数量 * 每行高度
+            var waypointsProp = property.FindPropertyRelative("PathWaypoints");
+            if (waypointsProp != null && waypointsProp.isArray)
+            {
+                height += LineHeight + Spacing; // 标题行
+                for (int i = 0; i < waypointsProp.arraySize; i++)
+                {
+                    height += LineHeight + Spacing;
+                }
+            }
+
+            height += ButtonHeight + Spacing;   // 同步按钮
             return height;
         }
 
@@ -472,6 +512,55 @@ namespace CNoom.DOTweenVisual.Editor
                 EditorGUI.PropertyField(rect, property.FindPropertyRelative("ShakeRandomness"), new GUIContent("随机性"));
                 rect.y += LineHeight + Spacing;
             }
+        }
+
+        private void DrawDOPathFields(ref Rect rect, SerializedProperty property)
+        {
+            // 目标物体
+            EditorGUI.PropertyField(rect, property.FindPropertyRelative("TargetTransform"));
+            rect.y += LineHeight + Spacing;
+
+            // 起始值
+            var useStartValueProp = property.FindPropertyRelative("UseStartValue");
+            useStartValueProp.boolValue = EditorGUI.ToggleLeft(rect, " 使用起始位置", useStartValueProp.boolValue);
+            rect.y += LineHeight + Spacing;
+
+            if (useStartValueProp.boolValue)
+            {
+                EditorGUI.PropertyField(rect, property.FindPropertyRelative("StartVector"), new GUIContent("起始位置"));
+                rect.y += LineHeight + Spacing;
+            }
+
+            // 路径参数
+            EditorGUI.PropertyField(rect, property.FindPropertyRelative("PathType"));
+            rect.y += LineHeight + Spacing;
+            EditorGUI.PropertyField(rect, property.FindPropertyRelative("PathMode"));
+            rect.y += LineHeight + Spacing;
+            EditorGUI.PropertyField(rect, property.FindPropertyRelative("PathResolution"));
+            rect.y += LineHeight + Spacing;
+
+            // 路径点列表
+            var waypointsProp = property.FindPropertyRelative("PathWaypoints");
+            if (waypointsProp != null && waypointsProp.isArray)
+            {
+                EditorGUI.LabelField(rect, $"路径点 ({waypointsProp.arraySize} 个)", EditorStyles.boldLabel);
+                rect.y += LineHeight + Spacing;
+
+                for (int i = 0; i < waypointsProp.arraySize; i++)
+                {
+                    var wp = waypointsProp.GetArrayElementAtIndex(i);
+                    EditorGUI.PropertyField(rect, wp, new GUIContent($"点 {i + 1}"));
+                    rect.y += LineHeight + Spacing;
+                }
+            }
+
+            // 同步按钮
+            var buttonRect = new Rect(rect.x, rect.y, rect.width, ButtonHeight);
+            if (GUI.Button(buttonRect, "同步当前位置"))
+            {
+                SyncCurrentValue(property, TweenStepType.DOPath);
+            }
+            rect.y += ButtonHeight + Spacing;
         }
 
         private void DrawCallbackFields(ref Rect rect, SerializedProperty property)

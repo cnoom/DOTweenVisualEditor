@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -76,6 +77,7 @@ namespace CNoom.DOTweenVisual.Editor
         private Label detailHelpLabel;
         private ScrollView detailScrollView;
 
+
         #endregion
 
         #region 数据
@@ -83,6 +85,7 @@ namespace CNoom.DOTweenVisual.Editor
         private DOTweenVisualPlayer targetPlayer;
         private SerializedObject serializedObject;
         private SerializedProperty stepsProperty;
+        private static string _clipboardJson;
 
         #endregion
 
@@ -106,6 +109,7 @@ namespace CNoom.DOTweenVisual.Editor
         {
             _previewManager = new DOTweenPreviewManager();
             _previewManager.StateChanged += OnPreviewStateChanged;
+            _previewManager.ProgressUpdated += OnPreviewProgressUpdated;
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
@@ -117,6 +121,7 @@ namespace CNoom.DOTweenVisual.Editor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             _previewManager.StateChanged -= OnPreviewStateChanged;
+            _previewManager.ProgressUpdated -= OnPreviewProgressUpdated;
             _previewManager.Dispose();
             _previewManager = null;
             rootVisualElement.Clear();
@@ -153,6 +158,7 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnEditorUpdate()
         {
             UpdateTimeDisplay();
+            HandleKeyboardShortcuts();
         }
 
         private void UpdateTimeDisplay()
@@ -177,6 +183,46 @@ namespace CNoom.DOTweenVisual.Editor
             int secs = (int)(seconds % 60);
             int ms = (int)((seconds * 10) % 10);
             return $"{minutes:D2}:{secs:D2}.{ms}";
+        }
+
+        /// <summary>
+        /// 处理键盘快捷键
+        /// </summary>
+        private void HandleKeyboardShortcuts()
+        {
+            if (focusedWindow != this) return;
+
+            var e = Event.current;
+            if (e == null) return;
+
+            if (e.type == EventType.KeyDown)
+            {
+                bool modifier = e.control || e.command;
+                if (e.keyCode == KeyCode.C && modifier)
+                {
+                    CopySelectedStep();
+                    e.Use();
+                }
+                else if (e.keyCode == KeyCode.V && modifier)
+                {
+                    PasteStep();
+                    e.Use();
+                }
+                else if (e.keyCode == KeyCode.D && modifier)
+                {
+                    DuplicateSelectedStep();
+                    e.Use();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 复制并粘贴（Duplicate）
+        /// </summary>
+        private void DuplicateSelectedStep()
+        {
+            CopySelectedStep();
+            PasteStep();
         }
 
         private void OnTargetChanged(ChangeEvent<UnityEngine.Object> evt)
@@ -964,6 +1010,30 @@ namespace CNoom.DOTweenVisual.Editor
 
                 AddDetailField("目标填充量", CreateFloatField(targetFloatProp));
             }
+            else if (type == TweenStepType.DOPath)
+            {
+                AddDetailField("目标物体", CreateObjectField(targetTransformProp, typeof(Transform)));
+
+                AddSeparator();
+
+                AddDetailField("使用起始位置", CreateToggle(useStartValueProp, OnToggleRebuild));
+
+                if (useStartValueProp.boolValue)
+                {
+                    AddDetailField("起始位置", CreateVector3Field(startVectorProp));
+                }
+
+                // 路径点数量提示
+                var waypointsProp = stepProperty.FindPropertyRelative("PathWaypoints");
+                int waypointCount = waypointsProp != null && waypointsProp.isArray ? waypointsProp.arraySize : 0;
+                AddDetailField("路径点数", new Label($"{waypointCount} 个（在 Inspector 中编辑）"));
+
+                AddSeparator();
+
+                AddDetailField("路径类型 (0=Linear,1=CatmullRom)", CreateIntegerField(stepProperty.FindPropertyRelative("PathType")));
+                AddDetailField("路径模式 (0=3D,1=TopDown2D,2=SideScroll2D)", CreateIntegerField(stepProperty.FindPropertyRelative("PathMode")));
+                AddDetailField("路径分辨率", CreateIntegerField(stepProperty.FindPropertyRelative("PathResolution")));
+            }
 
             AddSeparator();
 
@@ -1277,11 +1347,138 @@ namespace CNoom.DOTweenVisual.Editor
                     if (image != null)
                         stepProperty.FindPropertyRelative("TargetFloat").floatValue = image.fillAmount;
                     break;
+                case TweenStepType.DOPath:
+                    stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.position;
+                    break;
             }
 
             stepsProperty.serializedObject.ApplyModifiedProperties();
             RefreshDetailPanel();
             RebuildStepList();
+        }
+
+        #endregion
+
+        #region 复制/粘贴
+
+        /// <summary>
+        /// 复制选中的步骤到剪贴板
+        /// </summary>
+        private void CopySelectedStep()
+        {
+            if (selectedStepIndex < 0 || stepsProperty == null || selectedStepIndex >= stepsProperty.arraySize) return;
+
+            serializedObject.Update();
+            var stepProp = stepsProperty.GetArrayElementAtIndex(selectedStepIndex);
+            var sb = new StringBuilder();
+            sb.Append(stepProp.FindPropertyRelative("Type").enumValueIndex); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("IsEnabled").boolValue ? 1 : 0); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("Duration").floatValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("Delay").floatValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("Ease").enumValueIndex); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("TransformTarget").enumValueIndex); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("UseStartValue").boolValue ? 1 : 0); sb.Append('|');
+            AppendVector3(sb, stepProp.FindPropertyRelative("StartVector").vector3Value); sb.Append('|');
+            AppendVector3(sb, stepProp.FindPropertyRelative("TargetVector").vector3Value); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("IsRelative").boolValue ? 1 : 0); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("UseStartColor").boolValue ? 1 : 0); sb.Append('|');
+            AppendColor(sb, stepProp.FindPropertyRelative("StartColor").colorValue); sb.Append('|');
+            AppendColor(sb, stepProp.FindPropertyRelative("TargetColor").colorValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("UseStartFloat").boolValue ? 1 : 0); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("StartFloat").floatValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("TargetFloat").floatValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("JumpHeight").floatValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("JumpNum").intValue); sb.Append('|');
+            AppendVector3(sb, stepProp.FindPropertyRelative("Intensity").vector3Value); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("Vibrato").intValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("Elasticity").floatValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("ShakeRandomness").floatValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("ExecutionMode").enumValueIndex); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("InsertTime").floatValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("UseCustomCurve").boolValue ? 1 : 0); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("PathType").intValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("PathMode").intValue); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("PathResolution").intValue);
+
+            _clipboardJson = sb.ToString();
+            DOTweenLog.Info($"已复制步骤 {selectedStepIndex + 1}");
+        }
+
+        /// <summary>
+        /// 粘贴剪贴板中的步骤
+        /// </summary>
+        private void PasteStep()
+        {
+            if (string.IsNullOrEmpty(_clipboardJson) || stepsProperty == null)
+            {
+                DOTweenLog.Warning("剪贴板为空，请先复制一个步骤");
+                return;
+            }
+
+            Undo.RecordObject(targetPlayer, "粘贴动画步骤");
+            serializedObject.Update();
+
+            stepsProperty.InsertArrayElementAtIndex(stepsProperty.arraySize);
+            var newStep = stepsProperty.GetArrayElementAtIndex(stepsProperty.arraySize - 1);
+
+            var parts = _clipboardJson.Split('|');
+            int i = 0;
+            newStep.FindPropertyRelative("Type").enumValueIndex = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("IsEnabled").boolValue = parts[i++] == "1";
+            newStep.FindPropertyRelative("Duration").floatValue = float.Parse(parts[i++]);
+            newStep.FindPropertyRelative("Delay").floatValue = float.Parse(parts[i++]);
+            newStep.FindPropertyRelative("Ease").enumValueIndex = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("TransformTarget").enumValueIndex = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("UseStartValue").boolValue = parts[i++] == "1";
+            newStep.FindPropertyRelative("StartVector").vector3Value = ParseVector3(parts[i++]);
+            newStep.FindPropertyRelative("TargetVector").vector3Value = ParseVector3(parts[i++]);
+            newStep.FindPropertyRelative("IsRelative").boolValue = parts[i++] == "1";
+            newStep.FindPropertyRelative("UseStartColor").boolValue = parts[i++] == "1";
+            newStep.FindPropertyRelative("StartColor").colorValue = ParseColor(parts[i++]);
+            newStep.FindPropertyRelative("TargetColor").colorValue = ParseColor(parts[i++]);
+            newStep.FindPropertyRelative("UseStartFloat").boolValue = parts[i++] == "1";
+            newStep.FindPropertyRelative("StartFloat").floatValue = float.Parse(parts[i++]);
+            newStep.FindPropertyRelative("TargetFloat").floatValue = float.Parse(parts[i++]);
+            newStep.FindPropertyRelative("JumpHeight").floatValue = float.Parse(parts[i++]);
+            newStep.FindPropertyRelative("JumpNum").intValue = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("Intensity").vector3Value = ParseVector3(parts[i++]);
+            newStep.FindPropertyRelative("Vibrato").intValue = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("Elasticity").floatValue = float.Parse(parts[i++]);
+            newStep.FindPropertyRelative("ShakeRandomness").floatValue = float.Parse(parts[i++]);
+            newStep.FindPropertyRelative("ExecutionMode").enumValueIndex = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("InsertTime").floatValue = float.Parse(parts[i++]);
+            newStep.FindPropertyRelative("UseCustomCurve").boolValue = parts[i++] == "1";
+            newStep.FindPropertyRelative("PathType").intValue = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("PathMode").intValue = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("PathResolution").intValue = int.Parse(parts[i++]);
+
+            stepsProperty.serializedObject.ApplyModifiedProperties();
+            selectedStepIndex = stepsProperty.arraySize - 1;
+            RebuildStepList();
+            RefreshDetailPanel();
+            DOTweenLog.Info("已粘贴步骤");
+        }
+
+        private static void AppendVector3(StringBuilder sb, Vector3 v)
+        {
+            sb.Append(v.x.ToString("R")); sb.Append(','); sb.Append(v.y.ToString("R")); sb.Append(','); sb.Append(v.z.ToString("R"));
+        }
+
+        private static void AppendColor(StringBuilder sb, Color c)
+        {
+            sb.Append(c.r.ToString("R")); sb.Append(','); sb.Append(c.g.ToString("R")); sb.Append(','); sb.Append(c.b.ToString("R")); sb.Append(','); sb.Append(c.a.ToString("R"));
+        }
+
+        private static Vector3 ParseVector3(string s)
+        {
+            var p = s.Split(',');
+            return new Vector3(float.Parse(p[0]), float.Parse(p[1]), float.Parse(p[2]));
+        }
+
+        private static Color ParseColor(string s)
+        {
+            var p = s.Split(',');
+            return new Color(float.Parse(p[0]), float.Parse(p[1]), float.Parse(p[2]), float.Parse(p[3]));
         }
 
         #endregion
@@ -1319,6 +1516,7 @@ namespace CNoom.DOTweenVisual.Editor
             addStepMenu.menu.AppendAction("Shake (Rotation)", _ => AddStep(TweenStepType.Shake, TransformTarget.ShakeRotation));
             addStepMenu.menu.AppendAction("Shake (Scale)", _ => AddStep(TweenStepType.Shake, TransformTarget.ShakeScale));
             addStepMenu.menu.AppendAction("Fill Amount", _ => AddStep(TweenStepType.FillAmount));
+            addStepMenu.menu.AppendAction("DOPath (路径移动)", _ => AddStep(TweenStepType.DOPath));
             addStepMenu.menu.AppendSeparator();
 
             // 流程控制
@@ -1374,6 +1572,11 @@ namespace CNoom.DOTweenVisual.Editor
                     newStep.FindPropertyRelative("Elasticity").floatValue = 0.5f;
                     newStep.FindPropertyRelative("ShakeRandomness").floatValue = 90f;
                     break;
+                case TweenStepType.DOPath:
+                    newStep.FindPropertyRelative("PathType").intValue = 0;
+                    newStep.FindPropertyRelative("PathMode").intValue = 0;
+                    newStep.FindPropertyRelative("PathResolution").intValue = 10;
+                    break;
             }
 
             stepsProperty.serializedObject.ApplyModifiedProperties();
@@ -1422,7 +1625,63 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnPreviewStateChanged()
         {
             UpdateButtonStates();
+
+            // 非播放状态时清除步骤高亮
+            if (_previewManager.State != DOTweenPreviewManager.PreviewState.Playing)
+            {
+                ClearStepHighlight();
+            }
         }
+
+        /// <summary>
+        /// 预览进度更新回调，更新步骤高亮
+        /// </summary>
+        private void OnPreviewProgressUpdated(float progress)
+        {
+            HighlightCurrentStep(progress);
+        }
+
+        /// <summary>
+        /// 根据预览进度高亮当前执行的步骤
+        /// </summary>
+        private void HighlightCurrentStep(float progress)
+        {
+            if (stepListView == null || stepStartTimes == null || stepsProperty == null) return;
+
+            float currentTime = progress * totalSequenceDuration;
+
+            for (int i = 0; i < stepStartTimes.Length; i++)
+            {
+                if (i >= stepsProperty.arraySize) break;
+
+                var item = stepListView.GetRootElementForIndex(i);
+                if (item == null) continue;
+
+                var stepProp = stepsProperty.GetArrayElementAtIndex(i);
+                float stepStart = stepStartTimes[i];
+                float stepDur = stepProp.FindPropertyRelative("Duration").floatValue;
+                bool isActive = currentTime >= stepStart && currentTime <= stepStart + stepDur;
+
+                item.EnableInClassList("step-active", isActive);
+            }
+        }
+
+        /// <summary>
+        /// 清除所有步骤高亮
+        /// </summary>
+        private void ClearStepHighlight()
+        {
+            if (stepListView == null || stepsProperty == null) return;
+
+            for (int i = 0; i < stepsProperty.arraySize; i++)
+            {
+                var item = stepListView.GetRootElementForIndex(i);
+                if (item == null) continue;
+                item.EnableInClassList("step-active", false);
+            }
+        }
+
+
 
         private void UpdateButtonStates()
         {

@@ -36,6 +36,7 @@ namespace CNoom.DOTweenVisual.Editor
             TweenStepType.Punch => "Punch",
             TweenStepType.Shake => "Shake",
             TweenStepType.FillAmount => "FillAmount",
+            TweenStepType.DOPath => "DOPath",
             TweenStepType.Delay => "Delay",
             TweenStepType.Callback => "Callback",
             _ => type.ToString()

@@ -73,6 +73,11 @@ namespace CNoom.DOTweenVisual.Editor
         /// </summary>
         public event Action StateChanged;
 
+        /// <summary>
+        /// 预览进度更新事件，参数为归一化进度 (0~1)
+        /// </summary>
+        public event Action<float> ProgressUpdated;
+
         #endregion
 
         #region 私有字段
@@ -128,6 +133,16 @@ namespace CNoom.DOTweenVisual.Editor
                 {
                     State = PreviewState.Completed;
                     StateChanged?.Invoke();
+                });
+
+                _previewSequence.OnUpdate(() =>
+                {
+                    if (_previewSequence != null)
+                    {
+                        float elapsed = _previewSequence.Elapsed(false);
+                        float total = Mathf.Max(0.001f, _previewSequence.Duration(false));
+                        ProgressUpdated?.Invoke(Mathf.Clamp01(elapsed / total));
+                    }
                 });
 
                 _previewSequence.Play();
