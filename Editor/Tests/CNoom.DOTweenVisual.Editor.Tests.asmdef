@@ -1,0 +1,26 @@
+{
+  "name": "CNoom.DOTweenVisual.Editor.Tests",
+  "rootNamespace": "",
+  "references": [
+    "CNoom.DOTweenVisual.Editor",
+    "CNoom.DOTweenVisual.Runtime",
+    "UnityEngine.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll",
+    "DOTween.dll",
+    "DOTweenEditor.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

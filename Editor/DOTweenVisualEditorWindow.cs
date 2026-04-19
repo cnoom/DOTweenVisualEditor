@@ -178,7 +178,7 @@ namespace CNoom.DOTweenVisual.Editor
             timeLabel.text = $"{FormatTime(currentTime)} / {FormatTime(totalTime)}";
         }
 
-        private string FormatTime(float seconds)
+        internal static string FormatTime(float seconds)
         {
             int minutes = (int)(seconds / 60);
             int secs = (int)(seconds % 60);
@@ -1741,17 +1741,17 @@ namespace CNoom.DOTweenVisual.Editor
             DOTweenLog.Info("已粘贴步骤");
         }
 
-        private static void AppendVector3(StringBuilder sb, Vector3 v)
+        internal static void AppendVector3(StringBuilder sb, Vector3 v)
         {
             sb.Append(v.x.ToString("R", CultureInfo.InvariantCulture)); sb.Append(','); sb.Append(v.y.ToString("R", CultureInfo.InvariantCulture)); sb.Append(','); sb.Append(v.z.ToString("R", CultureInfo.InvariantCulture));
         }
 
-        private static void AppendColor(StringBuilder sb, Color c)
+        internal static void AppendColor(StringBuilder sb, Color c)
         {
             sb.Append(c.r.ToString("R", CultureInfo.InvariantCulture)); sb.Append(','); sb.Append(c.g.ToString("R", CultureInfo.InvariantCulture)); sb.Append(','); sb.Append(c.b.ToString("R", CultureInfo.InvariantCulture)); sb.Append(','); sb.Append(c.a.ToString("R", CultureInfo.InvariantCulture));
         }
 
-        private static Vector3 ParseVector3(string s)
+        internal static Vector3 ParseVector3(string s)
         {
             var p = s.Split(',');
             return new Vector3(
@@ -1760,7 +1760,7 @@ namespace CNoom.DOTweenVisual.Editor
                 float.Parse(p[2], CultureInfo.InvariantCulture));
         }
 
-        private static Color ParseColor(string s)
+        internal static Color ParseColor(string s)
         {
             var p = s.Split(',');
             return new Color(
