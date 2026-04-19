@@ -64,14 +64,17 @@ namespace CNoom.DOTweenVisual.Data
             var tween = CreateTween(step, defaultTarget);
             if (tween == null) return;
 
-            // 设置缓动
-            if (step.UseCustomCurve && step.CustomCurve != null)
+            // 设置缓动（Punch/Shake 有内置振荡缓动，不覆盖）
+            if (step.Type != TweenStepType.Punch && step.Type != TweenStepType.Shake)
             {
-                tween.SetEase(step.CustomCurve);
-            }
-            else
-            {
-                tween.SetEase(step.Ease);
+                if (step.UseCustomCurve && step.CustomCurve != null)
+                {
+                    tween.SetEase(step.CustomCurve);
+                }
+                else
+                {
+                    tween.SetEase(step.Ease);
+                }
             }
 
             // 设置延迟

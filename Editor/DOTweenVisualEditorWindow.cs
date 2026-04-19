@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
@@ -1063,6 +1064,23 @@ namespace CNoom.DOTweenVisual.Editor
                     AddDetailField("插入时间", CreateFloatField(insertTimeProp, OnTimingChanged));
                 }
             }
+            else if (type == TweenStepType.Punch || type == TweenStepType.Shake)
+            {
+                // Punch/Shake：有内置振荡缓动，不显示缓动设置
+                AddDetailField("执行模式", CreateEnumField(executionModeProp, typeof(ExecutionMode), OnEnumRebuild));
+                if ((ExecutionMode)executionModeProp.enumValueIndex == ExecutionMode.Insert)
+                {
+                    AddDetailField("插入时间", CreateFloatField(insertTimeProp, OnTimingChanged));
+                }
+
+                if (onCompleteProp != null)
+                {
+                    AddSeparator();
+                    var eventField = new PropertyField(onCompleteProp);
+                    eventField.BindProperty(onCompleteProp);
+                    detailScrollView.Add(eventField);
+                }
+            }
             else
             {
                 // 动画类型：完整执行模式 + 缓动
@@ -1628,6 +1646,23 @@ namespace CNoom.DOTweenVisual.Editor
             sb.Append(stepProp.FindPropertyRelative("PathMode").intValue); sb.Append('|');
             sb.Append(stepProp.FindPropertyRelative("PathResolution").intValue);
 
+            // 路径点数据（DOPath 使用）
+            var waypointsProp = stepProp.FindPropertyRelative("PathWaypoints");
+            sb.Append('|');
+            if (waypointsProp != null && waypointsProp.isArray)
+            {
+                sb.Append(waypointsProp.arraySize);
+                for (int w = 0; w < waypointsProp.arraySize; w++)
+                {
+                    sb.Append(';');
+                    AppendVector3(sb, waypointsProp.GetArrayElementAtIndex(w).vector3Value);
+                }
+            }
+            else
+            {
+                sb.Append('0');
+            }
+
             _clipboardJson = sb.ToString();
             DOTweenLog.Info($"已复制步骤 {selectedStepIndex + 1}");
         }
@@ -1651,15 +1686,15 @@ namespace CNoom.DOTweenVisual.Editor
 
             var parts = _clipboardJson.Split('|');
             int i = 0;
-            newStep.FindPropertyRelative("Type").enumValueIndex = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("Type").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
             newStep.FindPropertyRelative("IsEnabled").boolValue = parts[i++] == "1";
-            newStep.FindPropertyRelative("Duration").floatValue = float.Parse(parts[i++]);
-            newStep.FindPropertyRelative("Delay").floatValue = float.Parse(parts[i++]);
-            newStep.FindPropertyRelative("Ease").enumValueIndex = int.Parse(parts[i++]);
-            newStep.FindPropertyRelative("MoveSpace").enumValueIndex = int.Parse(parts[i++]);
-            newStep.FindPropertyRelative("RotateSpace").enumValueIndex = int.Parse(parts[i++]);
-            newStep.FindPropertyRelative("PunchTarget").enumValueIndex = int.Parse(parts[i++]);
-            newStep.FindPropertyRelative("ShakeTarget").enumValueIndex = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("Duration").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("Delay").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("Ease").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("MoveSpace").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("RotateSpace").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("PunchTarget").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("ShakeTarget").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
             newStep.FindPropertyRelative("UseStartValue").boolValue = parts[i++] == "1";
             newStep.FindPropertyRelative("StartVector").vector3Value = ParseVector3(parts[i++]);
             newStep.FindPropertyRelative("TargetVector").vector3Value = ParseVector3(parts[i++]);
@@ -1668,20 +1703,36 @@ namespace CNoom.DOTweenVisual.Editor
             newStep.FindPropertyRelative("StartColor").colorValue = ParseColor(parts[i++]);
             newStep.FindPropertyRelative("TargetColor").colorValue = ParseColor(parts[i++]);
             newStep.FindPropertyRelative("UseStartFloat").boolValue = parts[i++] == "1";
-            newStep.FindPropertyRelative("StartFloat").floatValue = float.Parse(parts[i++]);
-            newStep.FindPropertyRelative("TargetFloat").floatValue = float.Parse(parts[i++]);
-            newStep.FindPropertyRelative("JumpHeight").floatValue = float.Parse(parts[i++]);
-            newStep.FindPropertyRelative("JumpNum").intValue = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("StartFloat").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("TargetFloat").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("JumpHeight").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("JumpNum").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
             newStep.FindPropertyRelative("Intensity").vector3Value = ParseVector3(parts[i++]);
-            newStep.FindPropertyRelative("Vibrato").intValue = int.Parse(parts[i++]);
-            newStep.FindPropertyRelative("Elasticity").floatValue = float.Parse(parts[i++]);
-            newStep.FindPropertyRelative("ShakeRandomness").floatValue = float.Parse(parts[i++]);
-            newStep.FindPropertyRelative("ExecutionMode").enumValueIndex = int.Parse(parts[i++]);
-            newStep.FindPropertyRelative("InsertTime").floatValue = float.Parse(parts[i++]);
+            newStep.FindPropertyRelative("Vibrato").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("Elasticity").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("ShakeRandomness").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("ExecutionMode").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("InsertTime").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
             newStep.FindPropertyRelative("UseCustomCurve").boolValue = parts[i++] == "1";
-            newStep.FindPropertyRelative("PathType").intValue = int.Parse(parts[i++]);
-            newStep.FindPropertyRelative("PathMode").intValue = int.Parse(parts[i++]);
-            newStep.FindPropertyRelative("PathResolution").intValue = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("PathType").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("PathMode").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+            newStep.FindPropertyRelative("PathResolution").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+
+            // 路径点数据（兼容旧剪贴板格式：无路径点数据时跳过）
+            if (i < parts.Length)
+            {
+                int wpCount = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                if (wpCount > 0)
+                {
+                    var wpCoords = parts[i].Split(';');
+                    var waypointsProp = newStep.FindPropertyRelative("PathWaypoints");
+                    waypointsProp.arraySize = wpCount;
+                    for (int w = 0; w < wpCount && w < wpCoords.Length; w++)
+                    {
+                        waypointsProp.GetArrayElementAtIndex(w).vector3Value = ParseVector3(wpCoords[w]);
+                    }
+                }
+            }
 
             stepsProperty.serializedObject.ApplyModifiedProperties();
             selectedStepIndex = stepsProperty.arraySize - 1;
@@ -1692,24 +1743,31 @@ namespace CNoom.DOTweenVisual.Editor
 
         private static void AppendVector3(StringBuilder sb, Vector3 v)
         {
-            sb.Append(v.x.ToString("R")); sb.Append(','); sb.Append(v.y.ToString("R")); sb.Append(','); sb.Append(v.z.ToString("R"));
+            sb.Append(v.x.ToString("R", CultureInfo.InvariantCulture)); sb.Append(','); sb.Append(v.y.ToString("R", CultureInfo.InvariantCulture)); sb.Append(','); sb.Append(v.z.ToString("R", CultureInfo.InvariantCulture));
         }
 
         private static void AppendColor(StringBuilder sb, Color c)
         {
-            sb.Append(c.r.ToString("R")); sb.Append(','); sb.Append(c.g.ToString("R")); sb.Append(','); sb.Append(c.b.ToString("R")); sb.Append(','); sb.Append(c.a.ToString("R"));
+            sb.Append(c.r.ToString("R", CultureInfo.InvariantCulture)); sb.Append(','); sb.Append(c.g.ToString("R", CultureInfo.InvariantCulture)); sb.Append(','); sb.Append(c.b.ToString("R", CultureInfo.InvariantCulture)); sb.Append(','); sb.Append(c.a.ToString("R", CultureInfo.InvariantCulture));
         }
 
         private static Vector3 ParseVector3(string s)
         {
             var p = s.Split(',');
-            return new Vector3(float.Parse(p[0]), float.Parse(p[1]), float.Parse(p[2]));
+            return new Vector3(
+                float.Parse(p[0], CultureInfo.InvariantCulture),
+                float.Parse(p[1], CultureInfo.InvariantCulture),
+                float.Parse(p[2], CultureInfo.InvariantCulture));
         }
 
         private static Color ParseColor(string s)
         {
             var p = s.Split(',');
-            return new Color(float.Parse(p[0]), float.Parse(p[1]), float.Parse(p[2]), float.Parse(p[3]));
+            return new Color(
+                float.Parse(p[0], CultureInfo.InvariantCulture),
+                float.Parse(p[1], CultureInfo.InvariantCulture),
+                float.Parse(p[2], CultureInfo.InvariantCulture),
+                float.Parse(p[3], CultureInfo.InvariantCulture));
         }
 
         #endregion

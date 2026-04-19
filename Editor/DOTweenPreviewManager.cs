@@ -345,6 +345,11 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (_previewSequence != null)
             {
+                // 先 Rewind 回滚属性到动画开始前的状态，避免 Kill 时残留中间值
+                if (_previewSequence.IsActive())
+                {
+                    _previewSequence.Rewind();
+                }
                 _previewSequence.Kill();
                 _previewSequence = null;
             }

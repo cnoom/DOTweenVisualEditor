@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
@@ -85,12 +86,23 @@ namespace CNoom.DOTweenVisual.Components
             return this;
         }
 
+        /// <summary>
+        /// 注册动画完成/终止回调
+        /// 参数为 true 表示正常完成，false 表示被终止
+        /// </summary>
+        public DOTweenVisualPlayer OnDone(Action<bool> callback)
+        {
+            _onDone += callback;
+            return this;
+        }
+
         #endregion
 
         #region 私有字段
 
         private Sequence _currentSequence;
         private bool _isPlaying;
+        private event Action<bool> _onDone;
 
         #endregion
 
@@ -149,11 +161,17 @@ namespace CNoom.DOTweenVisual.Components
             if (_isPlaying)
             {
                 if (_debugMode) DOTweenLog.Debug("已在播放中，返回当前播放的等待包装器");
-                return new TweenAwaitable(_currentSequence);
+                return new TweenAwaitable(_currentSequence, this);
             }
 
             BuildAndPlay();
-            return new TweenAwaitable(_currentSequence);
+
+            if (_currentSequence == null)
+            {
+                if (_debugMode) DOTweenLog.Warning("没有可播放的动画步骤");
+            }
+
+            return new TweenAwaitable(_currentSequence, this);
         }
 
         /// <summary>
@@ -305,8 +323,14 @@ namespace CNoom.DOTweenVisual.Components
             if (_onStart != null)
                 _currentSequence.OnStart(() => _onStart?.Invoke());
 
-            if (_onComplete != null)
-                _currentSequence.OnComplete(() => _onComplete?.Invoke());
+            // 合并 OnComplete：用户回调 + 内部状态管理 + 完成通知
+            _currentSequence.OnComplete(() =>
+            {
+                _onComplete?.Invoke();
+                _isPlaying = false;
+                _onDone?.Invoke(true);
+                if (_debugMode) DOTweenLog.Debug("动画播放完成");
+            });
 
             if (_onUpdate != null)
                 _currentSequence.OnUpdate(() => _onUpdate?.Invoke());
@@ -317,10 +341,14 @@ namespace CNoom.DOTweenVisual.Components
                 if (_debugMode) DOTweenLog.Debug($"开始播放 {_steps.Count} 个步骤");
             });
 
-            _currentSequence.OnComplete(() =>
+            // 处理被手动 Kill 的情况（Stop/Restart 等场景，OnComplete 不会触发）
+            _currentSequence.OnKill(() =>
             {
-                _isPlaying = false;
-                if (_debugMode) DOTweenLog.Debug("动画播放完成");
+                if (_isPlaying)
+                {
+                    _isPlaying = false;
+                    _onDone?.Invoke(false);
+                }
             });
 
             _currentSequence.Play();
@@ -330,10 +358,16 @@ namespace CNoom.DOTweenVisual.Components
         {
             if (_currentSequence != null)
             {
+                // 回滚所有子 Tween 到动画开始前的状态（恢复位置/颜色/缩放等属性）
+                if (_currentSequence.IsActive())
+                {
+                    _currentSequence.Rewind();
+                }
                 _currentSequence.Kill();
                 _currentSequence = null;
             }
             _isPlaying = false;
+            _onDone = null;
         }
 
         #endregion

@@ -59,7 +59,7 @@ namespace CNoom.DOTweenVisual.Editor
                 case TweenStepType.Punch:
                 case TweenStepType.Shake:
                     height += GetPunchShakeFieldsHeight(property, type);
-                    height += GetCommonFieldsHeight(property);
+                    height += GetCommonFieldsHeight(property, skipEase: true);
                     break;
 
                 case TweenStepType.DOPath:
@@ -127,7 +127,7 @@ namespace CNoom.DOTweenVisual.Editor
                 case TweenStepType.Punch:
                 case TweenStepType.Shake:
                     DrawPunchShakeFields(ref rect, property, type);
-                    DrawCommonFields(ref rect, property);
+                    DrawCommonFields(ref rect, property, skipEase: true);
                     break;
 
                 case TweenStepType.DOPath:
@@ -278,17 +278,21 @@ namespace CNoom.DOTweenVisual.Editor
             return height;
         }
 
-        private float GetCommonFieldsHeight(SerializedProperty property)
+        private float GetCommonFieldsHeight(SerializedProperty property, bool skipEase = false)
         {
             float height = LineHeight + Spacing; // Duration
             height += LineHeight + Spacing;      // Delay
-            height += LineHeight + Spacing;      // Ease
-            height += LineHeight + Spacing;      // UseCustomCurve
 
-            var useCustomCurveProp = property.FindPropertyRelative("UseCustomCurve");
-            if (useCustomCurveProp.boolValue)
+            if (!skipEase)
             {
-                height += LineHeight + Spacing;
+                height += LineHeight + Spacing; // Ease
+                height += LineHeight + Spacing; // UseCustomCurve
+
+                var useCustomCurveProp = property.FindPropertyRelative("UseCustomCurve");
+                if (useCustomCurveProp.boolValue)
+                {
+                    height += LineHeight + Spacing;
+                }
             }
 
             height += LineHeight + Spacing; // ExecutionMode
@@ -562,7 +566,7 @@ namespace CNoom.DOTweenVisual.Editor
             rect.y += height + Spacing;
         }
 
-        private void DrawCommonFields(ref Rect rect, SerializedProperty property)
+        private void DrawCommonFields(ref Rect rect, SerializedProperty property, bool skipEase = false)
         {
             // Duration
             EditorGUI.PropertyField(rect, property.FindPropertyRelative("Duration"));
@@ -572,19 +576,23 @@ namespace CNoom.DOTweenVisual.Editor
             EditorGUI.PropertyField(rect, property.FindPropertyRelative("Delay"));
             rect.y += LineHeight + Spacing;
 
-            // Ease
-            EditorGUI.PropertyField(rect, property.FindPropertyRelative("Ease"));
-            rect.y += LineHeight + Spacing;
-
-            // 自定义曲线
-            var useCustomCurveProp = property.FindPropertyRelative("UseCustomCurve");
-            EditorGUI.PropertyField(rect, useCustomCurveProp);
-            rect.y += LineHeight + Spacing;
-
-            if (useCustomCurveProp.boolValue)
+            // 缓动设置（Punch/Shake 有内置振荡缓动，跳过）
+            if (!skipEase)
             {
-                EditorGUI.PropertyField(rect, property.FindPropertyRelative("CustomCurve"));
+                // Ease
+                EditorGUI.PropertyField(rect, property.FindPropertyRelative("Ease"));
                 rect.y += LineHeight + Spacing;
+
+                // 自定义曲线
+                var useCustomCurveProp = property.FindPropertyRelative("UseCustomCurve");
+                EditorGUI.PropertyField(rect, useCustomCurveProp);
+                rect.y += LineHeight + Spacing;
+
+                if (useCustomCurveProp.boolValue)
+                {
+                    EditorGUI.PropertyField(rect, property.FindPropertyRelative("CustomCurve"));
+                    rect.y += LineHeight + Spacing;
+                }
             }
 
             // ExecutionMode

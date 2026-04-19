@@ -14,6 +14,7 @@ namespace CNoom.DOTweenVisual.Components
         #region 私有字段
 
         private readonly Tween _tween;
+        private readonly DOTweenVisualPlayer _player;
 
         #endregion
 
@@ -45,9 +46,10 @@ namespace CNoom.DOTweenVisual.Components
         /// 创建 TweenAwaitable 包装器
         /// </summary>
         /// <param name="tween">要包装的 Tween 对象</param>
-        public TweenAwaitable(Tween tween)
+        public TweenAwaitable(Tween tween, DOTweenVisualPlayer player = null)
         {
             _tween = tween;
+            _player = player;
         }
 
         #endregion
@@ -64,7 +66,8 @@ namespace CNoom.DOTweenVisual.Components
         }
 
         /// <summary>
-        /// 注册完成回调（不影响内部 Tween 的 OnComplete）
+        /// 注册完成回调（通过 DOTweenVisualPlayer 事件系统，不影响内部 Tween 的 OnComplete）
+        /// 参数为 true 表示正常完成，false 表示被终止
         /// </summary>
         public TweenAwaitable OnDone(Action<bool> onDone)
         {
@@ -74,14 +77,15 @@ namespace CNoom.DOTweenVisual.Components
                 return this;
             }
 
-            _tween.OnComplete(() => onDone?.Invoke(true));
-            _tween.OnKill(() =>
+            if (_player != null)
             {
-                if (!_tween.IsComplete())
-                {
-                    onDone?.Invoke(false);
-                }
-            });
+                _player.OnDone(onDone);
+            }
+            else
+            {
+                onDone?.Invoke(false);
+            }
+
             return this;
         }
 
