@@ -139,6 +139,24 @@ namespace CNoom.DOTweenVisual.Components
         }
 
         /// <summary>
+        /// 播放动画序列并返回只读等待包装器
+        /// 外部只能等待动画完成，无法对内部 Tween 进行修改
+        /// 支持协程：yield return player.PlayAsync();
+        /// 支持 UniTask：await player.PlayAsync().ToUniTask();
+        /// </summary>
+        public TweenAwaitable PlayAsync()
+        {
+            if (_isPlaying)
+            {
+                if (_debugMode) DOTweenLog.Debug("已在播放中，返回当前播放的等待包装器");
+                return new TweenAwaitable(_currentSequence);
+            }
+
+            BuildAndPlay();
+            return new TweenAwaitable(_currentSequence);
+        }
+
+        /// <summary>
         /// 停止动画序列
         /// </summary>
         public void Stop()
