@@ -24,7 +24,7 @@ https://github.com/cnoom/DOTweenVisualEditor.git
 ## 前置依赖
 
 - Unity 2021.3 LTS 或更高版本
-- DOTween (com.demigiant.dotween) >= 1.2.765
+- DOTween (com.demigiant.dotween) >= 1.2.765,在DOTween UTility Panel中生成ASMDEF文件
 
 ## 快速开始
 

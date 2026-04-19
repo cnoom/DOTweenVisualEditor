@@ -366,6 +366,7 @@ namespace CNoom.DOTweenVisual.Data
         {
             var image = target.GetComponent<Image>();
             if (image == null) return null;
+            
 
             if (step.UseStartFloat)
             {
