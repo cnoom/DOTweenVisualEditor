@@ -1,0 +1,203 @@
+{
+  "id": "2026-04-19-205059",
+  "generated_at": "2026-04-19T12:50:59.2870922Z",
+  "language": "zh",
+  "pages": [
+    {
+      "slug": "1-gai-shu-dotween-visual-editor-shi-shi-yao",
+      "title": "概述：DOTween Visual Editor 是什么",
+      "file": "1-gai-shu-dotween-visual-editor-shi-shi-yao.md",
+      "section": "快速入门",
+      "level": "Beginner"
+    },
+    {
+      "slug": "2-kuai-su-shang-shou-an-zhuang-pei-zhi-yu-di-ge-dong-hua",
+      "title": "快速上手：安装配置与第一个动画",
+      "file": "2-kuai-su-shang-shou-an-zhuang-pei-zhi-yu-di-ge-dong-hua.md",
+      "section": "快速入门",
+      "level": "Beginner"
+    },
+    {
+      "slug": "3-dong-hua-lei-xing-lan-14-chong-tweensteptype-xiang-jie",
+      "title": "动画类型一览：14 种 TweenStepType 详解",
+      "file": "3-dong-hua-lei-xing-lan-14-chong-tweensteptype-xiang-jie.md",
+      "section": "快速入门",
+      "level": "Beginner"
+    },
+    {
+      "slug": "4-bian-ji-qi-chuang-kou-shi-yong-zhi-nan",
+      "title": "编辑器窗口使用指南",
+      "file": "4-bian-ji-qi-chuang-kou-shi-yong-zhi-nan.md",
+      "section": "快速入门",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "5-zheng-ti-jia-gou-she-ji-fen-ceng-yu-mo-kuai-zhi-ze",
+      "title": "整体架构设计：分层与模块职责",
+      "file": "5-zheng-ti-jia-gou-she-ji-fen-ceng-yu-mo-kuai-zhi-ze.md",
+      "section": "深入理解",
+      "group": "运行时架构",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "6-dotweenvisualplayer-bo-fang-qi-zu-jian-sheng-ming-zhou-qi-yu-bo-fang-kong-zhi",
+      "title": "DOTweenVisualPlayer 播放器组件：生命周期与播放控制",
+      "file": "6-dotweenvisualplayer-bo-fang-qi-zu-jian-sheng-ming-zhou-qi-yu-bo-fang-kong-zhi.md",
+      "section": "深入理解",
+      "group": "运行时架构",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "7-tweenstepdata-shu-ju-jie-gou-duo-zhi-zu-she-ji-mo-shi",
+      "title": "TweenStepData 数据结构：多值组设计模式",
+      "file": "7-tweenstepdata-shu-ju-jie-gou-duo-zhi-zu-she-ji-mo-shi.md",
+      "section": "深入理解",
+      "group": "运行时架构",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "8-tweenfactory-gong-han-mo-shi-tong-yun-xing-shi-yu-bian-ji-qi-yu-lan-de-tween-chuang-jian",
+      "title": "TweenFactory 工厂模式：统一运行时与编辑器预览的 Tween 创建",
+      "file": "8-tweenfactory-gong-han-mo-shi-tong-yun-xing-shi-yu-bian-ji-qi-yu-lan-de-tween-chuang-jian.md",
+      "section": "深入理解",
+      "group": "运行时架构",
+      "level": "Advanced"
+    },
+    {
+      "slug": "9-tweenvaluehelper-zhi-fang-wen-ceng-duo-zu-jian-gua-pei-ce-lue-graphic-renderer-spriterenderer-tmp",
+      "title": "TweenValueHelper 值访问层：多组件适配策略（Graphic / Renderer / SpriteRenderer / TMP）",
+      "file": "9-tweenvaluehelper-zhi-fang-wen-ceng-duo-zu-jian-gua-pei-ce-lue-graphic-renderer-spriterenderer-tmp.md",
+      "section": "深入理解",
+      "group": "运行时架构",
+      "level": "Advanced"
+    },
+    {
+      "slug": "10-tweensteprequirement-zu-jian-xiao-yan-xi-tong",
+      "title": "TweenStepRequirement 组件校验系统",
+      "file": "10-tweensteprequirement-zu-jian-xiao-yan-xi-tong.md",
+      "section": "深入理解",
+      "group": "运行时架构",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "11-yi-bu-deng-dai-ji-zhi-tweenawaitable-yu-xie-cheng-unitask-ji-cheng",
+      "title": "异步等待机制：TweenAwaitable 与协程 / UniTask 集成",
+      "file": "11-yi-bu-deng-dai-ji-zhi-tweenawaitable-yu-xie-cheng-unitask-ji-cheng.md",
+      "section": "深入理解",
+      "group": "运行时架构",
+      "level": "Advanced"
+    },
+    {
+      "slug": "12-executionmode-zhi-xing-mo-shi-append-join-insert-bian-pai-ce-lue",
+      "title": "ExecutionMode 执行模式：Append / Join / Insert 编排策略",
+      "file": "12-executionmode-zhi-xing-mo-shi-append-join-insert-bian-pai-ce-lue.md",
+      "section": "深入理解",
+      "group": "运行时架构",
+      "level": "Beginner"
+    },
+    {
+      "slug": "13-transformtarget-mei-ju-ti-xi-zuo-biao-kong-jian-yu-te-xiao-mu-biao-xuan-ze",
+      "title": "TransformTarget 枚举体系：坐标空间与特效目标选择",
+      "file": "13-transformtarget-mei-ju-ti-xi-zuo-biao-kong-jian-yu-te-xiao-mu-biao-xuan-ze.md",
+      "section": "深入理解",
+      "group": "运行时架构",
+      "level": "Beginner"
+    },
+    {
+      "slug": "14-ke-shi-hua-bian-ji-qi-chuang-kou-dotweenvisualeditorwindow-ui-toolkit-bu-ju-yu-jiao-hu",
+      "title": "可视化编辑器窗口（DOTweenVisualEditorWindow）：UI Toolkit 布局与交互",
+      "file": "14-ke-shi-hua-bian-ji-qi-chuang-kou-dotweenvisualeditorwindow-ui-toolkit-bu-ju-yu-jiao-hu.md",
+      "section": "深入理解",
+      "group": "编辑器架构",
+      "level": "Advanced"
+    },
+    {
+      "slug": "15-yu-lan-xi-tong-dotweenpreviewmanager-kuai-zhao-bao-cun-zhuang-tai-guan-li-yu-bian-ji-qi-yu-lan-zhi-xing",
+      "title": "预览系统（DOTweenPreviewManager）：快照保存、状态管理与编辑器预览一致性",
+      "file": "15-yu-lan-xi-tong-dotweenpreviewmanager-kuai-zhao-bao-cun-zhuang-tai-guan-li-yu-bian-ji-qi-yu-lan-zhi-xing.md",
+      "section": "深入理解",
+      "group": "编辑器架构",
+      "level": "Advanced"
+    },
+    {
+      "slug": "16-inspector-zi-ding-yi-hui-zhi-qi-tweenstepdatadrawer-an-lei-xing-tiao-jian-xuan-ran-zi-duan",
+      "title": "Inspector 自定义绘制器（TweenStepDataDrawer）：按类型条件渲染字段",
+      "file": "16-inspector-zi-ding-yi-hui-zhi-qi-tweenstepdatadrawer-an-lei-xing-tiao-jian-xuan-ran-zi-duan.md",
+      "section": "深入理解",
+      "group": "编辑器架构",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "17-bian-ji-qi-yang-shi-xi-tong-dotweeneditorstyle-yu-uss-an-se-zhu-ti",
+      "title": "编辑器样式系统：DOTweenEditorStyle 与 USS 暗色主题",
+      "file": "17-bian-ji-qi-yang-shi-xi-tong-dotweeneditorstyle-yu-uss-an-se-zhu-ti.md",
+      "section": "深入理解",
+      "group": "编辑器架构",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "18-jian-pan-kuai-jie-jian-yu-fu-zhi-nian-tie-xi-tong",
+      "title": "键盘快捷键与复制粘贴系统",
+      "file": "18-jian-pan-kuai-jie-jian-yu-fu-zhi-nian-tie-xi-tong.md",
+      "section": "深入理解",
+      "group": "编辑器架构",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "19-dotweenlog-ri-zhi-xi-tong-si-ji-ri-zhi-yu-fa-bu-ban-ben-zi-dong-cai-jian",
+      "title": "DOTweenLog 日志系统：四级日志与发布版本自动裁剪",
+      "file": "19-dotweenlog-ri-zhi-xi-tong-si-ji-ri-zhi-yu-fa-bu-ban-ben-zi-dong-cai-jian.md",
+      "section": "深入理解",
+      "group": "日志与诊断",
+      "level": "Beginner"
+    },
+    {
+      "slug": "20-runtime-ce-shi-ce-lue-dotween-manualupdate-tong-bu-qu-dong-mo-shi",
+      "title": "Runtime 测试策略：DOTween.ManualUpdate 同步驱动模式",
+      "file": "20-runtime-ce-shi-ce-lue-dotween-manualupdate-tong-bu-qu-dong-mo-shi.md",
+      "section": "深入理解",
+      "group": "测试体系",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "21-editor-ce-shi-ce-lue-yang-shi-ying-she-yu-chuang-kou-gong-ju-han-shu-yan-zheng",
+      "title": "Editor 测试策略：样式映射与窗口工具函数验证",
+      "file": "21-editor-ce-shi-ce-lue-yang-shi-ying-she-yu-chuang-kou-gong-ju-han-shu-yan-zheng.md",
+      "section": "深入理解",
+      "group": "测试体系",
+      "level": "Intermediate"
+    },
+    {
+      "slug": "22-dotween-free-pro-ban-ben-zi-dong-gua-pei-yu-tiao-jian-bian-yi",
+      "title": "DOTween Free / Pro 版本自动适配与条件编译",
+      "file": "22-dotween-free-pro-ban-ben-zi-dong-gua-pei-yu-tiao-jian-bian-yi.md",
+      "section": "深入理解",
+      "group": "扩展与集成",
+      "level": "Advanced"
+    },
+    {
+      "slug": "23-textmeshpro-ji-cheng-yu-kua-zu-jian-dong-hua-zhi-chi",
+      "title": "TextMeshPro 集成与跨组件动画支持",
+      "file": "23-textmeshpro-ji-cheng-yu-kua-zu-jian-dong-hua-zhi-chi.md",
+      "section": "深入理解",
+      "group": "扩展与集成",
+      "level": "Advanced"
+    },
+    {
+      "slug": "24-lian-shi-hui-diao-api-she-ji-onstart-oncomplete-onupdate-ondone",
+      "title": "链式回调 API 设计：OnStart / OnComplete / OnUpdate / OnDone",
+      "file": "24-lian-shi-hui-diao-api-she-ji-onstart-oncomplete-onupdate-ondone.md",
+      "section": "深入理解",
+      "group": "扩展与集成",
+      "level": "Advanced"
+    },
+    {
+      "slug": "25-sequence-gou-jian-liu-cheng-cong-bu-zou-shu-ju-dao-dotween-sequence-de-wan-zheng-sheng-ming-zhou-qi",
+      "title": "Sequence 构建流程：从步骤数据到 DOTween Sequence 的完整生命周期",
+      "file": "25-sequence-gou-jian-liu-cheng-cong-bu-zou-shu-ju-dao-dotween-sequence-de-wan-zheng-sheng-ming-zhou-qi.md",
+      "section": "深入理解",
+      "group": "扩展与集成",
+      "level": "Advanced"
+    }
+  ]
+}
