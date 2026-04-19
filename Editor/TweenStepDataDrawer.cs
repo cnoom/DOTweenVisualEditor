@@ -315,9 +315,14 @@ namespace CNoom.DOTweenVisual.Editor
             rect.y += LineHeight + Spacing;
 
             // TransformTarget（仅 Move/Rotate 类型显示子类型选择）
-            if (type == TweenStepType.Move || type == TweenStepType.Rotate)
+            if (type == TweenStepType.Move)
             {
-                EditorGUI.PropertyField(rect, property.FindPropertyRelative("TransformTarget"));
+                EditorGUI.PropertyField(rect, property.FindPropertyRelative("MoveSpace"));
+                rect.y += LineHeight + Spacing;
+            }
+            else if (type == TweenStepType.Rotate)
+            {
+                EditorGUI.PropertyField(rect, property.FindPropertyRelative("RotateSpace"));
                 rect.y += LineHeight + Spacing;
             }
 
@@ -471,27 +476,9 @@ namespace CNoom.DOTweenVisual.Editor
             rect.y += LineHeight + Spacing;
 
             // Punch/Shake 子类型
-            var transformTargetProp = property.FindPropertyRelative("TransformTarget");
-            var subTypes = isShake
-                ? new[] { "Shake Position", "Shake Rotation", "Shake Scale" }
-                : new[] { "Punch Position", "Punch Rotation", "Punch Scale" };
-            var subValues = isShake
-                ? new[] { TransformTarget.ShakePosition, TransformTarget.ShakeRotation, TransformTarget.ShakeScale }
-                : new[] { TransformTarget.PunchPosition, TransformTarget.PunchRotation, TransformTarget.PunchScale };
-
-            int currentIndex = 0;
-            var currentVal = (TransformTarget)transformTargetProp.enumValueIndex;
-            for (int i = 0; i < subValues.Length; i++)
-            {
-                if (currentVal == subValues[i]) { currentIndex = i; break; }
-            }
-
-            EditorGUI.BeginChangeCheck();
-            currentIndex = EditorGUI.Popup(rect, isShake ? "震动目标" : "冲击目标", currentIndex, subTypes);
-            if (EditorGUI.EndChangeCheck() && currentIndex >= 0 && currentIndex < subValues.Length)
-            {
-                transformTargetProp.enumValueIndex = (int)subValues[currentIndex];
-            }
+            string targetPropName = isShake ? "ShakeTarget" : "PunchTarget";
+            var targetProp = property.FindPropertyRelative(targetPropName);
+            EditorGUI.PropertyField(rect, targetProp, new GUIContent(isShake ? "震动目标" : "冲击目标"));
             rect.y += LineHeight + Spacing;
 
             // 强度
@@ -676,33 +663,34 @@ namespace CNoom.DOTweenVisual.Editor
                 return;
             }
 
-            var transformTargetProp = property.FindPropertyRelative("TransformTarget");
-            var transformTarget = (TransformTarget)transformTargetProp.enumValueIndex;
+            var transformTargetProp = property.FindPropertyRelative("MoveSpace");
+            var moveSpace = (MoveSpace)transformTargetProp.enumValueIndex;
 
             Vector3 currentValue = Vector3.zero;
 
             switch (type)
             {
                 case TweenStepType.Move:
-                    switch (transformTarget)
+                    switch (moveSpace)
                     {
-                        case TransformTarget.Position:
-                            currentValue = target.position;
-                            break;
-                        case TransformTarget.LocalPosition:
+                        case MoveSpace.Local:
                             currentValue = target.localPosition;
+                            break;
+                        default:
+                            currentValue = target.position;
                             break;
                     }
                     break;
 
                 case TweenStepType.Rotate:
-                    switch (transformTarget)
+                    var rotateSpace = (RotateSpace)property.FindPropertyRelative("RotateSpace").enumValueIndex;
+                    switch (rotateSpace)
                     {
-                        case TransformTarget.Rotation:
-                            currentValue = target.rotation.eulerAngles;
-                            break;
-                        case TransformTarget.LocalRotation:
+                        case RotateSpace.Local:
                             currentValue = target.localRotation.eulerAngles;
+                            break;
+                        default:
+                            currentValue = target.rotation.eulerAngles;
                             break;
                     }
                     break;
@@ -737,7 +725,7 @@ namespace CNoom.DOTweenVisual.Editor
             property.FindPropertyRelative("TargetVector").vector3Value = currentValue;
             property.serializedObject.ApplyModifiedProperties();
 
-            DOTweenLog.Info($"已同步 {target.name} 的 {type}.{transformTarget} = {currentValue}");
+            DOTweenLog.Info($"已同步 {target.name} 的 {type} = {currentValue}");
         }
 
         #endregion

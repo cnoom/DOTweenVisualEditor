@@ -187,12 +187,13 @@ namespace CNoom.DOTweenVisual.Editor
         }
 
         /// <summary>
-        /// 停止预览（不恢复状态）
+        /// 停止预览：停止动画 + 恢复初始状态
         /// </summary>
         public void StopPreview()
         {
             CleanupSequence();
             DOTweenEditorPreview.Stop();
+            RestoreSnapshots();
             State = PreviewState.None;
             StateChanged?.Invoke();
         }

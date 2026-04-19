@@ -848,7 +848,10 @@ namespace CNoom.DOTweenVisual.Editor
             var easeProp = stepProperty.FindPropertyRelative("Ease");
             var executionModeProp = stepProperty.FindPropertyRelative("ExecutionMode");
             var insertTimeProp = stepProperty.FindPropertyRelative("InsertTime");
-            var transformTargetProp = stepProperty.FindPropertyRelative("TransformTarget");
+            var moveSpaceProp = stepProperty.FindPropertyRelative("MoveSpace");
+            var rotateSpaceProp = stepProperty.FindPropertyRelative("RotateSpace");
+            var punchTargetProp = stepProperty.FindPropertyRelative("PunchTarget");
+            var shakeTargetProp = stepProperty.FindPropertyRelative("ShakeTarget");
             var targetTransformProp = stepProperty.FindPropertyRelative("TargetTransform");
             var isRelativeProp = stepProperty.FindPropertyRelative("IsRelative");
             var useStartValueProp = stepProperty.FindPropertyRelative("UseStartValue");
@@ -883,7 +886,11 @@ namespace CNoom.DOTweenVisual.Editor
 
             if (isTransformType)
             {
-                AddDetailField("目标类型", CreateEnumField(transformTargetProp, typeof(TransformTarget)));
+                if (type == TweenStepType.Move)
+                    AddDetailField("坐标空间", CreateEnumField(moveSpaceProp, typeof(MoveSpace)));
+                else if (type == TweenStepType.Rotate)
+                    AddDetailField("坐标空间", CreateEnumField(rotateSpaceProp, typeof(RotateSpace)));
+
                 AddDetailField("目标物体", CreateObjectField(targetTransformProp, typeof(Transform)));
                 AddDetailField("相对模式", CreateToggle(isRelativeProp));
 
@@ -977,7 +984,7 @@ namespace CNoom.DOTweenVisual.Editor
 
                 AddSeparator();
 
-                AddDetailField("冲击目标", CreateEnumField(transformTargetProp, typeof(TransformTarget)));
+                AddDetailField("冲击目标", CreateEnumField(punchTargetProp, typeof(PunchTarget)));
                 AddDetailField("强度", CreateVector3Field(intensityProp));
                 AddDetailField("震荡次数", CreateIntegerField(vibratoProp));
                 AddDetailField("弹性", CreateFloatField(elasticityProp));
@@ -988,7 +995,7 @@ namespace CNoom.DOTweenVisual.Editor
 
                 AddSeparator();
 
-                AddDetailField("震动目标", CreateEnumField(transformTargetProp, typeof(TransformTarget)));
+                AddDetailField("震动目标", CreateEnumField(shakeTargetProp, typeof(ShakeTarget)));
                 AddDetailField("强度", CreateVector3Field(intensityProp));
                 AddDetailField("震荡次数", CreateIntegerField(vibratoProp));
                 AddDetailField("弹性", CreateFloatField(elasticityProp));
@@ -1529,14 +1536,14 @@ namespace CNoom.DOTweenVisual.Editor
             switch (type)
             {
                 case TweenStepType.Move:
-                    var moveTarget = (TransformTarget)stepProperty.FindPropertyRelative("TransformTarget").enumValueIndex;
+                    var moveSpace = (MoveSpace)stepProperty.FindPropertyRelative("MoveSpace").enumValueIndex;
                     stepProperty.FindPropertyRelative("TargetVector").vector3Value =
-                        moveTarget == TransformTarget.LocalPosition ? target.localPosition : target.position;
+                        moveSpace == MoveSpace.Local ? target.localPosition : target.position;
                     break;
                 case TweenStepType.Rotate:
-                    var rotTarget = (TransformTarget)stepProperty.FindPropertyRelative("TransformTarget").enumValueIndex;
+                    var rotateSpace = (RotateSpace)stepProperty.FindPropertyRelative("RotateSpace").enumValueIndex;
                     stepProperty.FindPropertyRelative("TargetVector").vector3Value =
-                        rotTarget == TransformTarget.LocalRotation ? target.localRotation.eulerAngles : target.rotation.eulerAngles;
+                        rotateSpace == RotateSpace.Local ? target.localRotation.eulerAngles : target.rotation.eulerAngles;
                     break;
                 case TweenStepType.Scale:
                     stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.localScale;
@@ -1594,7 +1601,10 @@ namespace CNoom.DOTweenVisual.Editor
             sb.Append(stepProp.FindPropertyRelative("Duration").floatValue); sb.Append('|');
             sb.Append(stepProp.FindPropertyRelative("Delay").floatValue); sb.Append('|');
             sb.Append(stepProp.FindPropertyRelative("Ease").enumValueIndex); sb.Append('|');
-            sb.Append(stepProp.FindPropertyRelative("TransformTarget").enumValueIndex); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("MoveSpace").enumValueIndex); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("RotateSpace").enumValueIndex); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("PunchTarget").enumValueIndex); sb.Append('|');
+            sb.Append(stepProp.FindPropertyRelative("ShakeTarget").enumValueIndex); sb.Append('|');
             sb.Append(stepProp.FindPropertyRelative("UseStartValue").boolValue ? 1 : 0); sb.Append('|');
             AppendVector3(sb, stepProp.FindPropertyRelative("StartVector").vector3Value); sb.Append('|');
             AppendVector3(sb, stepProp.FindPropertyRelative("TargetVector").vector3Value); sb.Append('|');
@@ -1646,7 +1656,10 @@ namespace CNoom.DOTweenVisual.Editor
             newStep.FindPropertyRelative("Duration").floatValue = float.Parse(parts[i++]);
             newStep.FindPropertyRelative("Delay").floatValue = float.Parse(parts[i++]);
             newStep.FindPropertyRelative("Ease").enumValueIndex = int.Parse(parts[i++]);
-            newStep.FindPropertyRelative("TransformTarget").enumValueIndex = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("MoveSpace").enumValueIndex = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("RotateSpace").enumValueIndex = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("PunchTarget").enumValueIndex = int.Parse(parts[i++]);
+            newStep.FindPropertyRelative("ShakeTarget").enumValueIndex = int.Parse(parts[i++]);
             newStep.FindPropertyRelative("UseStartValue").boolValue = parts[i++] == "1";
             newStep.FindPropertyRelative("StartVector").vector3Value = ParseVector3(parts[i++]);
             newStep.FindPropertyRelative("TargetVector").vector3Value = ParseVector3(parts[i++]);
@@ -1708,11 +1721,11 @@ namespace CNoom.DOTweenVisual.Editor
             if (addStepMenu == null) return;
 
             // Transform
-            addStepMenu.menu.AppendAction("Move (Position)", _ => AddStep(TweenStepType.Move, TransformTarget.Position));
-            addStepMenu.menu.AppendAction("Move (LocalPosition)", _ => AddStep(TweenStepType.Move, TransformTarget.LocalPosition));
-            addStepMenu.menu.AppendAction("Rotate (Rotation)", _ => AddStep(TweenStepType.Rotate, TransformTarget.Rotation));
-            addStepMenu.menu.AppendAction("Rotate (LocalRotation)", _ => AddStep(TweenStepType.Rotate, TransformTarget.LocalRotation));
-            addStepMenu.menu.AppendAction("Scale", _ => AddStep(TweenStepType.Scale, TransformTarget.Scale));
+            addStepMenu.menu.AppendAction("Move (World)", _ => AddStep(TweenStepType.Move, moveSpace: MoveSpace.World));
+            addStepMenu.menu.AppendAction("Move (Local)", _ => AddStep(TweenStepType.Move, moveSpace: MoveSpace.Local));
+            addStepMenu.menu.AppendAction("Rotate (World)", _ => AddStep(TweenStepType.Rotate, rotateSpace: RotateSpace.World));
+            addStepMenu.menu.AppendAction("Rotate (Local)", _ => AddStep(TweenStepType.Rotate, rotateSpace: RotateSpace.Local));
+            addStepMenu.menu.AppendAction("Scale", _ => AddStep(TweenStepType.Scale));
             addStepMenu.menu.AppendSeparator();
 
             // 视觉
@@ -1727,12 +1740,12 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 特效
             addStepMenu.menu.AppendAction("Jump", _ => AddStep(TweenStepType.Jump));
-            addStepMenu.menu.AppendAction("Punch (Position)", _ => AddStep(TweenStepType.Punch, TransformTarget.PunchPosition));
-            addStepMenu.menu.AppendAction("Punch (Rotation)", _ => AddStep(TweenStepType.Punch, TransformTarget.PunchRotation));
-            addStepMenu.menu.AppendAction("Punch (Scale)", _ => AddStep(TweenStepType.Punch, TransformTarget.PunchScale));
-            addStepMenu.menu.AppendAction("Shake (Position)", _ => AddStep(TweenStepType.Shake, TransformTarget.ShakePosition));
-            addStepMenu.menu.AppendAction("Shake (Rotation)", _ => AddStep(TweenStepType.Shake, TransformTarget.ShakeRotation));
-            addStepMenu.menu.AppendAction("Shake (Scale)", _ => AddStep(TweenStepType.Shake, TransformTarget.ShakeScale));
+            addStepMenu.menu.AppendAction("Punch (Position)", _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Position));
+            addStepMenu.menu.AppendAction("Punch (Rotation)", _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Rotation));
+            addStepMenu.menu.AppendAction("Punch (Scale)", _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Scale));
+            addStepMenu.menu.AppendAction("Shake (Position)", _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Position));
+            addStepMenu.menu.AppendAction("Shake (Rotation)", _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Rotation));
+            addStepMenu.menu.AppendAction("Shake (Scale)", _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Scale));
             addStepMenu.menu.AppendAction("Fill Amount", _ => AddStep(TweenStepType.FillAmount));
             addStepMenu.menu.AppendAction("DOPath (路径移动)", _ => AddStep(TweenStepType.DOPath));
             addStepMenu.menu.AppendSeparator();
@@ -1742,7 +1755,9 @@ namespace CNoom.DOTweenVisual.Editor
             addStepMenu.menu.AppendAction("Callback", _ => AddStep(TweenStepType.Callback));
         }
 
-        private void AddStep(TweenStepType type, TransformTarget transformTarget = TransformTarget.Position)
+        private void AddStep(TweenStepType type, MoveSpace moveSpace = MoveSpace.World,
+            RotateSpace rotateSpace = RotateSpace.World, PunchTarget punchTarget = PunchTarget.Position,
+            ShakeTarget shakeTarget = ShakeTarget.Position)
         {
             if (stepsProperty == null)
             {
@@ -1760,7 +1775,10 @@ namespace CNoom.DOTweenVisual.Editor
             newStep.FindPropertyRelative("Duration").floatValue = 1f;
             newStep.FindPropertyRelative("Delay").floatValue = 0f;
             newStep.FindPropertyRelative("Ease").enumValueIndex = (int)Ease.OutQuad;
-            newStep.FindPropertyRelative("TransformTarget").enumValueIndex = (int)transformTarget;
+            newStep.FindPropertyRelative("MoveSpace").enumValueIndex = (int)moveSpace;
+            newStep.FindPropertyRelative("RotateSpace").enumValueIndex = (int)rotateSpace;
+            newStep.FindPropertyRelative("PunchTarget").enumValueIndex = (int)punchTarget;
+            newStep.FindPropertyRelative("ShakeTarget").enumValueIndex = (int)shakeTarget;
 
             switch (type)
             {

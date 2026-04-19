@@ -1,31 +1,50 @@
 namespace CNoom.DOTweenVisual.Data
 {
     /// <summary>
-    /// Transform 目标类型
+    /// 移动动画的坐标空间
     /// </summary>
-    public enum TransformTarget
+    public enum MoveSpace
     {
-        /// <summary>世界坐标位置</summary>
+        /// <summary>世界坐标</summary>
+        World,
+        /// <summary>本地坐标</summary>
+        Local
+    }
+
+    /// <summary>
+    /// 旋转动画的坐标空间
+    /// </summary>
+    public enum RotateSpace
+    {
+        /// <summary>世界旋转</summary>
+        World,
+        /// <summary>本地旋转</summary>
+        Local
+    }
+
+    /// <summary>
+    /// 冲击动画的属性目标
+    /// </summary>
+    public enum PunchTarget
+    {
+        /// <summary>冲击位置</summary>
         Position,
-        /// <summary>本地坐标位置</summary>
-        LocalPosition,
-        /// <summary>世界旋转（四元数插值，编辑器以欧拉角显示）</summary>
+        /// <summary>冲击旋转</summary>
         Rotation,
-        /// <summary>本地旋转（四元数插值，编辑器以欧拉角显示）</summary>
-        LocalRotation,
-        /// <summary>缩放</summary>
-        Scale,
-        /// <summary>冲击-位置</summary>
-        PunchPosition,
-        /// <summary>冲击-旋转</summary>
-        PunchRotation,
-        /// <summary>冲击-缩放</summary>
-        PunchScale,
-        /// <summary>震动-位置</summary>
-        ShakePosition,
-        /// <summary>震动-旋转</summary>
-        ShakeRotation,
-        /// <summary>震动-缩放</summary>
-        ShakeScale
+        /// <summary>冲击缩放</summary>
+        Scale
+    }
+
+    /// <summary>
+    /// 震动动画的属性目标
+    /// </summary>
+    public enum ShakeTarget
+    {
+        /// <summary>震动位置</summary>
+        Position,
+        /// <summary>震动旋转</summary>
+        Rotation,
+        /// <summary>震动缩放</summary>
+        Scale
     }
 }

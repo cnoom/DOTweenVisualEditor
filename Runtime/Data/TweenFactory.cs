@@ -111,7 +111,7 @@ namespace CNoom.DOTweenVisual.Data
                 case TweenStepType.Move:
                     if (step.UseStartValue)
                     {
-                        ApplyMoveValue(target, step.TransformTarget, step.StartVector);
+                        ApplyMoveValue(target, step.MoveSpace, step.StartVector);
                     }
                     break;
 
@@ -119,7 +119,7 @@ namespace CNoom.DOTweenVisual.Data
                     if (step.UseStartValue)
                     {
                         var quat = Quaternion.Euler(step.StartVector);
-                        ApplyRotationValue(target, step.TransformTarget, quat);
+                        ApplyRotationValue(target, step.RotateSpace, quat);
                     }
                     break;
 
@@ -190,12 +190,12 @@ namespace CNoom.DOTweenVisual.Data
         {
             if (step.UseStartValue)
             {
-                ApplyMoveValue(target, step.TransformTarget, step.StartVector);
+                ApplyMoveValue(target, step.MoveSpace, step.StartVector);
             }
 
             float duration = Mathf.Max(0.001f, step.Duration);
 
-            if (step.TransformTarget == TransformTarget.LocalPosition)
+            if (step.MoveSpace == MoveSpace.Local)
             {
                 return step.IsRelative
                     ? target.DOLocalMove(step.TargetVector, duration).From(isRelative: true)
@@ -216,18 +216,18 @@ namespace CNoom.DOTweenVisual.Data
             if (step.UseStartValue)
             {
                 startQuat = Quaternion.Euler(step.StartVector);
-                ApplyRotationValue(target, step.TransformTarget, startQuat);
+                ApplyRotationValue(target, step.RotateSpace, startQuat);
             }
             else
             {
-                startQuat = step.TransformTarget == TransformTarget.LocalRotation
+                startQuat = step.RotateSpace == RotateSpace.Local
                     ? target.localRotation
                     : target.rotation;
             }
 
             float duration = Mathf.Max(0.001f, step.Duration);
 
-            if (step.TransformTarget == TransformTarget.LocalRotation)
+            if (step.RotateSpace == RotateSpace.Local)
             {
                 return step.IsRelative
                     ? target.DOLocalRotateQuaternion(startQuat * targetQuat, duration)
@@ -340,10 +340,10 @@ namespace CNoom.DOTweenVisual.Data
             int vibrato = Mathf.Max(1, step.Vibrato);
             float elasticity = Mathf.Clamp01(step.Elasticity);
 
-            return step.TransformTarget switch
+            return step.PunchTarget switch
             {
-                TransformTarget.PunchRotation => target.DOPunchRotation(step.Intensity, duration, vibrato, elasticity),
-                TransformTarget.PunchScale => target.DOPunchScale(step.Intensity, duration, vibrato, elasticity),
+                PunchTarget.Rotation => target.DOPunchRotation(step.Intensity, duration, vibrato, elasticity),
+                PunchTarget.Scale => target.DOPunchScale(step.Intensity, duration, vibrato, elasticity),
                 _ => target.DOPunchPosition(step.Intensity, duration, vibrato, elasticity)
             };
         }
@@ -354,10 +354,10 @@ namespace CNoom.DOTweenVisual.Data
             int vibrato = Mathf.Max(1, step.Vibrato);
             float randomness = Mathf.Clamp(step.ShakeRandomness, 0f, 90f);
 
-            return step.TransformTarget switch
+            return step.ShakeTarget switch
             {
-                TransformTarget.ShakeRotation => target.DOShakeRotation(duration, step.Intensity, vibrato, randomness),
-                TransformTarget.ShakeScale => target.DOShakeScale(duration, step.Intensity, vibrato, randomness),
+                ShakeTarget.Rotation => target.DOShakeRotation(duration, step.Intensity, vibrato, randomness),
+                ShakeTarget.Scale => target.DOShakeScale(duration, step.Intensity, vibrato, randomness),
                 _ => target.DOShakePosition(duration, step.Intensity, vibrato, randomness)
             };
         }
@@ -397,27 +397,27 @@ namespace CNoom.DOTweenVisual.Data
 
         #region 工具方法
 
-        private static void ApplyMoveValue(Transform target, TransformTarget transformTarget, Vector3 value)
+        private static void ApplyMoveValue(Transform target, MoveSpace moveSpace, Vector3 value)
         {
-            switch (transformTarget)
+            switch (moveSpace)
             {
-                case TransformTarget.Position:
+                case MoveSpace.World:
                     target.position = value;
                     break;
-                case TransformTarget.LocalPosition:
+                case MoveSpace.Local:
                     target.localPosition = value;
                     break;
             }
         }
 
-        private static void ApplyRotationValue(Transform target, TransformTarget transformTarget, Quaternion value)
+        private static void ApplyRotationValue(Transform target, RotateSpace rotateSpace, Quaternion value)
         {
-            switch (transformTarget)
+            switch (rotateSpace)
             {
-                case TransformTarget.Rotation:
+                case RotateSpace.World:
                     target.rotation = value;
                     break;
-                case TransformTarget.LocalRotation:
+                case RotateSpace.Local:
                     target.localRotation = value;
                     break;
             }

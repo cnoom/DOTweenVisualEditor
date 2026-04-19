@@ -56,8 +56,17 @@ namespace CNoom.DOTweenVisual.Data
         [Tooltip("目标物体（为null时使用组件所在物体）")]
         public Transform TargetTransform = null;
 
-        [Tooltip("Transform 目标类型")]
-        public TransformTarget TransformTarget = TransformTarget.Position;
+        [Tooltip("移动坐标空间（Move 使用）")]
+        public MoveSpace MoveSpace = MoveSpace.World;
+
+        [Tooltip("旋转坐标空间（Rotate 使用）")]
+        public RotateSpace RotateSpace = RotateSpace.World;
+
+        [Tooltip("冲击属性目标（Punch 使用）")]
+        public PunchTarget PunchTarget = PunchTarget.Position;
+
+        [Tooltip("震动属性目标（Shake 使用）")]
+        public ShakeTarget ShakeTarget = ShakeTarget.Position;
 
         [Tooltip("是否使用起始值（为false时使用物体当前值）")]
         public bool UseStartValue = false;
