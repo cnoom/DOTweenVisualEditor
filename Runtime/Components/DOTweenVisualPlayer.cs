@@ -358,6 +358,10 @@ namespace CNoom.DOTweenVisual.Components
         {
             if (_currentSequence != null)
             {
+                bool wasPlaying = _isPlaying;
+                // 先标记为未播放，防止 OnKill 回调重复调用 _onDone
+                _isPlaying = false;
+
                 // 回滚所有子 Tween 到动画开始前的状态（恢复位置/颜色/缩放等属性）
                 if (_currentSequence.IsActive())
                 {
@@ -365,9 +369,15 @@ namespace CNoom.DOTweenVisual.Components
                 }
                 _currentSequence.Kill();
                 _currentSequence = null;
+
+                // 直接触发 OnDone 回调（不依赖 DOTween 的 OnKill，确保可靠性）
+                if (wasPlaying)
+                {
+                    _onDone?.Invoke(false);
+                }
+                _onDone = null;
             }
             _isPlaying = false;
-            _onDone = null;
         }
 
         #endregion
