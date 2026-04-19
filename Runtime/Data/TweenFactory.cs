@@ -197,14 +197,14 @@ namespace CNoom.DOTweenVisual.Data
 
             if (step.MoveSpace == MoveSpace.Local)
             {
-                return step.IsRelative
-                    ? target.DOLocalMove(step.TargetVector, duration).From(isRelative: true)
-                    : target.DOLocalMove(step.TargetVector, duration);
+                var tween = target.DOLocalMove(step.TargetVector, duration);
+                if (step.IsRelative) tween.SetRelative(true);
+                return tween;
             }
 
-            return step.IsRelative
-                ? target.DOMove(step.TargetVector, duration).From(isRelative: true)
-                : target.DOMove(step.TargetVector, duration);
+            var moveTween = target.DOMove(step.TargetVector, duration);
+            if (step.IsRelative) moveTween.SetRelative(true);
+            return moveTween;
         }
 
         private static Tweener CreateRotateTween(TweenStepData step, Transform target)
@@ -248,9 +248,9 @@ namespace CNoom.DOTweenVisual.Data
 
             float duration = Mathf.Max(0.001f, step.Duration);
 
-            return step.IsRelative
-                ? target.DOScale(step.TargetVector, duration).From(isRelative: true)
-                : target.DOScale(step.TargetVector, duration);
+            var tween = target.DOScale(step.TargetVector, duration);
+            if (step.IsRelative) tween.SetRelative(true);
+            return tween;
         }
 
         #endregion
@@ -298,9 +298,9 @@ namespace CNoom.DOTweenVisual.Data
 
             float duration = Mathf.Max(0.001f, step.Duration);
 
-            return step.IsRelative
-                ? rectTransform.DOAnchorPos(step.TargetVector, duration).From(isRelative: true)
-                : rectTransform.DOAnchorPos(step.TargetVector, duration);
+            var tween = rectTransform.DOAnchorPos(step.TargetVector, duration);
+            if (step.IsRelative) tween.SetRelative(true);
+            return tween;
         }
 
         private static Tweener CreateSizeDeltaTween(TweenStepData step, Transform target)
@@ -314,9 +314,9 @@ namespace CNoom.DOTweenVisual.Data
 
             float duration = Mathf.Max(0.001f, step.Duration);
 
-            return step.IsRelative
-                ? rectTransform.DOSizeDelta(step.TargetVector, duration).From(isRelative: true)
-                : rectTransform.DOSizeDelta(step.TargetVector, duration);
+            var tween = rectTransform.DOSizeDelta(step.TargetVector, duration);
+            if (step.IsRelative) tween.SetRelative(true);
+            return tween;
         }
 
         #endregion
