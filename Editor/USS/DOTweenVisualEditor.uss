@@ -304,7 +304,8 @@
 /* 步骤高亮 - 预览时当前执行步骤 */
 .step-item.step-active {
     background-color: rgba(74, 144, 217, 0.15);
-    border-left: 3px solid #4A90D9;
+    border-left-width: 3px;
+    border-left-color: #4A90D9;
 }
 
 .step-item.step-active .step-title {
