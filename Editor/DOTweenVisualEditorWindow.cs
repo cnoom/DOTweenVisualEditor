@@ -153,7 +153,6 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnEditorUpdate()
         {
             UpdateTimeDisplay();
-            HandleKeyboardShortcuts();
         }
 
         #endregion
@@ -294,6 +293,8 @@ namespace CNoom.DOTweenVisual.Editor
 
             BuildAddStepMenu();
             UpdateButtonStates();
+
+            rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
         private void InitControllers()
@@ -468,32 +469,26 @@ namespace CNoom.DOTweenVisual.Editor
 
         #region 快捷键
 
-        private void HandleKeyboardShortcuts()
+        private void OnKeyDown(KeyDownEvent evt)
         {
-            if (focusedWindow != this) return;
+            bool modifier = evt.ctrlKey || evt.commandKey;
+            if (!modifier) return;
 
-            var e = Event.current;
-            if (e == null) return;
-
-            if (e.type == EventType.KeyDown)
+            if (evt.keyCode == KeyCode.C)
             {
-                bool modifier = e.control || e.command;
-                if (e.keyCode == KeyCode.C && modifier)
-                {
-                    _clipboard?.CopySelectedStep();
-                    e.Use();
-                }
-                else if (e.keyCode == KeyCode.V && modifier)
-                {
-                    _clipboard?.PasteStep();
-                    e.Use();
-                }
-                else if (e.keyCode == KeyCode.D && modifier)
-                {
-                    _clipboard?.CopySelectedStep();
-                    _clipboard?.PasteStep();
-                    e.Use();
-                }
+                _clipboard?.CopySelectedStep();
+                evt.StopPropagation();
+            }
+            else if (evt.keyCode == KeyCode.V)
+            {
+                _clipboard?.PasteStep();
+                evt.StopPropagation();
+            }
+            else if (evt.keyCode == KeyCode.D)
+            {
+                _clipboard?.CopySelectedStep();
+                _clipboard?.PasteStep();
+                evt.StopPropagation();
             }
         }
 
