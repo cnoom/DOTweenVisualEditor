@@ -2,6 +2,34 @@
 
 本文件记录项目的所有重要变更。
 
+## [1.1.0] - 2026-04-20
+
+### 新增
+
+- **PathVisualizer** - SceneView 路径可视化器
+  - 选中 DOPath 步骤时在 SceneView 中显示完整路径曲线
+  - 通过 DOTween 内部 Path 类（反射）计算路径，确保与运行时完全一致
+  - 支持拖拽编辑路径航点，实时更新曲线
+  - 显示起始点（绿色）、航点（黄色）、方向箭头
+  - Play Mode 下路径可视化开关（工具栏 Toggle，默认开启）
+  - 预览模式下同步高亮当前路径进度
+- **StepListController** - 步骤列表逻辑独立控制器
+- **StepDetailPanel** - 步骤详情面板独立控制器
+- **StepClipboard** - 复制粘贴独立管理器
+- **DetailFieldFactory** - 详情面板字段创建工厂
+
+### 修复
+
+- 修复 `selectedStepIndex` setter 为空操作，导致粘贴/复制后选中状态和详情面板不更新
+- 修复快捷键 Ctrl+C/V/D 无效（`EditorApplication.update` 中 `Event.current` 始终为 null，改用 `RegisterCallback<KeyDownEvent>`）
+- 修复粘贴 DOPath 路径点数据 FormatException（wpCount 与坐标混在同一管道段中）
+- 修复 StepClipboard 旧格式兼容逻辑字段错位（`else i++` 跳过了错误字段）
+- 修复进入 Play Mode 后场景物体引用变为僵尸引用导致窗口空白（进入运行模式前主动清空目标引用）
+- TweenValueHelper 统一使用 `sharedMaterial`，消除读写不一致
+- 移除 `DOTweenVisualPlayer.Start()` 中的 `DOTween.Init()` 调用，由 DOTween 自行管理初始化
+- PathVisualizer GUIStyle 缓存为延迟初始化属性，避免每帧 GC 分配
+- DOTweenPreviewManager catch 保留完整异常堆栈信息
+
 ## [1.0.0] - 2026-04-19
 
 ### 新增
