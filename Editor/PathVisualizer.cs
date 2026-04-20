@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
@@ -36,6 +37,7 @@ namespace CNoom.DOTweenVisual.Editor
             private static readonly MethodInfo GetPointMethod;
             private static readonly FieldInfo AddedExtraStartWpField;
             private static readonly MethodInfo DrawMethod;
+            private static readonly PropertyInfo GizmosDelegatesProperty;
             public static readonly bool IsAvailable;
 
             static DotweenPathHelper()
@@ -54,6 +56,11 @@ namespace CNoom.DOTweenVisual.Editor
                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                     DrawMethod = PathType.GetMethod("Draw",
                         BindingFlags.Instance | BindingFlags.NonPublic);
+
+                    // GizmosDelegates 是 internal static 属性，通过反射获取
+                    GizmosDelegatesProperty = typeof(DG.Tweening.DOTween).GetProperty(
+                        "GizmosDelegates",
+                        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
                     IsAvailable = FinalizePathMethod != null
                                   && GetPointMethod != null
@@ -84,11 +91,12 @@ namespace CNoom.DOTweenVisual.Editor
 
             public static void RemoveGizmoDelegate(object path)
             {
-                if (path == null || DrawMethod == null) return;
+                if (path == null || DrawMethod == null || GizmosDelegatesProperty == null) return;
                 try
                 {
                     var del = Delegate.CreateDelegate(typeof(Action), path, DrawMethod);
-                    DG.Tweening.DOTween.GizmosDelegates.Remove(del);
+                    var delegates = GizmosDelegatesProperty.GetValue(null) as IList;
+                    if (delegates != null) delegates.Remove(del);
                 }
                 catch
                 {
