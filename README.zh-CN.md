@@ -112,6 +112,10 @@ Editor/
     └── DOTweenVisualEditor.uss    # 编辑器样式表
 ```
 
+## 致谢
+
+本项目基于 [DOTween](https://github.com/Demigiant/dotween.git)（作者 Daniele Giardini / Demigiant）构建。特别感谢 DOTween 项目为 Unity 提供了强大且易用的 Tween 动画引擎。
+
 ## 许可证
 
 [MIT License](LICENSE.md)

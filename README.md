@@ -112,6 +112,10 @@ Editor/
     └── DOTweenVisualEditor.uss    # Editor stylesheet
 ```
 
+## Acknowledgements
+
+This project is built on top of [DOTween](https://github.com/Demigiant/dotween.git) by Daniele Giardini (Demigiant). Many thanks to the DOTween project for providing a powerful and easy-to-use tween animation engine for Unity.
+
 ## License
 
 [MIT License](LICENSE.md)
