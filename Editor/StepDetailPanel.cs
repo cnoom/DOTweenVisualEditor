@@ -57,7 +57,7 @@ namespace CNoom.DOTweenVisual.Editor
             _detailPanel.AddToClassList("detail-content");
             _detailPanel.style.flexGrow = 1;
 
-            _detailHelpLabel = new Label("请在左侧选择一个步骤");
+            _detailHelpLabel = new Label(L10n.Tr("Detail/SelectStep"));
             _detailHelpLabel.AddToClassList("detail-help-label");
             _detailPanel.Add(_detailHelpLabel);
 
@@ -152,10 +152,10 @@ namespace CNoom.DOTweenVisual.Editor
             Action onObjectFieldChanged = () => { _onRebuildList(); _onRefreshDetail(); };
 
             // --- 通用字段 ---
-            AddDetailField("类型", DetailFieldFactory.CreateEnumField(typeProp, typeof(TweenStepType), onTypeChanged));
-            AddDetailField("启用", DetailFieldFactory.CreateToggle(isEnabledProp));
-            AddDetailField("时长", DetailFieldFactory.CreateFloatField(durationProp, onTimingChanged));
-            AddDetailField("延迟", DetailFieldFactory.CreateFloatField(delayProp));
+            AddDetailField(L10n.Tr("Detail/Type"), DetailFieldFactory.CreateEnumField(typeProp, typeof(TweenStepType), onTypeChanged));
+            AddDetailField(L10n.Tr("Detail/Enabled"), DetailFieldFactory.CreateToggle(isEnabledProp));
+            AddDetailField(L10n.Tr("Detail/Duration"), DetailFieldFactory.CreateFloatField(durationProp, onTimingChanged));
+            AddDetailField(L10n.Tr("Detail/Delay"), DetailFieldFactory.CreateFloatField(delayProp));
 
             // --- 按类型显示 ---
             bool isTransformType = type == TweenStepType.Move || type == TweenStepType.Rotate || type == TweenStepType.Scale;
@@ -163,150 +163,150 @@ namespace CNoom.DOTweenVisual.Editor
             if (isTransformType)
             {
                 if (type == TweenStepType.Move)
-                    AddDetailField("坐标空间", DetailFieldFactory.CreateEnumField(moveSpaceProp, typeof(MoveSpace)));
+                    AddDetailField(L10n.Tr("Detail/MoveSpace"), DetailFieldFactory.CreateEnumField(moveSpaceProp, typeof(MoveSpace)));
                 else if (type == TweenStepType.Rotate)
                 {
-                    AddDetailField("坐标空间", DetailFieldFactory.CreateEnumField(rotateSpaceProp, typeof(RotateSpace)));
-                    AddDetailField("旋转方向", DetailFieldFactory.CreateEnumField(rotateDirectionProp, typeof(RotateDirection)));
+                    AddDetailField(L10n.Tr("Detail/RotateSpace"), DetailFieldFactory.CreateEnumField(rotateSpaceProp, typeof(RotateSpace)));
+                    AddDetailField(L10n.Tr("Detail/RotateDirection"), DetailFieldFactory.CreateEnumField(rotateDirectionProp, typeof(RotateDirection)));
                 }
 
-                AddDetailField("目标物体", DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
-                AddDetailField("相对模式", DetailFieldFactory.CreateToggle(isRelativeProp));
+                AddDetailField(L10n.Tr("Detail/TargetObject"), DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
+                AddDetailField(L10n.Tr("Detail/RelativeMode"), DetailFieldFactory.CreateToggle(isRelativeProp));
 
                 AddSeparator();
 
-                AddDetailField("使用起始值", DetailFieldFactory.CreateToggle(useStartValueProp, onToggleRebuild));
+                AddDetailField(L10n.Tr("Detail/UseStartValue"), DetailFieldFactory.CreateToggle(useStartValueProp, onToggleRebuild));
 
                 if (useStartValueProp.boolValue)
                 {
-                    string startLabel = type == TweenStepType.Rotate ? "起始旋转" : "起始值";
+                    string startLabel = type == TweenStepType.Rotate ? L10n.Tr("Detail/StartRotation") : L10n.Tr("Detail/StartValue");
                     AddDetailField(startLabel, DetailFieldFactory.CreateVector3Field(startVectorProp));
                 }
 
-                string targetLabel = type == TweenStepType.Rotate ? "目标值 (欧拉角)" : "目标值";
+                string targetLabel = type == TweenStepType.Rotate ? L10n.Tr("Detail/TargetValueEuler") : L10n.Tr("Detail/TargetValue");
                 AddDetailField(targetLabel, DetailFieldFactory.CreateVector3Field(targetVectorProp));
             }
             else if (type == TweenStepType.AnchorMove || type == TweenStepType.SizeDelta)
             {
-                AddDetailField("目标物体", DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
+                AddDetailField(L10n.Tr("Detail/TargetObject"), DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
                 AddValidationWarning(targetTransformProp, type);
-                AddDetailField("相对模式", DetailFieldFactory.CreateToggle(isRelativeProp));
+                AddDetailField(L10n.Tr("Detail/RelativeMode"), DetailFieldFactory.CreateToggle(isRelativeProp));
 
                 AddSeparator();
 
-                AddDetailField("使用起始值", DetailFieldFactory.CreateToggle(useStartValueProp, onToggleRebuild));
+                AddDetailField(L10n.Tr("Detail/UseStartValue"), DetailFieldFactory.CreateToggle(useStartValueProp, onToggleRebuild));
 
                 if (useStartValueProp.boolValue)
                 {
-                    string startLabel = type == TweenStepType.AnchorMove ? "起始锚点位置" : "起始尺寸";
+                    string startLabel = type == TweenStepType.AnchorMove ? L10n.Tr("Detail/StartAnchorPos") : L10n.Tr("Detail/StartSize");
                     AddDetailField(startLabel, DetailFieldFactory.CreateVector3Field(startVectorProp));
                 }
 
-                string targetLabel = type == TweenStepType.AnchorMove ? "目标锚点位置" : "目标尺寸";
+                string targetLabel = type == TweenStepType.AnchorMove ? L10n.Tr("Detail/TargetAnchorPos") : L10n.Tr("Detail/TargetSize");
                 AddDetailField(targetLabel, DetailFieldFactory.CreateVector3Field(targetVectorProp));
             }
             else if (type == TweenStepType.Color)
             {
-                AddDetailField("目标物体", DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
+                AddDetailField(L10n.Tr("Detail/TargetObject"), DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
                 AddValidationWarning(targetTransformProp, TweenStepType.Color);
 
                 AddSeparator();
 
-                AddDetailField("使用起始颜色", DetailFieldFactory.CreateToggle(useStartColorProp, onToggleRebuild));
+                AddDetailField(L10n.Tr("Detail/UseStartColor"), DetailFieldFactory.CreateToggle(useStartColorProp, onToggleRebuild));
 
                 if (useStartColorProp.boolValue)
                 {
-                    AddDetailField("起始颜色", DetailFieldFactory.CreateColorField(startColorProp));
+                    AddDetailField(L10n.Tr("Detail/StartColor"), DetailFieldFactory.CreateColorField(startColorProp));
                 }
 
-                AddDetailField("目标颜色", DetailFieldFactory.CreateColorField(targetColorProp));
+                AddDetailField(L10n.Tr("Detail/TargetColor"), DetailFieldFactory.CreateColorField(targetColorProp));
             }
             else if (type == TweenStepType.Fade)
             {
-                AddDetailField("目标物体", DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
+                AddDetailField(L10n.Tr("Detail/TargetObject"), DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
                 AddValidationWarning(targetTransformProp, TweenStepType.Fade);
 
                 AddSeparator();
 
-                AddDetailField("使用起始透明度", DetailFieldFactory.CreateToggle(useStartFloatProp, onToggleRebuild));
+                AddDetailField(L10n.Tr("Detail/UseStartAlpha"), DetailFieldFactory.CreateToggle(useStartFloatProp, onToggleRebuild));
 
                 if (useStartFloatProp.boolValue)
                 {
-                    AddDetailField("起始透明度", DetailFieldFactory.CreateFloatField(startFloatProp));
+                    AddDetailField(L10n.Tr("Detail/StartAlpha"), DetailFieldFactory.CreateFloatField(startFloatProp));
                 }
 
-                AddDetailField("目标透明度", DetailFieldFactory.CreateFloatField(targetFloatProp));
+                AddDetailField(L10n.Tr("Detail/TargetAlpha"), DetailFieldFactory.CreateFloatField(targetFloatProp));
             }
             else if (type == TweenStepType.Jump)
             {
-                AddDetailField("目标物体", DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
+                AddDetailField(L10n.Tr("Detail/TargetObject"), DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
 
                 AddSeparator();
 
-                AddDetailField("使用起始位置", DetailFieldFactory.CreateToggle(useStartValueProp, onToggleRebuild));
+                AddDetailField(L10n.Tr("Detail/UseStartPosition"), DetailFieldFactory.CreateToggle(useStartValueProp, onToggleRebuild));
 
                 if (useStartValueProp.boolValue)
                 {
-                    AddDetailField("起始位置", DetailFieldFactory.CreateVector3Field(startVectorProp));
+                    AddDetailField(L10n.Tr("Detail/StartPosition"), DetailFieldFactory.CreateVector3Field(startVectorProp));
                 }
 
-                AddDetailField("目标位置", DetailFieldFactory.CreateVector3Field(targetVectorProp));
+                AddDetailField(L10n.Tr("Detail/TargetPosition"), DetailFieldFactory.CreateVector3Field(targetVectorProp));
 
                 AddSeparator();
 
-                AddDetailField("跳跃高度", DetailFieldFactory.CreateFloatField(jumpHeightProp));
-                AddDetailField("跳跃次数", DetailFieldFactory.CreateIntegerField(jumpNumProp));
+                AddDetailField(L10n.Tr("Detail/JumpHeight"), DetailFieldFactory.CreateFloatField(jumpHeightProp));
+                AddDetailField(L10n.Tr("Detail/JumpCount"), DetailFieldFactory.CreateIntegerField(jumpNumProp));
             }
             else if (type == TweenStepType.Punch)
             {
-                AddDetailField("目标物体", DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
+                AddDetailField(L10n.Tr("Detail/TargetObject"), DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
 
                 AddSeparator();
 
-                AddDetailField("冲击目标", DetailFieldFactory.CreateEnumField(punchTargetProp, typeof(PunchTarget)));
-                AddDetailField("强度", DetailFieldFactory.CreateVector3Field(intensityProp));
-                AddDetailField("震荡次数", DetailFieldFactory.CreateIntegerField(vibratoProp));
-                AddDetailField("弹性", DetailFieldFactory.CreateFloatField(elasticityProp));
+                AddDetailField(L10n.Tr("Detail/PunchTarget"), DetailFieldFactory.CreateEnumField(punchTargetProp, typeof(PunchTarget)));
+                AddDetailField(L10n.Tr("Detail/Intensity"), DetailFieldFactory.CreateVector3Field(intensityProp));
+                AddDetailField(L10n.Tr("Detail/Vibrato"), DetailFieldFactory.CreateIntegerField(vibratoProp));
+                AddDetailField(L10n.Tr("Detail/Elasticity"), DetailFieldFactory.CreateFloatField(elasticityProp));
             }
             else if (type == TweenStepType.Shake)
             {
-                AddDetailField("目标物体", DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
+                AddDetailField(L10n.Tr("Detail/TargetObject"), DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
 
                 AddSeparator();
 
-                AddDetailField("震动目标", DetailFieldFactory.CreateEnumField(shakeTargetProp, typeof(ShakeTarget)));
-                AddDetailField("强度", DetailFieldFactory.CreateVector3Field(intensityProp));
-                AddDetailField("震荡次数", DetailFieldFactory.CreateIntegerField(vibratoProp));
-                AddDetailField("弹性", DetailFieldFactory.CreateFloatField(elasticityProp));
-                AddDetailField("随机性", DetailFieldFactory.CreateFloatField(shakeRandomnessProp));
+                AddDetailField(L10n.Tr("Detail/ShakeTarget"), DetailFieldFactory.CreateEnumField(shakeTargetProp, typeof(ShakeTarget)));
+                AddDetailField(L10n.Tr("Detail/Intensity"), DetailFieldFactory.CreateVector3Field(intensityProp));
+                AddDetailField(L10n.Tr("Detail/Vibrato"), DetailFieldFactory.CreateIntegerField(vibratoProp));
+                AddDetailField(L10n.Tr("Detail/Elasticity"), DetailFieldFactory.CreateFloatField(elasticityProp));
+                AddDetailField(L10n.Tr("Detail/ShakeRandomness"), DetailFieldFactory.CreateFloatField(shakeRandomnessProp));
             }
             else if (type == TweenStepType.FillAmount)
             {
-                AddDetailField("目标物体", DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
+                AddDetailField(L10n.Tr("Detail/TargetObject"), DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
                 AddValidationWarning(targetTransformProp, TweenStepType.FillAmount);
 
                 AddSeparator();
 
-                AddDetailField("使用起始填充量", DetailFieldFactory.CreateToggle(useStartFloatProp, onToggleRebuild));
+                AddDetailField(L10n.Tr("Detail/UseStartValue"), DetailFieldFactory.CreateToggle(useStartFloatProp, onToggleRebuild));
 
                 if (useStartFloatProp.boolValue)
                 {
-                    AddDetailField("起始填充量", DetailFieldFactory.CreateFloatField(startFloatProp));
+                    AddDetailField(L10n.Tr("Detail/StartValue"), DetailFieldFactory.CreateFloatField(startFloatProp));
                 }
 
-                AddDetailField("目标填充量", DetailFieldFactory.CreateFloatField(targetFloatProp));
+                AddDetailField(L10n.Tr("Detail/TargetValue"), DetailFieldFactory.CreateFloatField(targetFloatProp));
             }
             else if (type == TweenStepType.DOPath)
             {
-                AddDetailField("目标物体", DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
+                AddDetailField(L10n.Tr("Detail/TargetObject"), DetailFieldFactory.CreateObjectField(targetTransformProp, typeof(Transform), onObjectFieldChanged));
 
                 AddSeparator();
 
-                AddDetailField("使用起始位置", DetailFieldFactory.CreateToggle(useStartValueProp, onToggleRebuild));
+                AddDetailField(L10n.Tr("Detail/UseStartPosition"), DetailFieldFactory.CreateToggle(useStartValueProp, onToggleRebuild));
 
                 if (useStartValueProp.boolValue)
                 {
-                    AddDetailField("起始位置", DetailFieldFactory.CreateVector3Field(startVectorProp));
+                    AddDetailField(L10n.Tr("Detail/StartPosition"), DetailFieldFactory.CreateVector3Field(startVectorProp));
                 }
 
                 var waypointsProp = stepProperty.FindPropertyRelative("PathWaypoints");
@@ -314,9 +314,9 @@ namespace CNoom.DOTweenVisual.Editor
 
                 AddSeparator();
 
-                AddDetailField("路径类型", DetailFieldFactory.CreatePathTypeEnumField(stepProperty.FindPropertyRelative("PathType")));
-                AddDetailField("路径模式", DetailFieldFactory.CreatePathModeEnumField(stepProperty.FindPropertyRelative("PathMode")));
-                AddDetailField("路径分辨率", DetailFieldFactory.CreateIntegerField(stepProperty.FindPropertyRelative("PathResolution")));
+                AddDetailField(L10n.Tr("Detail/PathType"), DetailFieldFactory.CreatePathTypeEnumField(stepProperty.FindPropertyRelative("PathType")));
+                AddDetailField(L10n.Tr("Detail/PathMode"), DetailFieldFactory.CreatePathModeEnumField(stepProperty.FindPropertyRelative("PathMode")));
+                AddDetailField(L10n.Tr("Detail/PathResolution"), DetailFieldFactory.CreateIntegerField(stepProperty.FindPropertyRelative("PathResolution")));
             }
 
             AddSeparator();
@@ -333,18 +333,18 @@ namespace CNoom.DOTweenVisual.Editor
             }
             else if (type == TweenStepType.Delay)
             {
-                AddDetailField("执行模式", DetailFieldFactory.CreateEnumField(executionModeProp, typeof(ExecutionMode), onEnumRebuild));
+                AddDetailField(L10n.Tr("Detail/ExecutionMode"), DetailFieldFactory.CreateEnumField(executionModeProp, typeof(ExecutionMode), onEnumRebuild));
                 if ((ExecutionMode)executionModeProp.enumValueIndex == ExecutionMode.Insert)
                 {
-                    AddDetailField("插入时间", DetailFieldFactory.CreateFloatField(insertTimeProp, onTimingChanged));
+                    AddDetailField(L10n.Tr("Detail/InsertTime"), DetailFieldFactory.CreateFloatField(insertTimeProp, onTimingChanged));
                 }
             }
             else if (type == TweenStepType.Punch || type == TweenStepType.Shake)
             {
-                AddDetailField("执行模式", DetailFieldFactory.CreateEnumField(executionModeProp, typeof(ExecutionMode), onEnumRebuild));
+                AddDetailField(L10n.Tr("Detail/ExecutionMode"), DetailFieldFactory.CreateEnumField(executionModeProp, typeof(ExecutionMode), onEnumRebuild));
                 if ((ExecutionMode)executionModeProp.enumValueIndex == ExecutionMode.Insert)
                 {
-                    AddDetailField("插入时间", DetailFieldFactory.CreateFloatField(insertTimeProp, onTimingChanged));
+                    AddDetailField(L10n.Tr("Detail/InsertTime"), DetailFieldFactory.CreateFloatField(insertTimeProp, onTimingChanged));
                 }
 
                 if (onCompleteProp != null)
@@ -357,19 +357,19 @@ namespace CNoom.DOTweenVisual.Editor
             }
             else
             {
-                AddDetailField("执行模式", DetailFieldFactory.CreateEnumField(executionModeProp, typeof(ExecutionMode), onEnumRebuild));
+                AddDetailField(L10n.Tr("Detail/ExecutionMode"), DetailFieldFactory.CreateEnumField(executionModeProp, typeof(ExecutionMode), onEnumRebuild));
                 if ((ExecutionMode)executionModeProp.enumValueIndex == ExecutionMode.Insert)
                 {
-                    AddDetailField("插入时间", DetailFieldFactory.CreateFloatField(insertTimeProp, onTimingChanged));
+                    AddDetailField(L10n.Tr("Detail/InsertTime"), DetailFieldFactory.CreateFloatField(insertTimeProp, onTimingChanged));
                 }
 
-                AddDetailField("缓动", DetailFieldFactory.CreateEnumField(easeProp, typeof(Ease)));
+                AddDetailField(L10n.Tr("Detail/Ease"), DetailFieldFactory.CreateEnumField(easeProp, typeof(Ease)));
 
-                AddDetailField("自定义曲线", DetailFieldFactory.CreateToggle(useCustomCurveProp, onToggleRebuild));
+                AddDetailField(L10n.Tr("Detail/CustomCurve"), DetailFieldFactory.CreateToggle(useCustomCurveProp, onToggleRebuild));
 
                 if (useCustomCurveProp.boolValue && customCurveProp != null)
                 {
-                    AddDetailField("曲线", DetailFieldFactory.CreateCurveField(customCurveProp));
+                    AddDetailField(L10n.Tr("Detail/CustomCurve"), DetailFieldFactory.CreateCurveField(customCurveProp));
                 }
 
                 if (onCompleteProp != null)
@@ -464,13 +464,13 @@ namespace CNoom.DOTweenVisual.Editor
             headerRow.style.alignItems = Align.Center;
             headerRow.style.marginBottom = 4f;
 
-            var countLabel = new Label($"路径点 ({waypointsProp.arraySize} 个)");
+            var countLabel = new Label($"{L10n.Tr("Detail/Waypoints")} ({waypointsProp.arraySize})");
             countLabel.style.fontSize = 11f;
             countLabel.style.color = new Color(0.85f, 0.75f, 0.5f);
             countLabel.style.flexGrow = 1;
             headerRow.Add(countLabel);
 
-            var addButton = new Button(() => AddPathWaypoint(waypointsProp, countLabel)) { text = "＋ 添加" };
+            var addButton = new Button(() => AddPathWaypoint(waypointsProp, countLabel)) { text = L10n.Tr("Detail/AddWaypoint") };
             addButton.style.fontSize = 10f;
             addButton.style.paddingLeft = 6f;
             addButton.style.paddingRight = 6f;
@@ -590,7 +590,7 @@ namespace CNoom.DOTweenVisual.Editor
             if (waypointsProp == null || index < 0 || index >= waypointsProp.arraySize) return;
             if (waypointsProp.arraySize <= 1)
             {
-                DOTweenLog.Warning("至少需要保留一个路径点");
+                DOTweenLog.Warning(L10n.Tr("Detail/MinWaypointsWarning"));
                 return;
             }
 
