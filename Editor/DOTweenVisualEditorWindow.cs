@@ -98,6 +98,12 @@ namespace CNoom.DOTweenVisual.Editor
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
+
+            // 域重载后（进入/退出 Play Mode）：UI 已由 Unity 重建，只需刷新数据
+            if (rootVisualElement.childCount > 0 && targetPlayer != null)
+            {
+                SetTarget(targetPlayer);
+            }
         }
 
         private void OnDisable()
@@ -107,11 +113,12 @@ namespace CNoom.DOTweenVisual.Editor
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             _previewManager.StateChanged -= OnPreviewStateChanged;
             _previewManager.ProgressUpdated -= OnPreviewProgressUpdated;
-            _previewManager.Dispose();
+            _previewManager?.Dispose();
             _previewManager = null;
             _pathVisualizer?.Dispose();
             _pathVisualizer = null;
-            rootVisualElement.Clear();
+            // 不清除 rootVisualElement，域重载后 Unity 会管理 visual tree 生命周期
+            // 如果 CreateGUI 被再次调用，BuildUI 内部会 Clear + 重建
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
