@@ -1,15 +1,18 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using CNoom.DOTweenVisual.Data;
+using DG.Tweening;
 
 namespace CNoom.DOTweenVisual.Editor
 {
     /// <summary>
     /// DOPath 路径可视化器
     /// 在 SceneView 中绘制路径曲线，支持拖拽编辑路径点
+    /// 使用 DOTween 内部 Path 类（反射）保证可视化路径与运行时路径完全一致
     /// </summary>
     internal class PathVisualizer : IDisposable
     {
@@ -17,8 +20,82 @@ namespace CNoom.DOTweenVisual.Editor
 
         private const float WaypointHandleSize = 0.08f;
         private const float StartPointHandleSize = 0.1f;
-        private const float ArrowSpacing = 0.1f;
         private const int ArrowDensity = 5;
+
+        #endregion
+
+        #region DOTween Path 反射辅助
+
+        /// <summary>
+        /// 通过反射访问 DOTween 内部 Path 类，确保路径计算与运行时完全一致
+        /// </summary>
+        private static class DotweenPathHelper
+        {
+            private static readonly System.Type PathType;
+            private static readonly MethodInfo FinalizePathMethod;
+            private static readonly MethodInfo GetPointMethod;
+            private static readonly FieldInfo AddedExtraStartWpField;
+            private static readonly MethodInfo DrawMethod;
+            public static readonly bool IsAvailable;
+
+            static DotweenPathHelper()
+            {
+                try
+                {
+                    PathType = typeof(DG.Tweening.PathType).Assembly.GetType(
+                        "DG.Tweening.Plugins.Core.PathCore.Path");
+                    if (PathType == null) return;
+
+                    FinalizePathMethod = PathType.GetMethod("FinalizePath",
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    GetPointMethod = PathType.GetMethod("GetPoint",
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    AddedExtraStartWpField = PathType.GetField("addedExtraStartWp",
+                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    DrawMethod = PathType.GetMethod("Draw",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+
+                    IsAvailable = FinalizePathMethod != null
+                                  && GetPointMethod != null
+                                  && DrawMethod != null;
+                }
+                catch
+                {
+                    IsAvailable = false;
+                }
+            }
+
+            public static object CreatePath(DG.Tweening.PathType pathType, Vector3[] waypoints, int resolution)
+            {
+                return Activator.CreateInstance(PathType, pathType, waypoints, resolution, (Color?)null);
+            }
+
+            public static void Finalize(object path, Vector3 start)
+            {
+                AddedExtraStartWpField?.SetValue(path, true);
+                FinalizePathMethod.Invoke(path,
+                    new object[] { false, DG.Tweening.AxisConstraint.None, start });
+            }
+
+            public static Vector3 GetPoint(object path, float perc)
+            {
+                return (Vector3)GetPointMethod.Invoke(path, new object[] { perc, false });
+            }
+
+            public static void RemoveGizmoDelegate(object path)
+            {
+                if (path == null || DrawMethod == null) return;
+                try
+                {
+                    var del = Delegate.CreateDelegate(typeof(Action), path, DrawMethod);
+                    DG.Tweening.DOTween.GizmosDelegates.Remove(del);
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+        }
 
         #endregion
 
@@ -60,10 +137,6 @@ namespace CNoom.DOTweenVisual.Editor
         /// <summary>
         /// 设置当前步骤数据
         /// </summary>
-        /// <param name="stepProperty">当前步骤的 SerializedProperty</param>
-        /// <param name="targetTransform">目标 Transform（用于获取起始位置）</param>
-        /// <param name="getStartPosition">获取起始位置的委托</param>
-        /// <param name="onPathDataChanged">路径数据变更后的回调（用于刷新 UI）</param>
         public void SetData(
             SerializedProperty stepProperty,
             Transform targetTransform,
@@ -98,7 +171,6 @@ namespace CNoom.DOTweenVisual.Editor
 
             if (_targetTransform == null) return;
 
-            // 获取路径数据
             var waypointsProp = _stepProperty.FindPropertyRelative("PathWaypoints");
             if (waypointsProp == null || !waypointsProp.isArray || waypointsProp.arraySize == 0) return;
 
@@ -107,7 +179,6 @@ namespace CNoom.DOTweenVisual.Editor
             var gizmoColorProp = _stepProperty.FindPropertyRelative("PathGizmoColor");
             Color pathColor = gizmoColorProp != null ? gizmoColorProp.colorValue : new Color(1f, 0.5f, 0f);
 
-            // 收集路径点
             Vector3[] waypoints = new Vector3[waypointsProp.arraySize];
             for (int i = 0; i < waypoints.Length; i++)
             {
@@ -150,7 +221,6 @@ namespace CNoom.DOTweenVisual.Editor
             float size = HandleUtility.GetHandleSize(position) * StartPointHandleSize;
             Handles.SphereHandleCap(0, position, Quaternion.identity, size, EventType.Repaint);
 
-            // 标签
             var labelStyle = new GUIStyle(EditorStyles.label)
             {
                 normal = { textColor = Color.green },
@@ -167,16 +237,13 @@ namespace CNoom.DOTweenVisual.Editor
                 Vector3 wp = waypoints[i];
                 float handleSize = HandleUtility.GetHandleSize(wp) * WaypointHandleSize;
 
-                // 路径点球体
                 Handles.color = color;
                 Handles.SphereHandleCap(0, wp, Quaternion.identity, handleSize, EventType.Repaint);
 
-                // FreeMoveHandle 支持拖拽
                 EditorGUI.BeginChangeCheck();
                 Vector3 newPos = Handles.FreeMoveHandle(wp, handleSize, Vector3.zero, Handles.SphereHandleCap);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    // 通过 SerializedProperty 回写（支持 Undo）
                     var targetObj = waypointsProp.serializedObject.targetObject;
                     Undo.RecordObject(targetObj, "Move Waypoint");
                     waypointsProp.serializedObject.Update();
@@ -186,7 +253,6 @@ namespace CNoom.DOTweenVisual.Editor
                     SceneView.RepaintAll();
                 }
 
-                // 序号标签
                 var labelStyle = new GUIStyle(EditorStyles.label)
                 {
                     normal = { textColor = new Color(1f, 0.85f, 0.5f) },
@@ -230,7 +296,70 @@ namespace CNoom.DOTweenVisual.Editor
 
         #region 路径计算
 
+        /// <summary>
+        /// 计算完整路径点序列
+        /// 优先使用 DOTween 内部 Path 类（反射），保证与预览/运行时路径完全一致
+        /// </summary>
         private List<Vector3> ComputePath(Vector3 start, Vector3[] waypoints, int pathType, int resolution)
+        {
+            if (DotweenPathHelper.IsAvailable)
+            {
+                try
+                {
+                    return ComputePathViaDotween(start, waypoints, pathType, resolution);
+                }
+                catch (Exception)
+                {
+                    // 反射失败时回退到自定义算法
+                }
+            }
+
+            return ComputePathFallback(start, waypoints, pathType, resolution);
+        }
+
+        /// <summary>
+        /// 使用 DOTween 内部 Path 类计算路径（反射方式）
+        /// 模拟 PlugPath.SetTween 的内部流程：前置起始点 → FinalizePath → 采样
+        /// </summary>
+        private List<Vector3> ComputePathViaDotween(Vector3 start, Vector3[] waypoints, int pathType, int resolution)
+        {
+            // DOTween 在 PlugPath.SetTween 中会前置起始位置到 waypoints 数组
+            var allWps = new Vector3[waypoints.Length + 1];
+            allWps[0] = start;
+            Array.Copy(waypoints, 0, allWps, 1, waypoints.Length);
+
+            var pathEnum = (DG.Tweening.PathType)pathType;
+            object path = null;
+            try
+            {
+                // 创建 DOTween Path 对象（公开构造函数）
+                path = DotweenPathHelper.CreatePath(pathEnum, allWps, resolution);
+
+                // 标记已前置起始点 + FinalizePath（初始化控制点和速度查找表）
+                DotweenPathHelper.Finalize(path, start);
+
+                // 采样路径点（密度足够保证平滑渲染）
+                int sampleCount = Mathf.Max(resolution * 20, 100) * allWps.Length;
+                var result = new List<Vector3>(sampleCount + 1);
+                for (int i = 0; i <= sampleCount; i++)
+                {
+                    float t = (float)i / sampleCount;
+                    result.Add(DotweenPathHelper.GetPoint(path, t));
+                }
+
+                return result;
+            }
+            finally
+            {
+                // 移除 Path 构造函数自动注册的 Gizmo 绘制委托，避免重复绘制
+                DotweenPathHelper.RemoveGizmoDelegate(path);
+            }
+        }
+
+        /// <summary>
+        /// 自定义路径算法后备方案（DOTween 反射不可用时使用）
+        /// </summary>
+        private List<Vector3> ComputePathFallback(Vector3 start, Vector3[] waypoints, int pathType, int resolution)
         {
             switch (pathType)
             {
@@ -297,14 +426,10 @@ namespace CNoom.DOTweenVisual.Editor
             resolution = Mathf.Max(1, resolution);
             var result = new List<Vector3>();
 
-            // DOTween CubicBezier: 每 3 个点定义一段（起始点 + 2控制点 + 终点）
-            // 实际上 DOTween 的 CubicBezier 模式下，路径点被当作控制点序列
-            // 每 4 个点（含起始点）定义一段三次贝塞尔
             int segments = (allPoints.Count - 1) / 3;
 
             if (segments == 0)
             {
-                // 不足 4 个点时退化为直线
                 return ComputeLinearPath(start, waypoints);
             }
 
@@ -323,7 +448,6 @@ namespace CNoom.DOTweenVisual.Editor
                 }
             }
 
-            // 如果有剩余的点（不足一段贝塞尔），用直线连接
             int remainingStart = segments * 3 + 1;
             for (int i = remainingStart; i < allPoints.Count; i++)
             {
