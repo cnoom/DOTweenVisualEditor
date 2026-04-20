@@ -31,7 +31,7 @@ https://github.com/cnoom/DOTweenVisualEditor.git
 ## Requirements
 
 - Unity 2021.3 LTS or later
-- DOTween (com.demigiant.dotween) >= 1.2.765, with ASMDEF files generated in the DOTween Utility Panel
+- [DOTween](https://github.com/Demigiant/dotween.git) >= 1.2.765, with ASMDEF files generated in the DOTween Utility Panel
 
 ## Quick Start
 
