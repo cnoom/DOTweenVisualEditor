@@ -326,7 +326,7 @@ namespace CNoom.DOTweenVisual.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     var targetObj = waypointsProp.serializedObject.targetObject;
-                    Undo.RecordObject(targetObj, "Move Waypoint");
+                    Undo.RecordObject(targetObj, L10n.Tr("Undo/MoveWaypoint"));
                     waypointsProp.serializedObject.Update();
                     waypointsProp.GetArrayElementAtIndex(i).vector3Value = newPos;
                     waypointsProp.serializedObject.ApplyModifiedProperties();
@@ -391,8 +391,7 @@ namespace CNoom.DOTweenVisual.Editor
             catch (Exception e)
             {
                 Debug.LogError(
-                    $"[DOTweenVisualEditor] 路径可视化反射调用失败，当前 DOTween 版本可能不兼容。\n" +
-                    $"请检查 DOTween 版本是否满足要求（≥1.2.0），或联系插件作者更新。\n{e}");
+                    string.Format(L10n.Tr("Path/ReflectionError"), e));
                 return null;
             }
         }
@@ -409,13 +408,13 @@ namespace CNoom.DOTweenVisual.Editor
             var warningStyle = WarningStyle;
             Handles.Label(
                 position + Vector3.up * size * 3f,
-                "⚠ DOTween 版本不兼容，路径可视化不可用",
+                L10n.Tr("Path/VersionWarning"),
                 warningStyle);
 
             var detailStyle = DetailStyle;
             Handles.Label(
                 position + Vector3.up * size * 1.5f,
-                "请检查 DOTween 版本 ≥ 1.2.0",
+                L10n.Tr("Path/VersionDetail"),
                 detailStyle);
         }
 

@@ -136,7 +136,7 @@ namespace CNoom.DOTweenVisual.Editor
         /// </summary>
         public static VisualElement CreatePathTypeEnumField(SerializedProperty prop)
         {
-            var options = new System.Collections.Generic.List<string> { "Linear (直线)", "CatmullRom (曲线)", "CubicBezier (贝塞尔)" };
+            var options = new System.Collections.Generic.List<string> { L10n.Tr("PathOption/Linear"), L10n.Tr("PathOption/CatmullRom"), L10n.Tr("PathOption/CubicBezier") };
             int idx = Mathf.Clamp(prop.intValue, 0, options.Count - 1);
             var field = new PopupField<string>(options, options[idx]);
             field.style.flexGrow = 1;
@@ -155,7 +155,7 @@ namespace CNoom.DOTweenVisual.Editor
         /// </summary>
         public static VisualElement CreatePathModeEnumField(SerializedProperty prop)
         {
-            var options = new System.Collections.Generic.List<string> { "3D (三维)", "TopDown2D (俯视)", "SideScroll2D (横版)" };
+            var options = new System.Collections.Generic.List<string> { L10n.Tr("PathOption/3D"), L10n.Tr("PathOption/TopDown2D"), L10n.Tr("PathOption/SideScroll2D") };
             int idx = Mathf.Clamp(prop.intValue, 0, options.Count - 1);
             var field = new PopupField<string>(options, options[idx]);
             field.style.flexGrow = 1;

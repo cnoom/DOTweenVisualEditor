@@ -87,7 +87,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 启用开关
             var isEnabledProp = property.FindPropertyRelative("IsEnabled");
-            isEnabledProp.boolValue = EditorGUI.ToggleLeft(rect, " 启用", isEnabledProp.boolValue);
+            isEnabledProp.boolValue = EditorGUI.ToggleLeft(rect, L10n.Tr("Drawer/Enabled"), isEnabledProp.boolValue);
             rect.y += LineHeight + Spacing;
 
             // 类型选择
@@ -339,7 +339,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 起始值开关
             var useStartValueProp = property.FindPropertyRelative("UseStartValue");
-            useStartValueProp.boolValue = EditorGUI.ToggleLeft(rect, " 使用起始值", useStartValueProp.boolValue);
+            useStartValueProp.boolValue = EditorGUI.ToggleLeft(rect, L10n.Tr("Drawer/UseStartValue"), useStartValueProp.boolValue);
             rect.y += LineHeight + Spacing;
 
             if (useStartValueProp.boolValue)
@@ -347,10 +347,10 @@ namespace CNoom.DOTweenVisual.Editor
                 // 起始值标签根据类型调整
                 string startLabel = type switch
                 {
-                    TweenStepType.Rotate => "起始旋转 (欧拉角)",
-                    TweenStepType.AnchorMove => "起始锚点位置",
-                    TweenStepType.SizeDelta => "起始尺寸",
-                    _ => "起始值"
+                    TweenStepType.Rotate => L10n.Tr("Detail/StartRotationEuler"),
+                    TweenStepType.AnchorMove => L10n.Tr("Detail/StartAnchorPos"),
+                    TweenStepType.SizeDelta => L10n.Tr("Detail/StartSize"),
+                    _ => L10n.Tr("Detail/StartValue")
                 };
                 EditorGUI.PropertyField(rect, property.FindPropertyRelative("StartVector"), new GUIContent(startLabel));
                 rect.y += LineHeight + Spacing;
@@ -359,10 +359,10 @@ namespace CNoom.DOTweenVisual.Editor
             // 目标值标签根据类型调整
             string targetLabel = type switch
             {
-                TweenStepType.Rotate => "目标旋转 (欧拉角)",
-                TweenStepType.AnchorMove => "目标锚点位置",
-                TweenStepType.SizeDelta => "目标尺寸",
-                _ => "目标值"
+                TweenStepType.Rotate => L10n.Tr("Detail/TargetRotationEuler"),
+                TweenStepType.AnchorMove => L10n.Tr("Detail/TargetAnchorPos"),
+                TweenStepType.SizeDelta => L10n.Tr("Detail/TargetSize"),
+                _ => L10n.Tr("Detail/TargetValue")
             };
             EditorGUI.PropertyField(rect, property.FindPropertyRelative("TargetVector"), new GUIContent(targetLabel));
             rect.y += LineHeight + Spacing;
@@ -373,7 +373,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 一键同步按钮
             var buttonRect = new Rect(rect.x, rect.y, rect.width, ButtonHeight);
-            if (GUI.Button(buttonRect, "同步当前值"))
+            if (GUI.Button(buttonRect, L10n.Tr("Drawer/SyncCurrent")))
             {
                 SyncCurrentValue(property, type);
             }
@@ -391,7 +391,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 起始颜色开关
             var useStartColorProp = property.FindPropertyRelative("UseStartColor");
-            useStartColorProp.boolValue = EditorGUI.ToggleLeft(rect, " 使用起始颜色", useStartColorProp.boolValue);
+            useStartColorProp.boolValue = EditorGUI.ToggleLeft(rect, L10n.Tr("Detail/UseStartColor"), useStartColorProp.boolValue);
             rect.y += LineHeight + Spacing;
 
             if (useStartColorProp.boolValue)
@@ -416,9 +416,9 @@ namespace CNoom.DOTweenVisual.Editor
                 DrawValidationWarning(ref rect, property, TweenStepType.Fade);
 
             bool isFillAmount = type == TweenStepType.FillAmount;
-            string startLabel = isFillAmount ? " 使用起始填充量" : " 使用起始透明度";
-            string startValueLabel = isFillAmount ? "起始填充量" : "起始透明度";
-            string targetValueLabel = isFillAmount ? "目标填充量" : "目标透明度";
+            string startLabel = isFillAmount ? L10n.Tr("Drawer/UseStartFill") : L10n.Tr("Detail/UseStartAlpha");
+            string startValueLabel = isFillAmount ? L10n.Tr("Drawer/StartFill") : L10n.Tr("Detail/StartAlpha");
+            string targetValueLabel = isFillAmount ? L10n.Tr("Drawer/TargetFill") : L10n.Tr("Detail/TargetAlpha");
 
             // 起始值开关
             var useStartFloatProp = property.FindPropertyRelative("UseStartFloat");
@@ -438,7 +438,7 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void DrawDelayFields(ref Rect rect, SerializedProperty property)
         {
-            EditorGUI.PropertyField(rect, property.FindPropertyRelative("Duration"), new GUIContent("延迟时间"));
+            EditorGUI.PropertyField(rect, property.FindPropertyRelative("Duration"), new GUIContent(L10n.Tr("Drawer/DelayTime")));
             rect.y += LineHeight + Spacing;
         }
 
@@ -450,28 +450,28 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 起始值开关
             var useStartValueProp = property.FindPropertyRelative("UseStartValue");
-            useStartValueProp.boolValue = EditorGUI.ToggleLeft(rect, " 使用起始位置", useStartValueProp.boolValue);
+            useStartValueProp.boolValue = EditorGUI.ToggleLeft(rect, L10n.Tr("Detail/UseStartPosition"), useStartValueProp.boolValue);
             rect.y += LineHeight + Spacing;
 
             if (useStartValueProp.boolValue)
             {
-                EditorGUI.PropertyField(rect, property.FindPropertyRelative("StartVector"), new GUIContent("起始位置"));
+                EditorGUI.PropertyField(rect, property.FindPropertyRelative("StartVector"), new GUIContent(L10n.Tr("Detail/StartPosition")));
                 rect.y += LineHeight + Spacing;
             }
 
             // 目标位置
-            EditorGUI.PropertyField(rect, property.FindPropertyRelative("TargetVector"), new GUIContent("目标位置"));
+            EditorGUI.PropertyField(rect, property.FindPropertyRelative("TargetVector"), new GUIContent(L10n.Tr("Detail/TargetPosition")));
             rect.y += LineHeight + Spacing;
 
             // 跳跃参数
-            EditorGUI.PropertyField(rect, property.FindPropertyRelative("JumpHeight"), new GUIContent("跳跃高度"));
+            EditorGUI.PropertyField(rect, property.FindPropertyRelative("JumpHeight"), new GUIContent(L10n.Tr("Detail/JumpHeight")));
             rect.y += LineHeight + Spacing;
-            EditorGUI.PropertyField(rect, property.FindPropertyRelative("JumpNum"), new GUIContent("跳跃次数"));
+            EditorGUI.PropertyField(rect, property.FindPropertyRelative("JumpNum"), new GUIContent(L10n.Tr("Detail/JumpCount")));
             rect.y += LineHeight + Spacing;
 
             // 同步按钮
             var buttonRect = new Rect(rect.x, rect.y, rect.width, ButtonHeight);
-            if (GUI.Button(buttonRect, "同步当前位置"))
+            if (GUI.Button(buttonRect, L10n.Tr("Drawer/SyncCurrentPos")))
             {
                 SyncCurrentValue(property, TweenStepType.Jump);
             }
@@ -489,25 +489,25 @@ namespace CNoom.DOTweenVisual.Editor
             // Punch/Shake 子类型
             string targetPropName = isShake ? "ShakeTarget" : "PunchTarget";
             var targetProp = property.FindPropertyRelative(targetPropName);
-            EditorGUI.PropertyField(rect, targetProp, new GUIContent(isShake ? "震动目标" : "冲击目标"));
+            EditorGUI.PropertyField(rect, targetProp, new GUIContent(isShake ? L10n.Tr("Detail/ShakeTarget") : L10n.Tr("Detail/PunchTarget")));
             rect.y += LineHeight + Spacing;
 
             // 强度
-            EditorGUI.PropertyField(rect, property.FindPropertyRelative("Intensity"), new GUIContent("强度"));
+            EditorGUI.PropertyField(rect, property.FindPropertyRelative("Intensity"), new GUIContent(L10n.Tr("Detail/Intensity")));
             rect.y += LineHeight + Spacing;
 
             // 震荡次数
-            EditorGUI.PropertyField(rect, property.FindPropertyRelative("Vibrato"), new GUIContent("震荡次数"));
+            EditorGUI.PropertyField(rect, property.FindPropertyRelative("Vibrato"), new GUIContent(L10n.Tr("Detail/Vibrato")));
             rect.y += LineHeight + Spacing;
 
             // 弹性
-            EditorGUI.PropertyField(rect, property.FindPropertyRelative("Elasticity"), new GUIContent("弹性"));
+            EditorGUI.PropertyField(rect, property.FindPropertyRelative("Elasticity"), new GUIContent(L10n.Tr("Detail/Elasticity")));
             rect.y += LineHeight + Spacing;
 
             // 随机性（仅 Shake）
             if (isShake)
             {
-                EditorGUI.PropertyField(rect, property.FindPropertyRelative("ShakeRandomness"), new GUIContent("随机性"));
+                EditorGUI.PropertyField(rect, property.FindPropertyRelative("ShakeRandomness"), new GUIContent(L10n.Tr("Detail/ShakeRandomness")));
                 rect.y += LineHeight + Spacing;
             }
         }
@@ -520,12 +520,12 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 起始值
             var useStartValueProp = property.FindPropertyRelative("UseStartValue");
-            useStartValueProp.boolValue = EditorGUI.ToggleLeft(rect, " 使用起始位置", useStartValueProp.boolValue);
+            useStartValueProp.boolValue = EditorGUI.ToggleLeft(rect, L10n.Tr("Detail/UseStartPosition"), useStartValueProp.boolValue);
             rect.y += LineHeight + Spacing;
 
             if (useStartValueProp.boolValue)
             {
-                EditorGUI.PropertyField(rect, property.FindPropertyRelative("StartVector"), new GUIContent("起始位置"));
+                EditorGUI.PropertyField(rect, property.FindPropertyRelative("StartVector"), new GUIContent(L10n.Tr("Detail/StartPosition")));
                 rect.y += LineHeight + Spacing;
             }
 
@@ -541,20 +541,21 @@ namespace CNoom.DOTweenVisual.Editor
             var waypointsProp = property.FindPropertyRelative("PathWaypoints");
             if (waypointsProp != null && waypointsProp.isArray)
             {
-                EditorGUI.LabelField(rect, $"路径点 ({waypointsProp.arraySize} 个)", EditorStyles.boldLabel);
+                var wpLabel = L10n.Tr("Detail/Waypoints");
+                EditorGUI.LabelField(rect, $"{wpLabel} ({waypointsProp.arraySize})", EditorStyles.boldLabel);
                 rect.y += LineHeight + Spacing;
 
                 for (int i = 0; i < waypointsProp.arraySize; i++)
                 {
                     var wp = waypointsProp.GetArrayElementAtIndex(i);
-                    EditorGUI.PropertyField(rect, wp, new GUIContent($"点 {i + 1}"));
+                    EditorGUI.PropertyField(rect, wp, new GUIContent($"{L10n.Tr("Drawer/Waypoint")} {i + 1}"));
                     rect.y += LineHeight + Spacing;
                 }
             }
 
             // 同步按钮
             var buttonRect = new Rect(rect.x, rect.y, rect.width, ButtonHeight);
-            if (GUI.Button(buttonRect, "同步当前位置"))
+            if (GUI.Button(buttonRect, L10n.Tr("Drawer/SyncCurrentPos")))
             {
                 SyncCurrentValue(property, TweenStepType.DOPath);
             }
@@ -563,7 +564,7 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void DrawCallbackFields(ref Rect rect, SerializedProperty property)
         {
-            EditorGUI.LabelField(rect, "回调事件", EditorStyles.boldLabel);
+            EditorGUI.LabelField(rect, L10n.Tr("Detail/CallbackEvent"), EditorStyles.boldLabel);
             rect.y += LineHeight + Spacing;
 
             var onCompleteProp = property.FindPropertyRelative("OnComplete");
@@ -674,7 +675,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             if (target == null)
             {
-                DOTweenLog.Warning("无法获取目标物体");
+                DOTweenLog.Warning(L10n.Tr("Drawer/CannotGetTarget"));
                 return;
             }
 
@@ -740,7 +741,7 @@ namespace CNoom.DOTweenVisual.Editor
             property.FindPropertyRelative("TargetVector").vector3Value = currentValue;
             property.serializedObject.ApplyModifiedProperties();
 
-            DOTweenLog.Info($"已同步 {target.name} 的 {type} = {currentValue}");
+            DOTweenLog.Info($"{L10n.Tr("Drawer/Synced")} {target.name} {type} = {currentValue}");
         }
 
         #endregion

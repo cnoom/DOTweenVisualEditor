@@ -107,7 +107,7 @@ namespace CNoom.DOTweenVisual.Editor
             }
 
             _clipboardJson = sb.ToString();
-            DOTweenLog.Info($"已复制步骤 {selectedStepIndex + 1}");
+            DOTweenLog.Info(string.Format(L10n.Tr("Clipboard/Copied"), selectedStepIndex + 1));
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (string.IsNullOrEmpty(_clipboardJson))
             {
-                DOTweenLog.Warning("剪贴板为空，请先复制一个步骤");
+                DOTweenLog.Warning(L10n.Tr("Clipboard/Empty"));
                 return;
             }
 
@@ -126,7 +126,7 @@ namespace CNoom.DOTweenVisual.Editor
             if (stepsProperty == null) return;
 
             var serializedObject = _getSerializedObject();
-            Undo.RecordObject(targetPlayer, "粘贴动画步骤");
+            Undo.RecordObject(targetPlayer, L10n.Tr("Undo/PasteStep"));
             serializedObject?.Update();
 
             stepsProperty.InsertArrayElementAtIndex(stepsProperty.arraySize);
@@ -192,7 +192,7 @@ namespace CNoom.DOTweenVisual.Editor
             _setSelectedIndex(stepsProperty.arraySize - 1);
             _onRebuildList();
             _onRefreshDetail();
-            DOTweenLog.Info("已粘贴步骤");
+            DOTweenLog.Info(L10n.Tr("Clipboard/Pasted"));
         }
 
         #region 序列化工具

@@ -45,6 +45,7 @@ namespace CNoom.DOTweenVisual.Editor
         private ToolbarMenu addStepMenu;
         private Label stateLabel;
         private Label timeLabel;
+        private Button langButton;
 
         #endregion
 
@@ -88,6 +89,26 @@ namespace CNoom.DOTweenVisual.Editor
             var window = GetWindow<DOTweenVisualEditorWindow>("DOTween Visual Editor");
             window.minSize = new Vector2(600, 400);
             window.Show();
+        }
+
+        [MenuItem("Tools/DOTween Visual/中文 (简体)", false, 200)]
+        private static void SetLanguageZhCN() { L10n.Current = L10n.Language.ZhCN; }
+
+        [MenuItem("Tools/DOTween Visual/中文 (简体)", true)]
+        private static bool ValidateLanguageZhCN()
+        {
+            Menu.SetChecked("Tools/DOTween Visual/中文 (简体)", L10n.Current == L10n.Language.ZhCN);
+            return true;
+        }
+
+        [MenuItem("Tools/DOTween Visual/English", false, 201)]
+        private static void SetLanguageEnUS() { L10n.Current = L10n.Language.EnUS; }
+
+        [MenuItem("Tools/DOTween Visual/English", true)]
+        private static bool ValidateLanguageEnUS()
+        {
+            Menu.SetChecked("Tools/DOTween Visual/English", L10n.Current == L10n.Language.EnUS);
+            return true;
         }
 
         private void OnEnable()
@@ -170,7 +191,7 @@ namespace CNoom.DOTweenVisual.Editor
             }
             else
             {
-                DOTweenLog.Error("样式表加载失败！请检查 Editor/USS/DOTweenVisualEditor.uss 是否存在且已被 Unity 导入");
+                DOTweenLog.Error(L10n.Tr("Window/StyleSheetError"));
             }
 
             if (targetPlayer != null)
@@ -188,7 +209,7 @@ namespace CNoom.DOTweenVisual.Editor
             var toolbar = new VisualElement();
             toolbar.AddToClassList("top-toolbar");
 
-            var targetLabel = new Label("目标物体:");
+            var targetLabel = new Label(L10n.Tr("Window/TargetLabel"));
             targetLabel.AddToClassList("toolbar-label");
             toolbar.Add(targetLabel);
 
@@ -202,10 +223,10 @@ namespace CNoom.DOTweenVisual.Editor
             targetField.RegisterValueChangedCallback(OnTargetChanged);
             toolbar.Add(targetField);
 
-            showPathInPlayModeToggle = new Toggle("运行时路径")
+            showPathInPlayModeToggle = new Toggle(L10n.Tr("Window/ShowPathInPlayMode"))
             {
                 value = PathVisualizer.ShowPathInPlayMode,
-                tooltip = "Play Mode 下是否显示路径可视化"
+                tooltip = L10n.Tr("Window/ShowPathTooltip")
             };
             showPathInPlayModeToggle.AddToClassList("play-mode-path-toggle");
             showPathInPlayModeToggle.RegisterValueChangedCallback(evt =>
@@ -217,19 +238,32 @@ namespace CNoom.DOTweenVisual.Editor
             var spacer1 = new VisualElement { style = { flexGrow = 1 } };
             toolbar.Add(spacer1);
 
-            previewButton = new Button(OnPreviewClicked) { text = "预览" };
+            // 语言切换下拉按钮
+            langButton = new Button(OnLanguageMenuClicked)
+            {
+                text = L10n.Tr("Menu/Language"),
+                tooltip = L10n.Tr("Menu/Language")
+            };
+            langButton.AddToClassList("lang-button");
+            toolbar.Add(langButton);
+
+            var separator = new VisualElement();
+            separator.AddToClassList("toolbar-separator");
+            toolbar.Add(separator);
+
+            previewButton = new Button(OnPreviewClicked) { text = L10n.Tr("Window/Preview") };
             previewButton.AddToClassList("toolbar-button");
             toolbar.Add(previewButton);
 
-            stopButton = new Button(OnStopClicked) { text = "停止" };
+            stopButton = new Button(OnStopClicked) { text = L10n.Tr("Window/Stop") };
             stopButton.AddToClassList("toolbar-button");
             toolbar.Add(stopButton);
 
-            replayButton = new Button(OnReplayClicked) { text = "重播" };
+            replayButton = new Button(OnReplayClicked) { text = L10n.Tr("Window/Replay") };
             replayButton.AddToClassList("toolbar-button");
             toolbar.Add(replayButton);
 
-            resetButton = new Button(OnResetClicked) { text = "重置" };
+            resetButton = new Button(OnResetClicked) { text = L10n.Tr("Window/Reset") };
             resetButton.AddToClassList("toolbar-button");
             toolbar.Add(resetButton);
 
@@ -239,7 +273,7 @@ namespace CNoom.DOTweenVisual.Editor
             var statusBar = new VisualElement();
             statusBar.AddToClassList("status-bar");
 
-            stateLabel = new Label("● 未播放");
+            stateLabel = new Label(L10n.Tr("Window/StateNone"));
             stateLabel.AddToClassList("state-label");
             statusBar.Add(stateLabel);
 
@@ -258,11 +292,11 @@ namespace CNoom.DOTweenVisual.Editor
 
             var leftHeader = new VisualElement();
             leftHeader.AddToClassList("panel-header");
-            var leftTitle = new Label("步骤概览");
+            var leftTitle = new Label(L10n.Tr("Window/StepOverview"));
             leftTitle.AddToClassList("panel-title");
             leftHeader.Add(leftTitle);
 
-            addStepMenu = new ToolbarMenu { text = "＋ 添加" };
+            addStepMenu = new ToolbarMenu { text = L10n.Tr("Window/AddStep") };
             addStepMenu.AddToClassList("add-step-menu");
             leftHeader.Add(addStepMenu);
             leftPanel.Add(leftHeader);
@@ -276,11 +310,11 @@ namespace CNoom.DOTweenVisual.Editor
 
             var rightHeader = new VisualElement();
             rightHeader.AddToClassList("panel-header");
-            var rightTitle = new Label("步骤详情");
+            var rightTitle = new Label(L10n.Tr("Window/StepDetail"));
             rightTitle.AddToClassList("panel-title");
             rightHeader.Add(rightTitle);
 
-            var syncButton = new Button(() => _detailPanelController.OnSyncClicked()) { text = "同步当前值" };
+            var syncButton = new Button(() => _detailPanelController.OnSyncClicked()) { text = L10n.Tr("Window/SyncValue") };
             syncButton.AddToClassList("sync-button");
             rightHeader.Add(syncButton);
 
@@ -295,6 +329,13 @@ namespace CNoom.DOTweenVisual.Editor
             UpdateButtonStates();
 
             rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown);
+
+            // 语言切换后恢复数据绑定
+            if (targetPlayer != null)
+            {
+                _listController?.RebuildStepList();
+                _detailPanelController?.RefreshDetailPanel();
+            }
         }
 
         private void InitControllers()
@@ -467,6 +508,24 @@ namespace CNoom.DOTweenVisual.Editor
 
         #endregion
 
+        #region 语言切换
+
+        private void OnLanguageMenuClicked()
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(
+                new GUIContent(L10n.Tr("Menu/Chinese")),
+                L10n.Current == L10n.Language.ZhCN,
+                () => { L10n.Current = L10n.Language.ZhCN; BuildUI(); });
+            menu.AddItem(
+                new GUIContent(L10n.Tr("Menu/English")),
+                L10n.Current == L10n.Language.EnUS,
+                () => { L10n.Current = L10n.Language.EnUS; BuildUI(); });
+            menu.DropDown(langButton.worldBound);
+        }
+
+        #endregion
+
         #region 快捷键
 
         private void OnKeyDown(KeyDownEvent evt)
@@ -500,34 +559,34 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (addStepMenu == null) return;
 
-            addStepMenu.menu.AppendAction("Move (World)", _ => AddStep(TweenStepType.Move, moveSpace: MoveSpace.World));
-            addStepMenu.menu.AppendAction("Move (Local)", _ => AddStep(TweenStepType.Move, moveSpace: MoveSpace.Local));
-            addStepMenu.menu.AppendAction("Rotate (World)", _ => AddStep(TweenStepType.Rotate, rotateSpace: RotateSpace.World));
-            addStepMenu.menu.AppendAction("Rotate (Local)", _ => AddStep(TweenStepType.Rotate, rotateSpace: RotateSpace.Local));
-            addStepMenu.menu.AppendAction("Scale", _ => AddStep(TweenStepType.Scale));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/MoveWorld"), _ => AddStep(TweenStepType.Move, moveSpace: MoveSpace.World));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/MoveLocal"), _ => AddStep(TweenStepType.Move, moveSpace: MoveSpace.Local));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/RotateWorld"), _ => AddStep(TweenStepType.Rotate, rotateSpace: RotateSpace.World));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/RotateLocal"), _ => AddStep(TweenStepType.Rotate, rotateSpace: RotateSpace.Local));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Scale"), _ => AddStep(TweenStepType.Scale));
             addStepMenu.menu.AppendSeparator();
 
-            addStepMenu.menu.AppendAction("Color", _ => AddStep(TweenStepType.Color));
-            addStepMenu.menu.AppendAction("Fade", _ => AddStep(TweenStepType.Fade));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Color"), _ => AddStep(TweenStepType.Color));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Fade"), _ => AddStep(TweenStepType.Fade));
             addStepMenu.menu.AppendSeparator();
 
-            addStepMenu.menu.AppendAction("Anchor Move", _ => AddStep(TweenStepType.AnchorMove));
-            addStepMenu.menu.AppendAction("Size Delta", _ => AddStep(TweenStepType.SizeDelta));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/AnchorMove"), _ => AddStep(TweenStepType.AnchorMove));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/SizeDelta"), _ => AddStep(TweenStepType.SizeDelta));
             addStepMenu.menu.AppendSeparator();
 
-            addStepMenu.menu.AppendAction("Jump", _ => AddStep(TweenStepType.Jump));
-            addStepMenu.menu.AppendAction("Punch (Position)", _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Position));
-            addStepMenu.menu.AppendAction("Punch (Rotation)", _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Rotation));
-            addStepMenu.menu.AppendAction("Punch (Scale)", _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Scale));
-            addStepMenu.menu.AppendAction("Shake (Position)", _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Position));
-            addStepMenu.menu.AppendAction("Shake (Rotation)", _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Rotation));
-            addStepMenu.menu.AppendAction("Shake (Scale)", _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Scale));
-            addStepMenu.menu.AppendAction("Fill Amount", _ => AddStep(TweenStepType.FillAmount));
-            addStepMenu.menu.AppendAction("DOPath (路径移动)", _ => AddStep(TweenStepType.DOPath));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Jump"), _ => AddStep(TweenStepType.Jump));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/PunchPosition"), _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Position));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/PunchRotation"), _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Rotation));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/PunchScale"), _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Scale));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/ShakePosition"), _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Position));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/ShakeRotation"), _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Rotation));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/ShakeScale"), _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Scale));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/FillAmount"), _ => AddStep(TweenStepType.FillAmount));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/DOPath"), _ => AddStep(TweenStepType.DOPath));
             addStepMenu.menu.AppendSeparator();
 
-            addStepMenu.menu.AppendAction("Delay", _ => AddStep(TweenStepType.Delay));
-            addStepMenu.menu.AppendAction("Callback", _ => AddStep(TweenStepType.Callback));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Delay"), _ => AddStep(TweenStepType.Delay));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Callback"), _ => AddStep(TweenStepType.Callback));
         }
 
         private void AddStep(TweenStepType type, MoveSpace moveSpace = MoveSpace.World,
@@ -536,11 +595,11 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (stepsProperty == null)
             {
-                DOTweenLog.Warning("请先选择一个 DOTweenVisualPlayer 组件");
+                DOTweenLog.Warning(L10n.Tr("Window/NoTargetWarning"));
                 return;
             }
 
-            Undo.RecordObject(targetPlayer, "添加动画步骤");
+            Undo.RecordObject(targetPlayer, L10n.Tr("Undo/AddStep"));
             serializedObject.Update();
             stepsProperty.InsertArrayElementAtIndex(stepsProperty.arraySize);
             var newStep = stepsProperty.GetArrayElementAtIndex(stepsProperty.arraySize - 1);
@@ -599,7 +658,7 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (targetPlayer == null)
             {
-                DOTweenLog.Warning("请先选择一个 DOTweenVisualPlayer 组件");
+                DOTweenLog.Warning(L10n.Tr("Window/NoTargetWarning"));
                 return;
             }
 
@@ -661,8 +720,8 @@ namespace CNoom.DOTweenVisual.Editor
             {
                 previewButton.SetEnabled(hasSteps && !isCompleted);
                 previewButton.text = state == DOTweenPreviewManager.PreviewState.Playing
-                    ? "暂停"
-                    : (state == DOTweenPreviewManager.PreviewState.Paused ? "继续" : "预览");
+                    ? L10n.Tr("Window/Pause")
+                    : (state == DOTweenPreviewManager.PreviewState.Paused ? L10n.Tr("Window/Continue") : L10n.Tr("Window/Preview"));
             }
 
             if (stopButton != null) stopButton.SetEnabled(inPreview);
@@ -682,19 +741,19 @@ namespace CNoom.DOTweenVisual.Editor
             switch (state)
             {
                 case DOTweenPreviewManager.PreviewState.None:
-                    stateLabel.text = "● 未播放";
+                    stateLabel.text = L10n.Tr("Window/StateNone");
                     stateLabel.style.color = new Color(0.6f, 0.6f, 0.6f);
                     break;
                 case DOTweenPreviewManager.PreviewState.Playing:
-                    stateLabel.text = "● 播放中";
+                    stateLabel.text = L10n.Tr("Window/StatePlaying");
                     stateLabel.style.color = new Color(0.3f, 0.8f, 0.3f);
                     break;
                 case DOTweenPreviewManager.PreviewState.Paused:
-                    stateLabel.text = "● 已暂停";
+                    stateLabel.text = L10n.Tr("Window/StatePaused");
                     stateLabel.style.color = new Color(1f, 0.7f, 0f);
                     break;
                 case DOTweenPreviewManager.PreviewState.Completed:
-                    stateLabel.text = "● 播放完成";
+                    stateLabel.text = L10n.Tr("Window/StateCompleted");
                     stateLabel.style.color = new Color(0.3f, 0.6f, 1f);
                     break;
             }
