@@ -28,7 +28,7 @@ namespace CNoom.DOTweenVisual.Editor
 
         #region 数据
 
-        private DOTweenVisualPlayer targetPlayer;
+        [SerializeField] private DOTweenVisualPlayer targetPlayer;
         private SerializedObject serializedObject;
         private SerializedProperty stepsProperty;
 
@@ -123,29 +123,6 @@ namespace CNoom.DOTweenVisual.Editor
                     _previewManager.Reset();
                 }
             }
-            else if (state == PlayModeStateChange.EnteredEditMode)
-            {
-                // 退出播放模式后，重建 SerializedObject 并刷新 UI
-                if (targetPlayer != null)
-                {
-                    try
-                    {
-                        var go = targetPlayer.gameObject;
-                        serializedObject = new SerializedObject(targetPlayer);
-                        stepsProperty = serializedObject.FindProperty("_steps");
-                    }
-                    catch
-                    {
-                        targetPlayer = null;
-                        serializedObject = null;
-                        stepsProperty = null;
-                    }
-                }
-
-                _listController?.RebuildStepList();
-                _detailPanelController?.RefreshDetailPanel();
-                UpdatePathVisualizer();
-            }
         }
 
         private void OnUndoRedoPerformed()
@@ -186,19 +163,9 @@ namespace CNoom.DOTweenVisual.Editor
                 DOTweenLog.Error("样式表加载失败！请检查 Editor/USS/DOTweenVisualEditor.uss 是否存在且已被 Unity 导入");
             }
 
-            // 退出 Play Mode 后域重载：targetPlayer 引用可能指向已销毁的对象
             if (targetPlayer != null)
             {
-                // Unity fake null: C# 引用非 null 但底层 native 对象已被销毁
-                try
-                {
-                    var go = targetPlayer.gameObject;
-                    SetTarget(targetPlayer);
-                }
-                catch
-                {
-                    targetPlayer = null;
-                }
+                SetTarget(targetPlayer);
             }
         }
 
