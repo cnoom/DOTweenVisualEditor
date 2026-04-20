@@ -21,6 +21,19 @@ namespace CNoom.DOTweenVisual.Editor
 
         public ListView StepListView => _stepListView;
         public int SelectedStepIndex => _selectedStepIndex;
+
+        /// <summary>
+        /// 外部设置选中索引（如粘贴、添加步骤后），同步更新 ListView 选中状态
+        /// </summary>
+        public void SetSelectedIndex(int index)
+        {
+            _selectedStepIndex = index;
+            if (_stepListView != null)
+            {
+                if (index >= 0) _stepListView.SetSelection(index);
+                else _stepListView.ClearSelection();
+            }
+        }
         public float TotalSequenceDuration => _totalSequenceDuration;
         public float[] StepStartTimes => _stepStartTimes;
 

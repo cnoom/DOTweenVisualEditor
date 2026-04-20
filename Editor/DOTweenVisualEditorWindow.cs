@@ -332,11 +332,7 @@ namespace CNoom.DOTweenVisual.Editor
         private int selectedStepIndex
         {
             get => _listController?.SelectedStepIndex ?? -1;
-            set
-            {
-                // selectedStepIndex 由 StepListController 内部管理
-                // 这里仅用于外部设置（如 SetTarget、AddStep、PasteStep）
-            }
+            set => _listController?.SetSelectedIndex(value);
         }
 
         private void OnTargetChanged(ChangeEvent<UnityEngine.Object> evt)
