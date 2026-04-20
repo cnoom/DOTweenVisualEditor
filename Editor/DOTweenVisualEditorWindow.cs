@@ -851,6 +851,7 @@ namespace CNoom.DOTweenVisual.Editor
             var insertTimeProp = stepProperty.FindPropertyRelative("InsertTime");
             var moveSpaceProp = stepProperty.FindPropertyRelative("MoveSpace");
             var rotateSpaceProp = stepProperty.FindPropertyRelative("RotateSpace");
+            var rotateDirectionProp = stepProperty.FindPropertyRelative("RotateDirection");
             var punchTargetProp = stepProperty.FindPropertyRelative("PunchTarget");
             var shakeTargetProp = stepProperty.FindPropertyRelative("ShakeTarget");
             var targetTransformProp = stepProperty.FindPropertyRelative("TargetTransform");
@@ -890,7 +891,10 @@ namespace CNoom.DOTweenVisual.Editor
                 if (type == TweenStepType.Move)
                     AddDetailField("坐标空间", CreateEnumField(moveSpaceProp, typeof(MoveSpace)));
                 else if (type == TweenStepType.Rotate)
+                {
                     AddDetailField("坐标空间", CreateEnumField(rotateSpaceProp, typeof(RotateSpace)));
+                    AddDetailField("旋转方向", CreateEnumField(rotateDirectionProp, typeof(RotateDirection)));
+                }
 
                 AddDetailField("目标物体", CreateObjectField(targetTransformProp, typeof(Transform)));
                 AddDetailField("相对模式", CreateToggle(isRelativeProp));

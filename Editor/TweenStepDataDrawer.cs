@@ -154,6 +154,10 @@ namespace CNoom.DOTweenVisual.Editor
             float height = LineHeight + Spacing; // TargetTransform
             height += LineHeight + Spacing;      // TransformTarget
 
+            // RotateDirection（仅 Rotate 类型）
+            if (type == TweenStepType.Rotate)
+                height += LineHeight + Spacing;
+
             // 起始值开关
             height += LineHeight + Spacing;
             var useStartValueProp = property.FindPropertyRelative("UseStartValue");
@@ -327,6 +331,9 @@ namespace CNoom.DOTweenVisual.Editor
             else if (type == TweenStepType.Rotate)
             {
                 EditorGUI.PropertyField(rect, property.FindPropertyRelative("RotateSpace"));
+                rect.y += LineHeight + Spacing;
+
+                EditorGUI.PropertyField(rect, property.FindPropertyRelative("RotateDirection"));
                 rect.y += LineHeight + Spacing;
             }
 

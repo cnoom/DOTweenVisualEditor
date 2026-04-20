@@ -23,6 +23,19 @@ namespace CNoom.DOTweenVisual.Data
     }
 
     /// <summary>
+    /// 旋转方向（仅 Rotate 类型使用）
+    /// </summary>
+    public enum RotateDirection
+    {
+        /// <summary>最短路径（四元数插值，默认）</summary>
+        Shortest,
+        /// <summary>正方向（绕轴正向旋转，视觉上通常为顺时针）</summary>
+        Positive,
+        /// <summary>负方向（绕轴负向旋转，视觉上通常为逆时针）</summary>
+        Negative
+    }
+
+    /// <summary>
     /// 冲击动画的属性目标
     /// </summary>
     public enum PunchTarget

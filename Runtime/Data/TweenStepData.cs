@@ -62,6 +62,9 @@ namespace CNoom.DOTweenVisual.Data
         [Tooltip("旋转坐标空间（Rotate 使用）")]
         public RotateSpace RotateSpace = RotateSpace.World;
 
+        [Tooltip("旋转方向（仅 Rotate 使用）：Shortest=最短路径，Positive=正方向，Negative=负方向")]
+        public RotateDirection RotateDirection = RotateDirection.Shortest;
+
         [Tooltip("冲击属性目标（Punch 使用）")]
         public PunchTarget PunchTarget = PunchTarget.Position;
 

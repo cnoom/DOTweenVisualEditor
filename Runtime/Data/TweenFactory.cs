@@ -212,34 +212,68 @@ namespace CNoom.DOTweenVisual.Data
 
         private static Tweener CreateRotateTween(TweenStepData step, Transform target)
         {
-            // 旋转始终使用四元数插值，避免万向锁
-            Quaternion startQuat;
-            Quaternion targetQuat = Quaternion.Euler(step.TargetVector);
-
-            if (step.UseStartValue)
-            {
-                startQuat = Quaternion.Euler(step.StartVector);
-                ApplyRotationValue(target, step.RotateSpace, startQuat);
-            }
-            else
-            {
-                startQuat = step.RotateSpace == RotateSpace.Local
-                    ? target.localRotation
-                    : target.rotation;
-            }
-
             float duration = Mathf.Max(0.001f, step.Duration);
 
-            if (step.RotateSpace == RotateSpace.Local)
+            // 应用起始值
+            if (step.UseStartValue)
             {
-                return step.IsRelative
-                    ? target.DOLocalRotateQuaternion(startQuat * targetQuat, duration)
-                    : target.DOLocalRotateQuaternion(targetQuat, duration);
+                ApplyRotationValue(target, step.RotateSpace, Quaternion.Euler(step.StartVector));
             }
 
-            return step.IsRelative
-                ? target.DORotateQuaternion(startQuat * targetQuat, duration)
-                : target.DORotateQuaternion(targetQuat, duration);
+            // Shortest 模式：使用四元数插值（最短路径），避免万向锁
+            if (step.RotateDirection == RotateDirection.Shortest)
+            {
+                Quaternion targetQuat = Quaternion.Euler(step.TargetVector);
+
+                if (step.RotateSpace == RotateSpace.Local)
+                {
+                    return step.IsRelative
+                        ? target.DOLocalRotateQuaternion(target.localRotation * targetQuat, duration)
+                        : target.DOLocalRotateQuaternion(targetQuat, duration);
+                }
+
+                return step.IsRelative
+                    ? target.DORotateQuaternion(target.rotation * targetQuat, duration)
+                    : target.DORotateQuaternion(targetQuat, duration);
+            }
+
+            // Positive / Negative 模式：使用欧拉角插值，支持完整 360° 旋转
+            Vector3 rotValue = step.TargetVector;
+            if (step.RotateDirection == RotateDirection.Negative)
+                rotValue = -rotValue;
+
+            if (step.IsRelative)
+            {
+                // 相对模式：轴增量旋转
+                var rotateMode = step.RotateSpace == RotateSpace.Local
+                    ? RotateMode.LocalAxisAdd
+                    : RotateMode.WorldAxisAdd;
+                return target.DORotate(rotValue, duration, rotateMode);
+            }
+
+            // 绝对模式：计算从当前旋转到目标旋转的完整欧拉角差值
+            if (step.RotateSpace == RotateSpace.Local)
+            {
+                Vector3 currentEuler = target.localEulerAngles;
+                Vector3 targetEuler = ComputeDirectionalTarget(currentEuler, rotValue, step.RotateDirection);
+                return target.DOLocalRotate(targetEuler, duration, RotateMode.FastBeyond360);
+            }
+
+            Vector3 curEuler = target.eulerAngles;
+            Vector3 tgtEuler = ComputeDirectionalTarget(curEuler, rotValue, step.RotateDirection);
+            return target.DORotate(tgtEuler, duration, RotateMode.FastBeyond360);
+        }
+
+        /// <summary>
+        /// 计算带方向的目标欧拉角（绝对模式）
+        /// Positive: 当前角 + 目标向量（正向旋转）
+        /// Negative: 当前角 - 目标向量（负向旋转）
+        /// </summary>
+        private static Vector3 ComputeDirectionalTarget(Vector3 currentEuler, Vector3 targetVector, RotateDirection direction)
+        {
+            return direction == RotateDirection.Negative
+                ? currentEuler - targetVector
+                : currentEuler + targetVector;
         }
 
         private static Tweener CreateScaleTween(TweenStepData step, Transform target)
