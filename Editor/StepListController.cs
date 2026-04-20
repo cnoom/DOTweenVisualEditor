@@ -253,7 +253,7 @@ namespace CNoom.DOTweenVisual.Editor
                 var serializedObject = _getSerializedObject();
                 if (stepsProperty == null || idx < 0 || idx >= stepsProperty.arraySize) return;
 
-                Undo.RecordObject(targetPlayer, "删除动画步骤");
+                Undo.RecordObject(targetPlayer, L10n.Tr("Undo/DeleteStep"));
                 serializedObject.Update();
                 stepsProperty.DeleteArrayElementAtIndex(idx);
                 stepsProperty.serializedObject.ApplyModifiedProperties();
@@ -305,7 +305,7 @@ namespace CNoom.DOTweenVisual.Editor
             var ease = (Ease)easeProp.enumValueIndex;
             string targetName = targetTransformProp.objectReferenceValue != null
                 ? targetTransformProp.objectReferenceValue.name
-                : "未指定";
+                : L10n.Tr("StepList/NoTarget");
 
             element.userData = new StepItemData(stepProperty, index);
 
@@ -386,7 +386,7 @@ namespace CNoom.DOTweenVisual.Editor
             if (stepsProperty == null) return;
             var targetPlayer = _getTargetPlayer();
             var serializedObject = _getSerializedObject();
-            Undo.RecordObject(targetPlayer, "调整步骤顺序");
+            Undo.RecordObject(targetPlayer, L10n.Tr("Undo/ReorderStep"));
             serializedObject.Update();
             stepsProperty.MoveArrayElement(from, to);
             stepsProperty.serializedObject.ApplyModifiedProperties();

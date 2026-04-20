@@ -151,7 +151,7 @@ namespace CNoom.DOTweenVisual.Editor
             }
             catch (Exception e)
             {
-                DOTweenLog.Error($"预览启动失败: {e.Message}\n{e.StackTrace}");
+                DOTweenLog.Error(string.Format(L10n.Tr("Preview/StartFailed"), e.Message, e.StackTrace));
                 DOTweenEditorPreview.Stop();
                 CleanupSequence();
                 RestoreSnapshots();
@@ -309,7 +309,7 @@ namespace CNoom.DOTweenVisual.Editor
                 {
                     if (target == null || target.gameObject == null) continue;
 
-                    Undo.RecordObject(target, "Reset Preview State");
+                    Undo.RecordObject(target, L10n.Tr("Undo/ResetPreviewState"));
                     target.position = snapshot.Position;
                     target.rotation = snapshot.Rotation;
                     target.localPosition = snapshot.LocalPosition;

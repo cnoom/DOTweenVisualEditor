@@ -504,7 +504,7 @@ namespace CNoom.DOTweenVisual.Editor
                     val =>
                     {
                         if (!DetailFieldFactory.IsValidProperty(wp)) return;
-                        Undo.RecordObject(_getTargetPlayer(), "修改路径点");
+                        Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/ModifyWaypoint"));
                         _getSerializedObject()?.Update();
                         var v = waypointsProp.GetArrayElementAtIndex(idx).vector3Value;
                         v.x = val;
@@ -520,7 +520,7 @@ namespace CNoom.DOTweenVisual.Editor
                     val =>
                     {
                         if (!DetailFieldFactory.IsValidProperty(wp)) return;
-                        Undo.RecordObject(_getTargetPlayer(), "修改路径点");
+                        Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/ModifyWaypoint"));
                         _getSerializedObject()?.Update();
                         var v = waypointsProp.GetArrayElementAtIndex(idx).vector3Value;
                         v.y = val;
@@ -536,7 +536,7 @@ namespace CNoom.DOTweenVisual.Editor
                     val =>
                     {
                         if (!DetailFieldFactory.IsValidProperty(wp)) return;
-                        Undo.RecordObject(_getTargetPlayer(), "修改路径点");
+                        Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/ModifyWaypoint"));
                         _getSerializedObject()?.Update();
                         var v = waypointsProp.GetArrayElementAtIndex(idx).vector3Value;
                         v.z = val;
@@ -568,7 +568,7 @@ namespace CNoom.DOTweenVisual.Editor
         private void AddPathWaypoint(SerializedProperty waypointsProp, Label countLabel)
         {
             if (waypointsProp == null) return;
-            Undo.RecordObject(_getTargetPlayer(), "添加路径点");
+            Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/AddWaypoint"));
             _getSerializedObject()?.Update();
 
             Vector3 lastPos = Vector3.zero;
@@ -594,7 +594,7 @@ namespace CNoom.DOTweenVisual.Editor
                 return;
             }
 
-            Undo.RecordObject(_getTargetPlayer(), "删除路径点");
+            Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/DeleteWaypoint"));
             _getSerializedObject()?.Update();
             waypointsProp.DeleteArrayElementAtIndex(index);
             waypointsProp.serializedObject.ApplyModifiedProperties();
@@ -616,7 +616,7 @@ namespace CNoom.DOTweenVisual.Editor
             if (selectedIndex < 0 || stepsProperty == null || selectedIndex >= stepsProperty.arraySize) return;
 
             var targetPlayer = _getTargetPlayer();
-            Undo.RecordObject(targetPlayer, "同步当前值");
+            Undo.RecordObject(targetPlayer, L10n.Tr("Undo/SyncValue"));
             _getSerializedObject()?.Update();
             var stepProperty = stepsProperty.GetArrayElementAtIndex(selectedIndex);
             var type = (TweenStepType)stepProperty.FindPropertyRelative("Type").enumValueIndex;

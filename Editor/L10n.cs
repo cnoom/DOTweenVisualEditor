@@ -106,6 +106,13 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Undo/AddStep", "添加动画步骤"},
                 {"Undo/DeleteStep", "删除动画步骤"},
                 {"Undo/ReorderStep", "调整步骤顺序"},
+                {"Undo/ModifyWaypoint", "修改路径点"},
+                {"Undo/AddWaypoint", "添加路径点"},
+                {"Undo/DeleteWaypoint", "删除路径点"},
+                {"Undo/SyncValue", "同步当前值"},
+                {"Undo/PasteStep", "粘贴动画步骤"},
+                {"Undo/MoveWaypoint", "移动路径点"},
+                {"Undo/ResetPreviewState", "重置预览状态"},
 
                 // === Detail Panel ===
                 {"Detail/SelectStep", "请在左侧选择一个步骤"},
@@ -168,6 +175,14 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Detail/CustomCurve", "自定义曲线"},
                 {"Detail/OnStart", "OnStart"},
                 {"Detail/OnComplete", "OnComplete"},
+
+                // === Path Options ===
+                {"PathOption/Linear", "Linear (直线)"},
+                {"PathOption/CatmullRom", "CatmullRom (曲线)"},
+                {"PathOption/CubicBezier", "CubicBezier (贝塞尔)"},
+                {"PathOption/3D", "3D (三维)"},
+                {"PathOption/TopDown2D", "TopDown2D (俯视)"},
+                {"PathOption/SideScroll2D", "SideScroll2D (横版)"},
 
                 // === Step List ===
                 {"StepList/NoTarget", "未指定"},
@@ -280,6 +295,13 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Undo/AddStep", "Add Tween Step"},
                 {"Undo/DeleteStep", "Delete Tween Step"},
                 {"Undo/ReorderStep", "Reorder Steps"},
+                {"Undo/ModifyWaypoint", "Modify Waypoint"},
+                {"Undo/AddWaypoint", "Add Waypoint"},
+                {"Undo/DeleteWaypoint", "Delete Waypoint"},
+                {"Undo/SyncValue", "Sync Current Value"},
+                {"Undo/PasteStep", "Paste Tween Step"},
+                {"Undo/MoveWaypoint", "Move Waypoint"},
+                {"Undo/ResetPreviewState", "Reset Preview State"},
 
                 // === Detail Panel ===
                 {"Detail/SelectStep", "Select a step on the left"},
@@ -342,6 +364,14 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Detail/CustomCurve", "Custom Curve"},
                 {"Detail/OnStart", "OnStart"},
                 {"Detail/OnComplete", "OnComplete"},
+
+                // === Path Options ===
+                {"PathOption/Linear", "Linear"},
+                {"PathOption/CatmullRom", "CatmullRom"},
+                {"PathOption/CubicBezier", "CubicBezier"},
+                {"PathOption/3D", "3D"},
+                {"PathOption/TopDown2D", "TopDown2D"},
+                {"PathOption/SideScroll2D", "SideScroll2D"},
 
                 // === Step List ===
                 {"StepList/NoTarget", "Not Set"},

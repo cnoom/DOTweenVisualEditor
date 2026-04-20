@@ -553,34 +553,34 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (addStepMenu == null) return;
 
-            addStepMenu.menu.AppendAction("Move (World)", _ => AddStep(TweenStepType.Move, moveSpace: MoveSpace.World));
-            addStepMenu.menu.AppendAction("Move (Local)", _ => AddStep(TweenStepType.Move, moveSpace: MoveSpace.Local));
-            addStepMenu.menu.AppendAction("Rotate (World)", _ => AddStep(TweenStepType.Rotate, rotateSpace: RotateSpace.World));
-            addStepMenu.menu.AppendAction("Rotate (Local)", _ => AddStep(TweenStepType.Rotate, rotateSpace: RotateSpace.Local));
-            addStepMenu.menu.AppendAction("Scale", _ => AddStep(TweenStepType.Scale));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/MoveWorld"), _ => AddStep(TweenStepType.Move, moveSpace: MoveSpace.World));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/MoveLocal"), _ => AddStep(TweenStepType.Move, moveSpace: MoveSpace.Local));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/RotateWorld"), _ => AddStep(TweenStepType.Rotate, rotateSpace: RotateSpace.World));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/RotateLocal"), _ => AddStep(TweenStepType.Rotate, rotateSpace: RotateSpace.Local));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Scale"), _ => AddStep(TweenStepType.Scale));
             addStepMenu.menu.AppendSeparator();
 
-            addStepMenu.menu.AppendAction("Color", _ => AddStep(TweenStepType.Color));
-            addStepMenu.menu.AppendAction("Fade", _ => AddStep(TweenStepType.Fade));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Color"), _ => AddStep(TweenStepType.Color));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Fade"), _ => AddStep(TweenStepType.Fade));
             addStepMenu.menu.AppendSeparator();
 
-            addStepMenu.menu.AppendAction("Anchor Move", _ => AddStep(TweenStepType.AnchorMove));
-            addStepMenu.menu.AppendAction("Size Delta", _ => AddStep(TweenStepType.SizeDelta));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/AnchorMove"), _ => AddStep(TweenStepType.AnchorMove));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/SizeDelta"), _ => AddStep(TweenStepType.SizeDelta));
             addStepMenu.menu.AppendSeparator();
 
-            addStepMenu.menu.AppendAction("Jump", _ => AddStep(TweenStepType.Jump));
-            addStepMenu.menu.AppendAction("Punch (Position)", _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Position));
-            addStepMenu.menu.AppendAction("Punch (Rotation)", _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Rotation));
-            addStepMenu.menu.AppendAction("Punch (Scale)", _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Scale));
-            addStepMenu.menu.AppendAction("Shake (Position)", _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Position));
-            addStepMenu.menu.AppendAction("Shake (Rotation)", _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Rotation));
-            addStepMenu.menu.AppendAction("Shake (Scale)", _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Scale));
-            addStepMenu.menu.AppendAction("Fill Amount", _ => AddStep(TweenStepType.FillAmount));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Jump"), _ => AddStep(TweenStepType.Jump));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/PunchPosition"), _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Position));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/PunchRotation"), _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Rotation));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/PunchScale"), _ => AddStep(TweenStepType.Punch, punchTarget: PunchTarget.Scale));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/ShakePosition"), _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Position));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/ShakeRotation"), _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Rotation));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/ShakeScale"), _ => AddStep(TweenStepType.Shake, shakeTarget: ShakeTarget.Scale));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/FillAmount"), _ => AddStep(TweenStepType.FillAmount));
             addStepMenu.menu.AppendAction(L10n.Tr("Menu/DOPath"), _ => AddStep(TweenStepType.DOPath));
             addStepMenu.menu.AppendSeparator();
 
-            addStepMenu.menu.AppendAction("Delay", _ => AddStep(TweenStepType.Delay));
-            addStepMenu.menu.AppendAction("Callback", _ => AddStep(TweenStepType.Callback));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Delay"), _ => AddStep(TweenStepType.Delay));
+            addStepMenu.menu.AppendAction(L10n.Tr("Menu/Callback"), _ => AddStep(TweenStepType.Callback));
         }
 
         private void AddStep(TweenStepType type, MoveSpace moveSpace = MoveSpace.World,
