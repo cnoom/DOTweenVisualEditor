@@ -620,8 +620,7 @@ namespace CNoom.DOTweenVisual.Editor
             UpdateButtonStates();
 
             var state = _previewManager.State;
-            bool inPreview = state == DOTweenPreviewManager.PreviewState.Playing
-                          || state == DOTweenPreviewManager.PreviewState.Paused;
+            bool inPreview = state != DOTweenPreviewManager.PreviewState.None;
             _pathVisualizer?.SetPreviewing(inPreview);
 
             if (state != DOTweenPreviewManager.PreviewState.Playing)
