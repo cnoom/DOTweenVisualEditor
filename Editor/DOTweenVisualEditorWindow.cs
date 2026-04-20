@@ -98,12 +98,6 @@ namespace CNoom.DOTweenVisual.Editor
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
-
-            // 域重载后（进入/退出 Play Mode）：UI 已由 Unity 重建，只需刷新数据
-            if (rootVisualElement.childCount > 0 && targetPlayer != null)
-            {
-                SetTarget(targetPlayer);
-            }
         }
 
         private void OnDisable()
@@ -111,24 +105,33 @@ namespace CNoom.DOTweenVisual.Editor
             EditorApplication.update -= OnEditorUpdate;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-            _previewManager.StateChanged -= OnPreviewStateChanged;
-            _previewManager.ProgressUpdated -= OnPreviewProgressUpdated;
-            _previewManager?.Dispose();
-            _previewManager = null;
-            _pathVisualizer?.Dispose();
-            _pathVisualizer = null;
-            // 不清除 rootVisualElement，域重载后 Unity 会管理 visual tree 生命周期
-            // 如果 CreateGUI 被再次调用，BuildUI 内部会 Clear + 重建
+
+            if (_previewManager != null)
+            {
+                _previewManager.StateChanged -= OnPreviewStateChanged;
+                _previewManager.ProgressUpdated -= OnPreviewProgressUpdated;
+                _previewManager.Dispose();
+                _previewManager = null;
+            }
+            if (_pathVisualizer != null)
+            {
+                _pathVisualizer.Dispose();
+                _pathVisualizer = null;
+            }
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             if (state == PlayModeStateChange.ExitingEditMode)
             {
+                // 进入运行模式前：停止预览 + 清空目标引用
+                // 场景物体在域重载后引用会失效（僵尸引用），不如直接清空
                 if (_previewManager != null && _previewManager.State != DOTweenPreviewManager.PreviewState.None)
                 {
                     _previewManager.Reset();
                 }
+                SetTarget(null);
+                if (targetField != null) targetField.value = null;
             }
         }
 
