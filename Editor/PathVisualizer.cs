@@ -298,23 +298,60 @@ namespace CNoom.DOTweenVisual.Editor
 
         /// <summary>
         /// 计算完整路径点序列
-        /// 优先使用 DOTween 内部 Path 类（反射），保证与预览/运行时路径完全一致
+        /// 使用 DOTween 内部 Path 类（反射），保证与预览/运行时路径完全一致
         /// </summary>
         private List<Vector3> ComputePath(Vector3 start, Vector3[] waypoints, int pathType, int resolution)
         {
-            if (DotweenPathHelper.IsAvailable)
+            if (!DotweenPathHelper.IsAvailable)
             {
-                try
-                {
-                    return ComputePathViaDotween(start, waypoints, pathType, resolution);
-                }
-                catch (Exception)
-                {
-                    // 反射失败时回退到自定义算法
-                }
+                DrawCompatibilityWarning(start);
+                return null;
             }
 
-            return ComputePathFallback(start, waypoints, pathType, resolution);
+            try
+            {
+                return ComputePathViaDotween(start, waypoints, pathType, resolution);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(
+                    $"[DOTweenVisualEditor] 路径可视化反射调用失败，当前 DOTween 版本可能不兼容。\n" +
+                    $"请检查 DOTween 版本是否满足要求（≥1.2.0），或联系插件作者更新。\n{e}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 在 SceneView 中绘制版本不兼容警告
+        /// </summary>
+        private void DrawCompatibilityWarning(Vector3 position)
+        {
+            Handles.color = Color.red;
+            float size = HandleUtility.GetHandleSize(position) * 0.15f;
+            Handles.SphereHandleCap(0, position, Quaternion.identity, size, EventType.Repaint);
+
+            var warningStyle = new GUIStyle(EditorStyles.label)
+            {
+                normal = { textColor = Color.red },
+                fontSize = 12,
+                fontStyle = UnityEngine.FontStyle.Bold,
+                alignment = TextAnchor.LowerCenter
+            };
+            Handles.Label(
+                position + Vector3.up * size * 3f,
+                "⚠ DOTween 版本不兼容，路径可视化不可用",
+                warningStyle);
+
+            var detailStyle = new GUIStyle(EditorStyles.label)
+            {
+                normal = { textColor = new Color(1f, 0.7f, 0.5f) },
+                fontSize = 10,
+                alignment = TextAnchor.LowerCenter
+            };
+            Handles.Label(
+                position + Vector3.up * size * 1.5f,
+                "请检查 DOTween 版本 ≥ 1.2.0",
+                detailStyle);
         }
 
         /// <summary>
@@ -354,116 +391,6 @@ namespace CNoom.DOTweenVisual.Editor
                 // 移除 Path 构造函数自动注册的 Gizmo 绘制委托，避免重复绘制
                 DotweenPathHelper.RemoveGizmoDelegate(path);
             }
-        }
-
-        /// <summary>
-        /// 自定义路径算法后备方案（DOTween 反射不可用时使用）
-        /// </summary>
-        private List<Vector3> ComputePathFallback(Vector3 start, Vector3[] waypoints, int pathType, int resolution)
-        {
-            switch (pathType)
-            {
-                case 1: return ComputeCatmullRomPath(start, waypoints, resolution);
-                case 2: return ComputeCubicBezierPath(start, waypoints, resolution);
-                default: return ComputeLinearPath(start, waypoints);
-            }
-        }
-
-        private List<Vector3> ComputeLinearPath(Vector3 start, Vector3[] waypoints)
-        {
-            var points = new List<Vector3> { start };
-            points.AddRange(waypoints);
-            return points;
-        }
-
-        private List<Vector3> ComputeCatmullRomPath(Vector3 start, Vector3[] waypoints, int resolution)
-        {
-            var allPoints = new List<Vector3> { start };
-            allPoints.AddRange(waypoints);
-
-            if (allPoints.Count < 2) return allPoints;
-
-            resolution = Mathf.Max(1, resolution);
-            var result = new List<Vector3>();
-
-            for (int i = 0; i < allPoints.Count - 1; i++)
-            {
-                Vector3 p0 = i > 0 ? allPoints[i - 1] : allPoints[i];
-                Vector3 p1 = allPoints[i];
-                Vector3 p2 = allPoints[i + 1];
-                Vector3 p3 = i < allPoints.Count - 2 ? allPoints[i + 2] : allPoints[i + 1];
-
-                for (int t = 0; t < resolution; t++)
-                {
-                    float f = (float)t / resolution;
-                    result.Add(CatmullRomInterpolate(p0, p1, p2, p3, f));
-                }
-            }
-
-            result.Add(allPoints[allPoints.Count - 1]);
-            return result;
-        }
-
-        private static Vector3 CatmullRomInterpolate(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
-        {
-            float t2 = t * t;
-            float t3 = t2 * t;
-            return 0.5f * (
-                (2f * p1) +
-                (-p0 + p2) * t +
-                (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2 +
-                (-p0 + 3f * p1 - 3f * p2 + p3) * t3
-            );
-        }
-
-        private List<Vector3> ComputeCubicBezierPath(Vector3 start, Vector3[] waypoints, int resolution)
-        {
-            var allPoints = new List<Vector3> { start };
-            allPoints.AddRange(waypoints);
-
-            if (allPoints.Count < 2) return allPoints;
-
-            resolution = Mathf.Max(1, resolution);
-            var result = new List<Vector3>();
-
-            int segments = (allPoints.Count - 1) / 3;
-
-            if (segments == 0)
-            {
-                return ComputeLinearPath(start, waypoints);
-            }
-
-            for (int s = 0; s < segments; s++)
-            {
-                int idx = s * 3;
-                Vector3 p0 = allPoints[idx];
-                Vector3 p1 = allPoints[idx + 1];
-                Vector3 p2 = allPoints[idx + 2];
-                Vector3 p3 = allPoints[idx + 3];
-
-                for (int t = 0; t <= resolution; t++)
-                {
-                    float f = (float)t / resolution;
-                    result.Add(BezierCubic(p0, p1, p2, p3, f));
-                }
-            }
-
-            int remainingStart = segments * 3 + 1;
-            for (int i = remainingStart; i < allPoints.Count; i++)
-            {
-                result.Add(allPoints[i]);
-            }
-
-            return result;
-        }
-
-        private static Vector3 BezierCubic(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
-        {
-            float omt = 1f - t;
-            return omt * omt * omt * p0
-                 + 3f * omt * omt * t * p1
-                 + 3f * omt * t * t * p2
-                 + t * t * t * p3;
         }
 
         #endregion
