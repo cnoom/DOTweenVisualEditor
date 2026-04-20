@@ -29,7 +29,7 @@ namespace CNoom.DOTweenVisual.Editor
         /// </summary>
         public static bool ShowPathInPlayMode
         {
-            get => EditorPrefs.GetBool(ShowInPlayModeKey, false);
+            get => EditorPrefs.GetBool(ShowInPlayModeKey, true);
             set => EditorPrefs.SetBool(ShowInPlayModeKey, value);
         }
 

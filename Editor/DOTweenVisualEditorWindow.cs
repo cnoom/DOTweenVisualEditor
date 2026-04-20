@@ -37,6 +37,7 @@ namespace CNoom.DOTweenVisual.Editor
         #region UI 元素
 
         private ObjectField targetField;
+        private Toggle showPathInPlayModeToggle;
         private Button previewButton;
         private Button stopButton;
         private Button replayButton;
@@ -87,19 +88,6 @@ namespace CNoom.DOTweenVisual.Editor
             var window = GetWindow<DOTweenVisualEditorWindow>("DOTween Visual Editor");
             window.minSize = new Vector2(600, 400);
             window.Show();
-        }
-
-        [MenuItem("Tools/DOTween Visual/运行时显示路径", false, 100)]
-        private static void ToggleShowPathInPlayMode()
-        {
-            PathVisualizer.ShowPathInPlayMode = !PathVisualizer.ShowPathInPlayMode;
-        }
-
-        [MenuItem("Tools/DOTween Visual/运行时显示路径", true)]
-        private static bool ValidateShowPathInPlayMode()
-        {
-            Menu.SetChecked("Tools/DOTween Visual/运行时显示路径", PathVisualizer.ShowPathInPlayMode);
-            return true;
         }
 
         private void OnEnable()
@@ -214,6 +202,18 @@ namespace CNoom.DOTweenVisual.Editor
             targetField.AddToClassList("target-field");
             targetField.RegisterValueChangedCallback(OnTargetChanged);
             toolbar.Add(targetField);
+
+            showPathInPlayModeToggle = new Toggle("运行时路径")
+            {
+                value = PathVisualizer.ShowPathInPlayMode,
+                tooltip = "Play Mode 下是否显示路径可视化"
+            };
+            showPathInPlayModeToggle.AddToClassList("play-mode-path-toggle");
+            showPathInPlayModeToggle.RegisterValueChangedCallback(evt =>
+            {
+                PathVisualizer.ShowPathInPlayMode = evt.newValue;
+            });
+            toolbar.Add(showPathInPlayModeToggle);
 
             var spacer1 = new VisualElement { style = { flexGrow = 1 } };
             toolbar.Add(spacer1);
