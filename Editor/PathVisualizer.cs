@@ -22,6 +22,16 @@ namespace CNoom.DOTweenVisual.Editor
         private const float WaypointHandleSize = 0.08f;
         private const float StartPointHandleSize = 0.1f;
         private const int ArrowDensity = 5;
+        private const string ShowInPlayModeKey = "DOTweenVisualEditor_ShowPathInPlayMode";
+
+        /// <summary>
+        /// 是否在 Play Mode 下显示路径可视化（默认关闭）
+        /// </summary>
+        public static bool ShowPathInPlayMode
+        {
+            get => EditorPrefs.GetBool(ShowInPlayModeKey, false);
+            set => EditorPrefs.SetBool(ShowInPlayModeKey, value);
+        }
 
         #endregion
 
@@ -203,6 +213,9 @@ namespace CNoom.DOTweenVisual.Editor
         private void OnSceneGUI(SceneView sceneView)
         {
             if (!_isEnabled || _stepProperty == null) return;
+
+            // Play Mode 下默认不显示路径可视化（可通过菜单勾选开启）
+            if (EditorApplication.isPlaying && !ShowPathInPlayMode) return;
 
             var type = (TweenStepType)_stepProperty.FindPropertyRelative("Type").enumValueIndex;
             if (type != TweenStepType.DOPath) return;

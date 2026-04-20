@@ -89,6 +89,19 @@ namespace CNoom.DOTweenVisual.Editor
             window.Show();
         }
 
+        [MenuItem("Tools/DOTween Visual/运行时显示路径", false, 100)]
+        private static void ToggleShowPathInPlayMode()
+        {
+            PathVisualizer.ShowPathInPlayMode = !PathVisualizer.ShowPathInPlayMode;
+        }
+
+        [MenuItem("Tools/DOTween Visual/运行时显示路径", true)]
+        private static bool ValidateShowPathInPlayMode()
+        {
+            Menu.SetChecked("Tools/DOTween Visual/运行时显示路径", PathVisualizer.ShowPathInPlayMode);
+            return true;
+        }
+
         private void OnEnable()
         {
             _previewManager = new DOTweenPreviewManager();
