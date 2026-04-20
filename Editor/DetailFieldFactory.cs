@@ -17,7 +17,7 @@ namespace CNoom.DOTweenVisual.Editor
         /// 检查 SerializedProperty 是否仍然有效
         /// 兼容 Unity 2021.3+（isValid 在 2022.1 才引入）
         /// </summary>
-        public static bool IsValidProperty(UnityEngine.Serialization.SerializedProperty prop)
+        public static bool IsValidProperty(SerializedProperty prop)
         {
             if (prop == null) return false;
             try
@@ -31,7 +31,7 @@ namespace CNoom.DOTweenVisual.Editor
             }
         }
 
-        public static Toggle CreateToggle(UnityEngine.Serialization.SerializedProperty prop, Action onChanged = null)
+        public static Toggle CreateToggle(SerializedProperty prop, Action onChanged = null)
         {
             var toggle = new Toggle { value = prop.boolValue };
             toggle.RegisterValueChangedCallback(evt =>
@@ -44,7 +44,7 @@ namespace CNoom.DOTweenVisual.Editor
             return toggle;
         }
 
-        public static FloatField CreateFloatField(UnityEngine.Serialization.SerializedProperty prop, Action onChanged = null)
+        public static FloatField CreateFloatField(SerializedProperty prop, Action onChanged = null)
         {
             var field = new FloatField { value = prop.floatValue };
             field.RegisterValueChangedCallback(evt =>
@@ -57,7 +57,7 @@ namespace CNoom.DOTweenVisual.Editor
             return field;
         }
 
-        public static Vector3Field CreateVector3Field(UnityEngine.Serialization.SerializedProperty prop)
+        public static Vector3Field CreateVector3Field(SerializedProperty prop)
         {
             var field = new Vector3Field { value = prop.vector3Value };
             field.RegisterValueChangedCallback(evt =>
@@ -69,7 +69,7 @@ namespace CNoom.DOTweenVisual.Editor
             return field;
         }
 
-        public static ColorField CreateColorField(UnityEngine.Serialization.SerializedProperty prop)
+        public static ColorField CreateColorField(SerializedProperty prop)
         {
             var field = new ColorField { value = prop.colorValue };
             field.RegisterValueChangedCallback(evt =>
@@ -81,7 +81,7 @@ namespace CNoom.DOTweenVisual.Editor
             return field;
         }
 
-        public static EnumField CreateEnumField(UnityEngine.Serialization.SerializedProperty prop, Type enumType, Action onChanged = null)
+        public static EnumField CreateEnumField(SerializedProperty prop, Type enumType, Action onChanged = null)
         {
             var field = new EnumField((Enum)Enum.GetValues(enumType).GetValue(prop.enumValueIndex));
             field.RegisterValueChangedCallback(evt =>
@@ -94,7 +94,7 @@ namespace CNoom.DOTweenVisual.Editor
             return field;
         }
 
-        public static ObjectField CreateObjectField(UnityEngine.Serialization.SerializedProperty prop, Type objType, Action onChanged = null)
+        public static ObjectField CreateObjectField(SerializedProperty prop, Type objType, Action onChanged = null)
         {
             var field = new ObjectField { objectType = objType, value = prop.objectReferenceValue };
             field.RegisterValueChangedCallback(evt =>
@@ -107,7 +107,7 @@ namespace CNoom.DOTweenVisual.Editor
             return field;
         }
 
-        public static CurveField CreateCurveField(UnityEngine.Serialization.SerializedProperty prop)
+        public static CurveField CreateCurveField(SerializedProperty prop)
         {
             var field = new CurveField { value = prop.animationCurveValue };
             field.RegisterValueChangedCallback(evt =>
@@ -119,7 +119,7 @@ namespace CNoom.DOTweenVisual.Editor
             return field;
         }
 
-        public static IntegerField CreateIntegerField(UnityEngine.Serialization.SerializedProperty prop)
+        public static IntegerField CreateIntegerField(SerializedProperty prop)
         {
             var field = new IntegerField { value = prop.intValue };
             field.RegisterValueChangedCallback(evt =>
@@ -134,7 +134,7 @@ namespace CNoom.DOTweenVisual.Editor
         /// <summary>
         /// 创建路径类型下拉选择器（0=Linear, 1=CatmullRom, 2=CubicBezier）
         /// </summary>
-        public static VisualElement CreatePathTypeEnumField(UnityEngine.Serialization.SerializedProperty prop)
+        public static VisualElement CreatePathTypeEnumField(SerializedProperty prop)
         {
             var options = new System.Collections.Generic.List<string> { "Linear (直线)", "CatmullRom (曲线)", "CubicBezier (贝塞尔)" };
             int idx = Mathf.Clamp(prop.intValue, 0, options.Count - 1);
@@ -153,7 +153,7 @@ namespace CNoom.DOTweenVisual.Editor
         /// <summary>
         /// 创建路径模式下拉选择器（0=3D, 1=TopDown2D, 2=SideScroll2D）
         /// </summary>
-        public static VisualElement CreatePathModeEnumField(UnityEngine.Serialization.SerializedProperty prop)
+        public static VisualElement CreatePathModeEnumField(SerializedProperty prop)
         {
             var options = new System.Collections.Generic.List<string> { "3D (三维)", "TopDown2D (俯视)", "SideScroll2D (横版)" };
             int idx = Mathf.Clamp(prop.intValue, 0, options.Count - 1);
