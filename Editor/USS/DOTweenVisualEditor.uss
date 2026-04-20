@@ -4,10 +4,10 @@
 .top-toolbar {
     flex-direction: row;
     align-items: center;
-    height: 28px;
+    height: 30px;
     padding-left: 8px;
     padding-right: 8px;
-    background-color: #2D2D2D;
+    background-color: #2A2A2A;
     border-bottom-width: 1px;
     border-bottom-color: #505050;
 }
@@ -26,10 +26,35 @@
 .toolbar-button {
     margin-left: 2px;
     margin-right: 2px;
-    padding-left: 8px;
-    padding-right: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
     min-width: 50px;
     font-size: 11px;
+}
+
+.lang-button {
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 8px;
+    min-width: 36px;
+    color: #CCCCCC;
+    background-color: rgba(255, 255, 255, 0.06);
+    border-width: 1px;
+    border-color: #555555;
+    border-radius: 3px;
+}
+
+.lang-button:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+}
+
+.toolbar-separator {
+    width: 1px;
+    height: 18px;
+    background-color: #505050;
+    margin-left: 8px;
+    margin-right: 6px;
 }
 
 /* === 状态栏 === */
@@ -38,8 +63,8 @@
     align-items: center;
     padding-left: 10px;
     padding-right: 10px;
-    padding-top: 3px;
-    padding-bottom: 3px;
+    padding-top: 4px;
+    padding-bottom: 4px;
     background-color: #252525;
     border-bottom-width: 1px;
     border-bottom-color: #404040;
@@ -66,7 +91,7 @@
 .panel-header {
     flex-direction: row;
     align-items: center;
-    height: 24px;
+    height: 26px;
     padding-left: 8px;
     padding-right: 4px;
     background-color: #333333;
@@ -104,7 +129,7 @@
 
 .step-item {
     flex-direction: column;
-    padding: 4px 6px;
+    padding: 5px 6px;
     border-left-width: 3px;
     border-left-color: #505050;
     border-bottom-width: 1px;
@@ -113,7 +138,7 @@
 }
 
 .step-item:hover {
-    background-color: #404040;
+    background-color: #3C3C3C;
 }
 
 /* ListView 选中行 */
@@ -259,8 +284,11 @@
 .detail-field-label {
     font-size: 11px;
     color: #AAAAAA;
-    width: 80px;
+    width: 100px;
     flex-shrink: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .detail-field-value {

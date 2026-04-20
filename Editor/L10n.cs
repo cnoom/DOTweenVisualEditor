@@ -174,6 +174,7 @@ namespace CNoom.DOTweenVisual.Editor
                 {"StepList/StepFormat", "步骤 {0}"},
 
                 // === Inspector Drawer ===
+                {"Drawer/Enabled", " 启用"},
                 {"Drawer/Enable", " 启用"},
                 {"Drawer/UseStartValue", " 使用起始值"},
                 {"Drawer/SyncCurrent", "同步当前值"},
@@ -194,6 +195,10 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Drawer/Elasticity", "弹性"},
                 {"Drawer/ShakeRandomness", "随机性"},
                 {"Drawer/WaypointCount", "路径点 ({0} 个)"},
+                {"Drawer/Waypoint", "点"},
+                {"Drawer/UseStartFill", " 使用起始填充量"},
+                {"Drawer/StartFill", "起始填充量"},
+                {"Drawer/TargetFill", "目标填充量"},
                 {"Drawer/Point", "点 {0}"},
                 {"Drawer/CallbackEvent", "回调事件"},
                 {"Drawer/CannotGetTarget", "无法获取目标物体"},
@@ -344,6 +349,7 @@ namespace CNoom.DOTweenVisual.Editor
 
                 // === Inspector Drawer ===
                 {"Drawer/Enable", " Enable"},
+                {"Drawer/Enabled", " Enable"},
                 {"Drawer/UseStartValue", " Use Start Value"},
                 {"Drawer/SyncCurrent", "Sync Current"},
                 {"Drawer/SyncCurrentPos", "Sync Current Position"},
@@ -363,6 +369,10 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Drawer/Elasticity", "Elasticity"},
                 {"Drawer/ShakeRandomness", "Randomness"},
                 {"Drawer/WaypointCount", "Waypoints ({0})"},
+                {"Drawer/Waypoint", "Point"},
+                {"Drawer/UseStartFill", " Use Start Fill"},
+                {"Drawer/StartFill", "Start Fill"},
+                {"Drawer/TargetFill", "Target Fill"},
                 {"Drawer/Point", "Point {0}"},
                 {"Drawer/CallbackEvent", "Callback Event"},
                 {"Drawer/CannotGetTarget", "Cannot get target object"},

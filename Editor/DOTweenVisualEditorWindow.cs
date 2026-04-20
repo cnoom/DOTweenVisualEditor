@@ -45,6 +45,7 @@ namespace CNoom.DOTweenVisual.Editor
         private ToolbarMenu addStepMenu;
         private Label stateLabel;
         private Label timeLabel;
+        private Button langButton;
 
         #endregion
 
@@ -237,6 +238,19 @@ namespace CNoom.DOTweenVisual.Editor
             var spacer1 = new VisualElement { style = { flexGrow = 1 } };
             toolbar.Add(spacer1);
 
+            // 语言切换按钮
+            langButton = new Button(OnLanguageToggleClicked)
+            {
+                text = L10n.Current == L10n.Language.ZhCN ? "EN" : "中",
+                tooltip = L10n.Current == L10n.Language.ZhCN ? "Switch to English" : "切换到中文"
+            };
+            langButton.AddToClassList("lang-button");
+            toolbar.Add(langButton);
+
+            var separator = new VisualElement();
+            separator.AddToClassList("toolbar-separator");
+            toolbar.Add(separator);
+
             previewButton = new Button(OnPreviewClicked) { text = L10n.Tr("Window/Preview") };
             previewButton.AddToClassList("toolbar-button");
             toolbar.Add(previewButton);
@@ -315,6 +329,13 @@ namespace CNoom.DOTweenVisual.Editor
             UpdateButtonStates();
 
             rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown);
+
+            // 语言切换后恢复数据绑定
+            if (targetPlayer != null)
+            {
+                _listController?.RebuildStepList();
+                _detailPanelController?.RefreshDetailPanel();
+            }
         }
 
         private void InitControllers()
@@ -483,6 +504,18 @@ namespace CNoom.DOTweenVisual.Editor
             int secs = (int)(seconds % 60);
             int ms = (int)((seconds * 10) % 10);
             return $"{minutes:D2}:{secs:D2}.{ms}";
+        }
+
+        #endregion
+
+        #region 语言切换
+
+        private void OnLanguageToggleClicked()
+        {
+            L10n.Current = L10n.Current == L10n.Language.ZhCN
+                ? L10n.Language.EnUS
+                : L10n.Language.ZhCN;
+            BuildUI();
         }
 
         #endregion
