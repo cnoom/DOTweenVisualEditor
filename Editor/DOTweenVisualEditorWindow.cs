@@ -619,7 +619,12 @@ namespace CNoom.DOTweenVisual.Editor
         {
             UpdateButtonStates();
 
-            if (_previewManager.State != DOTweenPreviewManager.PreviewState.Playing)
+            var state = _previewManager.State;
+            bool inPreview = state == DOTweenPreviewManager.PreviewState.Playing
+                          || state == DOTweenPreviewManager.PreviewState.Paused;
+            _pathVisualizer?.SetPreviewing(inPreview);
+
+            if (state != DOTweenPreviewManager.PreviewState.Playing)
             {
                 _listController?.ClearStepHighlight();
             }

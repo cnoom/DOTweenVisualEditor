@@ -110,6 +110,9 @@ namespace CNoom.DOTweenVisual.Editor
         #region 数据
 
         private bool _isEnabled;
+        private bool _isPreviewing;
+        private Vector3 _cachedStartPos;
+        private bool _hasCachedStartPos;
         private SerializedProperty _stepProperty;
         private Transform _targetTransform;
         private Func<Vector3> _getStartPosition;
@@ -155,7 +158,24 @@ namespace CNoom.DOTweenVisual.Editor
             _targetTransform = targetTransform;
             _getStartPosition = getStartPosition;
             _onPathDataChanged = onPathDataChanged;
+            RefreshCachedStartPosition();
             SceneView.RepaintAll();
+        }
+
+        /// <summary>
+        /// 设置预览状态，预览期间冻结起始位置避免路径跟随物体移动
+        /// </summary>
+        public void SetPreviewing(bool isPreviewing)
+        {
+            if (_isPreviewing == isPreviewing) return;
+            _isPreviewing = isPreviewing;
+
+            if (!_isPreviewing)
+            {
+                // 预览结束时刷新起始位置
+                RefreshCachedStartPosition();
+                SceneView.RepaintAll();
+            }
         }
 
         /// <summary>
@@ -163,7 +183,17 @@ namespace CNoom.DOTweenVisual.Editor
         /// </summary>
         public void NotifyDataChanged()
         {
+            if (!_isPreviewing) RefreshCachedStartPosition();
             SceneView.RepaintAll();
+        }
+
+        private void RefreshCachedStartPosition()
+        {
+            if (_getStartPosition != null)
+            {
+                _cachedStartPos = _getStartPosition();
+                _hasCachedStartPos = true;
+            }
         }
 
         #endregion
@@ -193,7 +223,7 @@ namespace CNoom.DOTweenVisual.Editor
                 waypoints[i] = waypointsProp.GetArrayElementAtIndex(i).vector3Value;
             }
 
-            Vector3 startPos = _getStartPosition != null ? _getStartPosition() : _targetTransform.position;
+            Vector3 startPos = _hasCachedStartPos ? _cachedStartPos : _targetTransform.position;
 
             // 1. 计算完整路径点
             List<Vector3> fullPath = ComputePath(startPos, waypoints, pathType, resolution);
