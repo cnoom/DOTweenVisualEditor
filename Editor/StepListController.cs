@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using CNoom.DOTweenVisual.Components;
+using DG.Tweening;
 using CNoom.DOTweenVisual.Data;
 using UnityEditor;
 using UnityEngine;

@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using CNoom.DOTweenVisual.Components;
+using DG.Tweening;
 using CNoom.DOTweenVisual.Data;
 using UnityEditor;
 using UnityEngine;
