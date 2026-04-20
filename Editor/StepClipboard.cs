@@ -174,15 +174,16 @@ namespace CNoom.DOTweenVisual.Editor
             // 路径点数据（兼容旧剪贴板格式：无路径点数据时跳过）
             if (i < parts.Length)
             {
-                int wpCount = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-                if (wpCount > 0)
+                // 格式：wpCount;wp1x,wp1y,wp1z;wp2x,wp2y,wp2z;...
+                var wpParts = parts[i].Split(';');
+                int wpCount = int.Parse(wpParts[0], CultureInfo.InvariantCulture);
+                if (wpCount > 0 && wpParts.Length > wpCount)
                 {
-                    var wpCoords = parts[i].Split(';');
                     var waypointsProp = newStep.FindPropertyRelative("PathWaypoints");
                     waypointsProp.arraySize = wpCount;
-                    for (int w = 0; w < wpCount && w < wpCoords.Length; w++)
+                    for (int w = 0; w < wpCount; w++)
                     {
-                        waypointsProp.GetArrayElementAtIndex(w).vector3Value = ParseVector3(wpCoords[w]);
+                        waypointsProp.GetArrayElementAtIndex(w).vector3Value = ParseVector3(wpParts[w + 1]);
                     }
                 }
             }
