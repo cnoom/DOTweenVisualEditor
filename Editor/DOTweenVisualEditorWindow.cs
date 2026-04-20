@@ -238,11 +238,11 @@ namespace CNoom.DOTweenVisual.Editor
             var spacer1 = new VisualElement { style = { flexGrow = 1 } };
             toolbar.Add(spacer1);
 
-            // 语言切换按钮
-            langButton = new Button(OnLanguageToggleClicked)
+            // 语言切换下拉按钮
+            langButton = new Button(OnLanguageMenuClicked)
             {
-                text = L10n.Current == L10n.Language.ZhCN ? "EN" : "中",
-                tooltip = L10n.Current == L10n.Language.ZhCN ? "Switch to English" : "切换到中文"
+                text = L10n.Tr("Menu/Language"),
+                tooltip = L10n.Tr("Menu/Language")
             };
             langButton.AddToClassList("lang-button");
             toolbar.Add(langButton);
@@ -510,12 +510,18 @@ namespace CNoom.DOTweenVisual.Editor
 
         #region 语言切换
 
-        private void OnLanguageToggleClicked()
+        private void OnLanguageMenuClicked()
         {
-            L10n.Current = L10n.Current == L10n.Language.ZhCN
-                ? L10n.Language.EnUS
-                : L10n.Language.ZhCN;
-            BuildUI();
+            var menu = new GenericMenu();
+            menu.AddItem(
+                new GUIContent(L10n.Tr("Menu/Chinese")),
+                L10n.Current == L10n.Language.ZhCN,
+                () => { L10n.Current = L10n.Language.ZhCN; BuildUI(); });
+            menu.AddItem(
+                new GUIContent(L10n.Tr("Menu/English")),
+                L10n.Current == L10n.Language.EnUS,
+                () => { L10n.Current = L10n.Language.EnUS; BuildUI(); });
+            menu.DropDown(langButton.worldBound);
         }
 
         #endregion
