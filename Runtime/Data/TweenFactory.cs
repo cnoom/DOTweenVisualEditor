@@ -427,7 +427,7 @@ namespace CNoom.DOTweenVisual.Data
             var pathType = (PathType)step.PathType;
             var pathMode = (PathMode)step.PathMode;
 
-            return target.DOPath(step.PathWaypoints, duration, pathType, pathMode, step.PathResolution);
+            return target.DOPath(step.PathWaypoints, duration, pathType, pathMode, step.PathResolution, step.PathGizmoColor);
         }
 
         #endregion

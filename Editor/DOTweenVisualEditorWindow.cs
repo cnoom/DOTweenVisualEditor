@@ -53,6 +53,7 @@ namespace CNoom.DOTweenVisual.Editor
         private StepDetailPanel _detailPanelController;
         private StepClipboard _clipboard;
         private DOTweenPreviewManager _previewManager;
+        private PathVisualizer _pathVisualizer;
 
         #endregion
 
@@ -93,6 +94,7 @@ namespace CNoom.DOTweenVisual.Editor
             _previewManager = new DOTweenPreviewManager();
             _previewManager.StateChanged += OnPreviewStateChanged;
             _previewManager.ProgressUpdated += OnPreviewProgressUpdated;
+            _pathVisualizer = new PathVisualizer();
             EditorApplication.update += OnEditorUpdate;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
@@ -107,6 +109,8 @@ namespace CNoom.DOTweenVisual.Editor
             _previewManager.ProgressUpdated -= OnPreviewProgressUpdated;
             _previewManager.Dispose();
             _previewManager = null;
+            _pathVisualizer?.Dispose();
+            _pathVisualizer = null;
             rootVisualElement.Clear();
         }
 
@@ -132,6 +136,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             _listController?.RebuildStepList();
             _detailPanelController?.RefreshDetailPanel();
+            UpdatePathVisualizer();
         }
 
         private void OnEditorUpdate()
@@ -284,7 +289,8 @@ namespace CNoom.DOTweenVisual.Editor
                 () => targetPlayer,
                 () => selectedStepIndex,
                 () => { _listController?.RebuildStepList(); },
-                () => _detailPanelController?.RefreshDetailPanel());
+                () => { _detailPanelController?.RefreshDetailPanel(); UpdatePathVisualizer(); },
+                OnPathDataChanged);
 
             _clipboard = new StepClipboard(
                 () => serializedObject,
@@ -340,6 +346,75 @@ namespace CNoom.DOTweenVisual.Editor
 
             _listController?.RebuildStepList();
             _detailPanelController?.RefreshDetailPanel();
+            UpdatePathVisualizer();
+        }
+
+        #endregion
+
+        #region PathVisualizer 管理
+
+        /// <summary>
+        /// 路径数据变更回调（由 StepDetailPanel 触发）
+        /// </summary>
+        private void OnPathDataChanged()
+        {
+            _pathVisualizer?.NotifyDataChanged();
+        }
+
+        /// <summary>
+        /// 根据当前选中步骤更新 PathVisualizer
+        /// </summary>
+        private void UpdatePathVisualizer()
+        {
+            if (_pathVisualizer == null) return;
+
+            var stepsProp = stepsProperty;
+            int idx = selectedStepIndex;
+
+            if (stepsProp == null || idx < 0 || idx >= stepsProp.arraySize)
+            {
+                _pathVisualizer.Disable();
+                return;
+            }
+
+            var stepProp = stepsProp.GetArrayElementAtIndex(idx);
+            var type = (TweenStepType)stepProp.FindPropertyRelative("Type").enumValueIndex;
+
+            if (type != TweenStepType.DOPath)
+            {
+                _pathVisualizer.Disable();
+                return;
+            }
+
+            // 获取目标 Transform
+            var targetTransformProp = stepProp.FindPropertyRelative("TargetTransform");
+            var targetTransform = targetTransformProp?.objectReferenceValue as Transform;
+            if (targetTransform == null && targetPlayer != null)
+                targetTransform = targetPlayer.transform;
+
+            if (targetTransform == null)
+            {
+                _pathVisualizer.Disable();
+                return;
+            }
+
+            // 获取起始位置
+            var useStartValueProp = stepProp.FindPropertyRelative("UseStartValue");
+            var startVectorProp = stepProp.FindPropertyRelative("StartVector");
+            Transform capturedTransform = targetTransform;
+
+            _pathVisualizer.SetData(
+                stepProp,
+                targetTransform,
+                () =>
+                {
+                    if (useStartValueProp != null && useStartValueProp.boolValue)
+                        return startVectorProp != null ? startVectorProp.vector3Value : capturedTransform.position;
+                    return capturedTransform != null ? capturedTransform.position : Vector3.zero;
+                },
+                () => { _detailPanelController?.RefreshDetailPanel(); }
+            );
+            _pathVisualizer.Enable();
         }
 
         #endregion

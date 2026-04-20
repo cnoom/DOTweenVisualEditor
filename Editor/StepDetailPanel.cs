@@ -26,6 +26,7 @@ namespace CNoom.DOTweenVisual.Editor
         private readonly Func<int> _getSelectedIndex;
         private readonly Action _onRebuildList;
         private readonly Action _onRefreshDetail;
+        private readonly Action _onPathDataChanged;
 
         public StepDetailPanel(
             Func<SerializedObject> getSerializedObject,
@@ -33,7 +34,8 @@ namespace CNoom.DOTweenVisual.Editor
             Func<DOTweenVisualPlayer> getTargetPlayer,
             Func<int> getSelectedIndex,
             Action onRebuildList,
-            Action onRefreshDetail)
+            Action onRefreshDetail,
+            Action onPathDataChanged = null)
         {
             _getSerializedObject = getSerializedObject;
             _getStepsProperty = getStepsProperty;
@@ -41,6 +43,7 @@ namespace CNoom.DOTweenVisual.Editor
             _getSelectedIndex = getSelectedIndex;
             _onRebuildList = onRebuildList;
             _onRefreshDetail = onRefreshDetail;
+            _onPathDataChanged = onPathDataChanged;
         }
 
         #region UI 创建
@@ -507,6 +510,7 @@ namespace CNoom.DOTweenVisual.Editor
                         v.x = val;
                         waypointsProp.GetArrayElementAtIndex(idx).vector3Value = v;
                         waypointsProp.serializedObject.ApplyModifiedProperties();
+                        _onPathDataChanged?.Invoke();
                     });
                 xField.style.width = Length.Percent(32f);
                 xField.style.marginRight = 1f;
@@ -522,6 +526,7 @@ namespace CNoom.DOTweenVisual.Editor
                         v.y = val;
                         waypointsProp.GetArrayElementAtIndex(idx).vector3Value = v;
                         waypointsProp.serializedObject.ApplyModifiedProperties();
+                        _onPathDataChanged?.Invoke();
                     });
                 yField.style.width = Length.Percent(32f);
                 yField.style.marginRight = 1f;
@@ -537,6 +542,7 @@ namespace CNoom.DOTweenVisual.Editor
                         v.z = val;
                         waypointsProp.GetArrayElementAtIndex(idx).vector3Value = v;
                         waypointsProp.serializedObject.ApplyModifiedProperties();
+                        _onPathDataChanged?.Invoke();
                     });
                 zField.style.width = Length.Percent(32f);
                 pointRow.Add(zField);
