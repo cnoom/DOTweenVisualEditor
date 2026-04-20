@@ -280,7 +280,7 @@ namespace CNoom.DOTweenVisual.Editor
                 () => stepsProperty,
                 () => targetPlayer,
                 index => selectedStepIndex = index,
-                () => _detailPanelController?.RefreshDetailPanel(),
+                () => { _detailPanelController?.RefreshDetailPanel(); UpdatePathVisualizer(); },
                 UpdateButtonStates);
 
             _detailPanelController = new StepDetailPanel(
@@ -299,7 +299,7 @@ namespace CNoom.DOTweenVisual.Editor
                 () => selectedStepIndex,
                 index => selectedStepIndex = index,
                 () => _listController?.RebuildStepList(),
-                () => _detailPanelController?.RefreshDetailPanel());
+                () => { _detailPanelController?.RefreshDetailPanel(); UpdatePathVisualizer(); });
         }
 
         #endregion
