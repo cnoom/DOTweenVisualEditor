@@ -541,13 +541,14 @@ namespace CNoom.DOTweenVisual.Editor
             var waypointsProp = property.FindPropertyRelative("PathWaypoints");
             if (waypointsProp != null && waypointsProp.isArray)
             {
-                EditorGUI.LabelField(rect, $"{L10n.Tr(\"Detail/Waypoints\")} ({waypointsProp.arraySize})", EditorStyles.boldLabel);
+                var wpLabel = L10n.Tr("Detail/Waypoints");
+                EditorGUI.LabelField(rect, $"{wpLabel} ({waypointsProp.arraySize})", EditorStyles.boldLabel);
                 rect.y += LineHeight + Spacing;
 
                 for (int i = 0; i < waypointsProp.arraySize; i++)
                 {
                     var wp = waypointsProp.GetArrayElementAtIndex(i);
-                    EditorGUI.PropertyField(rect, wp, new GUIContent($"{L10n.Tr(\"Drawer/Waypoint\")} {i + 1}"));
+                    EditorGUI.PropertyField(rect, wp, new GUIContent($"{L10n.Tr("Drawer/Waypoint")} {i + 1}"));
                     rect.y += LineHeight + Spacing;
                 }
             }
