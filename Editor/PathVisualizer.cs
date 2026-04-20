@@ -128,6 +128,41 @@ namespace CNoom.DOTweenVisual.Editor
         private Func<Vector3> _getStartPosition;
         private Action _onPathDataChanged;
 
+        // 缓存 GUIStyle，避免每帧 new 产生 GC
+        private GUIStyle _startPointLabelStyle;
+        private GUIStyle _waypointLabelStyle;
+        private GUIStyle _warningStyle;
+        private GUIStyle _detailStyle;
+
+        private GUIStyle StartPointLabelStyle => _startPointLabelStyle ??= new GUIStyle(EditorStyles.label)
+        {
+            normal = { textColor = Color.green },
+            fontSize = 10,
+            alignment = TextAnchor.LowerCenter
+        };
+
+        private GUIStyle WaypointLabelStyle => _waypointLabelStyle ??= new GUIStyle(EditorStyles.label)
+        {
+            normal = { textColor = new Color(1f, 0.85f, 0.5f) },
+            fontSize = 10,
+            alignment = TextAnchor.LowerCenter
+        };
+
+        private GUIStyle WarningStyle => _warningStyle ??= new GUIStyle(EditorStyles.label)
+        {
+            normal = { textColor = Color.red },
+            fontSize = 12,
+            fontStyle = UnityEngine.FontStyle.Bold,
+            alignment = TextAnchor.LowerCenter
+        };
+
+        private GUIStyle DetailStyle => _detailStyle ??= new GUIStyle(EditorStyles.label)
+        {
+            normal = { textColor = new Color(1f, 0.7f, 0.5f) },
+            fontSize = 10,
+            alignment = TextAnchor.LowerCenter
+        };
+
         #endregion
 
         #region 生命周期
@@ -272,12 +307,7 @@ namespace CNoom.DOTweenVisual.Editor
             float size = HandleUtility.GetHandleSize(position) * StartPointHandleSize;
             Handles.SphereHandleCap(0, position, Quaternion.identity, size, EventType.Repaint);
 
-            var labelStyle = new GUIStyle(EditorStyles.label)
-            {
-                normal = { textColor = Color.green },
-                fontSize = 10,
-                alignment = TextAnchor.LowerCenter
-            };
+            var labelStyle = StartPointLabelStyle;
             Handles.Label(position + Vector3.up * size * 2f, "Start", labelStyle);
         }
 
@@ -304,12 +334,7 @@ namespace CNoom.DOTweenVisual.Editor
                     SceneView.RepaintAll();
                 }
 
-                var labelStyle = new GUIStyle(EditorStyles.label)
-                {
-                    normal = { textColor = new Color(1f, 0.85f, 0.5f) },
-                    fontSize = 10,
-                    alignment = TextAnchor.LowerCenter
-                };
+                var labelStyle = WaypointLabelStyle;
                 Handles.Label(newPos + Vector3.up * handleSize * 2f, $"WP{i + 1}", labelStyle);
             }
         }
@@ -381,24 +406,13 @@ namespace CNoom.DOTweenVisual.Editor
             float size = HandleUtility.GetHandleSize(position) * 0.15f;
             Handles.SphereHandleCap(0, position, Quaternion.identity, size, EventType.Repaint);
 
-            var warningStyle = new GUIStyle(EditorStyles.label)
-            {
-                normal = { textColor = Color.red },
-                fontSize = 12,
-                fontStyle = UnityEngine.FontStyle.Bold,
-                alignment = TextAnchor.LowerCenter
-            };
+            var warningStyle = WarningStyle;
             Handles.Label(
                 position + Vector3.up * size * 3f,
                 "⚠ DOTween 版本不兼容，路径可视化不可用",
                 warningStyle);
 
-            var detailStyle = new GUIStyle(EditorStyles.label)
-            {
-                normal = { textColor = new Color(1f, 0.7f, 0.5f) },
-                fontSize = 10,
-                alignment = TextAnchor.LowerCenter
-            };
+            var detailStyle = DetailStyle;
             Handles.Label(
                 position + Vector3.up * size * 1.5f,
                 "请检查 DOTween 版本 ≥ 1.2.0",

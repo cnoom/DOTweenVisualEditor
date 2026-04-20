@@ -145,7 +145,7 @@ namespace CNoom.DOTweenVisual.Editor
             if (parts.Length > 30)
                 newStep.FindPropertyRelative("RotateDirection").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
             else
-                i++; // skip
+                newStep.FindPropertyRelative("RotateDirection").enumValueIndex = 0;
             newStep.FindPropertyRelative("PunchTarget").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
             newStep.FindPropertyRelative("ShakeTarget").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
             newStep.FindPropertyRelative("UseStartValue").boolValue = parts[i++] == "1";

@@ -122,11 +122,11 @@ namespace CNoom.DOTweenVisual.Data
                 return spriteRenderer.DOColor(endColor, duration);
             }
 
-            // Renderer（Material）- 动画需要使用 material 实例
+            // Renderer（Material）- 使用 sharedMaterial 保持读写一致
             var renderer = target.GetComponent<Renderer>();
-            if (renderer != null && renderer.material != null)
+            if (renderer != null && renderer.sharedMaterial != null)
             {
-                return renderer.material.DOColor(endColor, duration);
+                return renderer.sharedMaterial.DOColor(endColor, duration);
             }
 
 #if DOTWEEN_TMP || TMP_PRESENT
@@ -268,11 +268,11 @@ namespace CNoom.DOTweenVisual.Data
                 return spriteRenderer.DOFade(endAlpha, duration);
             }
 
-            // Renderer（Material）- 动画需要使用 material 实例
+            // Renderer（Material）- 使用 sharedMaterial 保持读写一致
             var renderer = target.GetComponent<Renderer>();
-            if (renderer != null && renderer.material != null)
+            if (renderer != null && renderer.sharedMaterial != null)
             {
-                return renderer.material.DOFade(endAlpha, duration);
+                return renderer.sharedMaterial.DOFade(endAlpha, duration);
             }
 
 #if DOTWEEN_TMP || TMP_PRESENT

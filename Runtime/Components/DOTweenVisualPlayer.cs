@@ -110,8 +110,6 @@ namespace CNoom.DOTweenVisual.Components
 
         private void Start()
         {
-            DOTween.Init(true, true, LogBehaviour.Verbose);
-
             if (_playOnStart)
             {
                 Play();
