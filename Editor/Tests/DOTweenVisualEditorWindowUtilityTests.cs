@@ -62,28 +62,28 @@ namespace CNoom.DOTweenVisual.Editor.Tests
         [Test]
         public void ParseVector3_ValidString_ReturnsCorrectVector()
         {
-            var result = DOTweenVisualEditorWindow.ParseVector3("1,2,3");
+            var result = StepClipboard.ParseVector3("1,2,3");
             Assert.AreEqual(new Vector3(1f, 2f, 3f), result);
         }
 
         [Test]
         public void ParseVector3_NegativeValues_ReturnsCorrectVector()
         {
-            var result = DOTweenVisualEditorWindow.ParseVector3("-1,-2,-3");
+            var result = StepClipboard.ParseVector3("-1,-2,-3");
             Assert.AreEqual(new Vector3(-1f, -2f, -3f), result);
         }
 
         [Test]
         public void ParseVector3_ZeroValues_ReturnsZeroVector()
         {
-            var result = DOTweenVisualEditorWindow.ParseVector3("0,0,0");
+            var result = StepClipboard.ParseVector3("0,0,0");
             Assert.AreEqual(Vector3.zero, result);
         }
 
         [Test]
         public void ParseVector3_DecimalValues_ReturnsCorrectVector()
         {
-            var result = DOTweenVisualEditorWindow.ParseVector3("1.5,2.5,3.5");
+            var result = StepClipboard.ParseVector3("1.5,2.5,3.5");
             Assert.AreEqual(new Vector3(1.5f, 2.5f, 3.5f), result);
         }
 
@@ -95,7 +95,7 @@ namespace CNoom.DOTweenVisual.Editor.Tests
         public void AppendVector3_WritesCorrectFormat()
         {
             var sb = new StringBuilder();
-            DOTweenVisualEditorWindow.AppendVector3(sb, new Vector3(1.5f, 2.5f, 3.5f));
+            StepClipboard.AppendVector3(sb, new Vector3(1.5f, 2.5f, 3.5f));
             Assert.AreEqual("1.5,2.5,3.5", sb.ToString());
         }
 
@@ -103,7 +103,7 @@ namespace CNoom.DOTweenVisual.Editor.Tests
         public void AppendVector3_ZeroVector_WritesZeros()
         {
             var sb = new StringBuilder();
-            DOTweenVisualEditorWindow.AppendVector3(sb, Vector3.zero);
+            StepClipboard.AppendVector3(sb, Vector3.zero);
             Assert.AreEqual("0,0,0", sb.ToString());
         }
 
@@ -111,7 +111,7 @@ namespace CNoom.DOTweenVisual.Editor.Tests
         public void AppendVector3_NegativeValues_WritesCorrectFormat()
         {
             var sb = new StringBuilder();
-            DOTweenVisualEditorWindow.AppendVector3(sb, new Vector3(-1f, -2f, -3f));
+            StepClipboard.AppendVector3(sb, new Vector3(-1f, -2f, -3f));
             Assert.AreEqual("-1,-2,-3", sb.ToString());
         }
 
@@ -124,8 +124,8 @@ namespace CNoom.DOTweenVisual.Editor.Tests
         {
             var original = new Vector3(1.23f, 4.56f, 7.89f);
             var sb = new StringBuilder();
-            DOTweenVisualEditorWindow.AppendVector3(sb, original);
-            var parsed = DOTweenVisualEditorWindow.ParseVector3(sb.ToString());
+            StepClipboard.AppendVector3(sb, original);
+            var parsed = StepClipboard.ParseVector3(sb.ToString());
 
             Assert.AreEqual(original.x, parsed.x, 0.0001f);
             Assert.AreEqual(original.y, parsed.y, 0.0001f);
@@ -137,8 +137,8 @@ namespace CNoom.DOTweenVisual.Editor.Tests
         {
             var original = new Vector3(-10f, -20f, -30f);
             var sb = new StringBuilder();
-            DOTweenVisualEditorWindow.AppendVector3(sb, original);
-            var parsed = DOTweenVisualEditorWindow.ParseVector3(sb.ToString());
+            StepClipboard.AppendVector3(sb, original);
+            var parsed = StepClipboard.ParseVector3(sb.ToString());
 
             Assert.AreEqual(original.x, parsed.x, 0.0001f);
             Assert.AreEqual(original.y, parsed.y, 0.0001f);
@@ -152,21 +152,21 @@ namespace CNoom.DOTweenVisual.Editor.Tests
         [Test]
         public void ParseColor_Red_ReturnsRedColor()
         {
-            var result = DOTweenVisualEditorWindow.ParseColor("1,0,0,1");
+            var result = StepClipboard.ParseColor("1,0,0,1");
             Assert.AreEqual(new Color(1f, 0f, 0f, 1f), result);
         }
 
         [Test]
         public void ParseColor_ZeroAlpha_ReturnsTransparentColor()
         {
-            var result = DOTweenVisualEditorWindow.ParseColor("1,1,1,0");
+            var result = StepClipboard.ParseColor("1,1,1,0");
             Assert.AreEqual(new Color(1f, 1f, 1f, 0f), result);
         }
 
         [Test]
         public void ParseColor_AllZero_ReturnsBlackTransparent()
         {
-            var result = DOTweenVisualEditorWindow.ParseColor("0,0,0,0");
+            var result = StepClipboard.ParseColor("0,0,0,0");
             Assert.AreEqual(new Color(0f, 0f, 0f, 0f), result);
         }
 
@@ -178,7 +178,7 @@ namespace CNoom.DOTweenVisual.Editor.Tests
         public void AppendColor_WritesCorrectFormat()
         {
             var sb = new StringBuilder();
-            DOTweenVisualEditorWindow.AppendColor(sb, new Color(1f, 0.5f, 0f, 1f));
+            StepClipboard.AppendColor(sb, new Color(1f, 0.5f, 0f, 1f));
             Assert.AreEqual("1,0.5,0,1", sb.ToString());
         }
 
@@ -186,7 +186,7 @@ namespace CNoom.DOTweenVisual.Editor.Tests
         public void AppendColor_White_WritesOnes()
         {
             var sb = new StringBuilder();
-            DOTweenVisualEditorWindow.AppendColor(sb, Color.white);
+            StepClipboard.AppendColor(sb, Color.white);
             Assert.AreEqual("1,1,1,1", sb.ToString());
         }
 
@@ -199,8 +199,8 @@ namespace CNoom.DOTweenVisual.Editor.Tests
         {
             var original = new Color(0.1f, 0.2f, 0.3f, 0.4f);
             var sb = new StringBuilder();
-            DOTweenVisualEditorWindow.AppendColor(sb, original);
-            var parsed = DOTweenVisualEditorWindow.ParseColor(sb.ToString());
+            StepClipboard.AppendColor(sb, original);
+            var parsed = StepClipboard.ParseColor(sb.ToString());
 
             Assert.AreEqual(original.r, parsed.r, 0.0001f);
             Assert.AreEqual(original.g, parsed.g, 0.0001f);
@@ -213,8 +213,8 @@ namespace CNoom.DOTweenVisual.Editor.Tests
         {
             var original = new Color(0.75f, 0.25f, 0.5f, 1f);
             var sb = new StringBuilder();
-            DOTweenVisualEditorWindow.AppendColor(sb, original);
-            var parsed = DOTweenVisualEditorWindow.ParseColor(sb.ToString());
+            StepClipboard.AppendColor(sb, original);
+            var parsed = StepClipboard.ParseColor(sb.ToString());
 
             Assert.AreEqual(original.r, parsed.r, 0.0001f);
             Assert.AreEqual(original.g, parsed.g, 0.0001f);
