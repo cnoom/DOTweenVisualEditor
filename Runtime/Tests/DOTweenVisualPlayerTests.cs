@@ -476,7 +476,7 @@ namespace CNoom.DOTweenVisual.Tests
             DOTween.ManualUpdate(0.1f, 0.1f);
 
             float posAfter = _gameObject.transform.position.x;
-            Assert.AreNotEqual(posBefore, posAfter, 0.01f,
+            Assert.Greater(Mathf.Abs(posAfter - posBefore), 0.01f,
                 "DisableAction.None 不应影响动画播放");
         }
 
@@ -507,7 +507,7 @@ namespace CNoom.DOTweenVisual.Tests
             DOTween.ManualUpdate(0.2f, 0.2f);
 
             float posAfter = _gameObject.transform.position.x;
-            Assert.AreNotEqual(posBefore, posAfter, 0.01f,
+            Assert.Greater(Mathf.Abs(posAfter - posBefore), 0.01f,
                 "OnEnableResume 应恢复暂停的动画");
         }
 
