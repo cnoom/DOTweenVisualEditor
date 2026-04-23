@@ -516,7 +516,8 @@ namespace CNoom.DOTweenVisual.Editor
                         waypointsProp.serializedObject.ApplyModifiedProperties();
                         _onPathDataChanged?.Invoke();
                     });
-                xField.style.width = Length.Percent(32f);
+                xField.style.flexGrow = 1f;
+                xField.style.flexBasis = 0f;
                 xField.style.marginRight = 1f;
                 pointRow.Add(xField);
 
@@ -532,7 +533,8 @@ namespace CNoom.DOTweenVisual.Editor
                         waypointsProp.serializedObject.ApplyModifiedProperties();
                         _onPathDataChanged?.Invoke();
                     });
-                yField.style.width = Length.Percent(32f);
+                yField.style.flexGrow = 1f;
+                yField.style.flexBasis = 0f;
                 yField.style.marginRight = 1f;
                 pointRow.Add(yField);
 
@@ -548,7 +550,8 @@ namespace CNoom.DOTweenVisual.Editor
                         waypointsProp.serializedObject.ApplyModifiedProperties();
                         _onPathDataChanged?.Invoke();
                     });
-                zField.style.width = Length.Percent(32f);
+                zField.style.flexGrow = 1f;
+                zField.style.flexBasis = 0f;
                 pointRow.Add(zField);
 
                 // 同步按钮：将该路径点设为物体当前位置
