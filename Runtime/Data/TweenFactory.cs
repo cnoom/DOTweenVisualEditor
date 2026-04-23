@@ -17,8 +17,9 @@ namespace CNoom.DOTweenVisual.Data
         /// </summary>
         /// <param name="step">动画步骤数据</param>
         /// <param name="defaultTarget">默认目标 Transform（组件所在物体）</param>
+        /// <param name="suppressPathGizmo">为 true 时禁用 DOPath 的内置 Gizmo 路径绘制（编辑器预览用）</param>
         /// <returns>创建的 Tween，Delay/Callback 类型返回 null</returns>
-        public static Tween CreateTween(TweenStepData step, Transform defaultTarget)
+        public static Tween CreateTween(TweenStepData step, Transform defaultTarget, bool suppressPathGizmo = false)
         {
             var target = step.TargetTransform != null ? step.TargetTransform : defaultTarget;
             if (target == null) return null;
@@ -36,7 +37,7 @@ namespace CNoom.DOTweenVisual.Data
                 TweenStepType.Punch => CreatePunchTween(step, target),
                 TweenStepType.Shake => CreateShakeTween(step, target),
                 TweenStepType.FillAmount => CreateFillAmountTween(step, target),
-                TweenStepType.DOPath => CreateDOPathTween(step, target),
+                TweenStepType.DOPath => CreateDOPathTween(step, target, suppressPathGizmo),
                 _ => null
             };
         }
@@ -45,7 +46,7 @@ namespace CNoom.DOTweenVisual.Data
         /// 将 Tween 配置并添加到 Sequence
         /// 处理缓动、延迟、可回收、执行模式
         /// </summary>
-        public static void AppendToSequence(Sequence sequence, TweenStepData step, Transform defaultTarget)
+        public static void AppendToSequence(Sequence sequence, TweenStepData step, Transform defaultTarget, bool suppressPathGizmo = false)
         {
             // Delay 和 Callback 特殊处理
             if (step.Type == TweenStepType.Delay)
@@ -61,7 +62,7 @@ namespace CNoom.DOTweenVisual.Data
                 return;
             }
 
-            var tween = CreateTween(step, defaultTarget);
+            var tween = CreateTween(step, defaultTarget, suppressPathGizmo);
             if (tween == null) return;
 
             // 设置缓动（Punch/Shake 有内置振荡缓动，不覆盖）
@@ -414,7 +415,7 @@ namespace CNoom.DOTweenVisual.Data
             return image.DOFillAmount(step.TargetFloat, duration);
         }
 
-        private static Tweener CreateDOPathTween(TweenStepData step, Transform target)
+        private static Tweener CreateDOPathTween(TweenStepData step, Transform target, bool suppressPathGizmo = false)
         {
             if (step.PathWaypoints == null || step.PathWaypoints.Length < 2) return null;
 
@@ -426,8 +427,9 @@ namespace CNoom.DOTweenVisual.Data
             float duration = Mathf.Max(0.001f, step.Duration);
             var pathType = (PathType)step.PathType;
             var pathMode = (PathMode)step.PathMode;
+            Color? gizmoColor = suppressPathGizmo ? null : step.PathGizmoColor;
 
-            return target.DOPath(step.PathWaypoints, duration, pathType, pathMode, step.PathResolution, step.PathGizmoColor);
+            return target.DOPath(step.PathWaypoints, duration, pathType, pathMode, step.PathResolution, gizmoColor);
         }
 
         #endregion

@@ -113,6 +113,25 @@ namespace CNoom.DOTweenVisual.Editor
                     // ignored
                 }
             }
+
+            /// <summary>
+            /// 清除 DOTween 所有 Gizmo 绘制委托
+            /// 预览时 DOTween 内部 DOPath 的 Path 对象可能仍注册了 Gizmo 委托，
+            /// 会在 SceneView 中额外绘制一条跟随物体移动的路径，造成视觉干扰
+            /// </summary>
+            public static void ClearAllGizmoDelegates()
+            {
+                if (GizmosDelegatesProperty == null) return;
+                try
+                {
+                    var delegates = GizmosDelegatesProperty.GetValue(null) as IList;
+                    if (delegates != null) delegates.Clear();
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
         }
 
         #endregion
@@ -123,6 +142,11 @@ namespace CNoom.DOTweenVisual.Editor
         private bool _isPreviewing;
         private Vector3 _cachedStartPos;
         private bool _hasCachedStartPos;
+        /// <summary>
+        /// 预览冻结的起始位置，进入预览时一次性保存，整个预览期间不变
+        /// </summary>
+        private Vector3 _frozenStartPos;
+        private bool _hasFrozenStartPos;
         private SerializedProperty _stepProperty;
         private Transform _targetTransform;
         private Func<Vector3> _getStartPosition;
@@ -192,6 +216,8 @@ namespace CNoom.DOTweenVisual.Editor
 
         /// <summary>
         /// 设置当前步骤数据
+        /// 预览期间仅更新引用，不刷新起始位置缓存，防止动画中的位置覆盖冻结值
+        /// 如果预览前未查看路径（无冻结数据），在此时用 lambda 提供的正确位置冻结
         /// </summary>
         public void SetData(
             SerializedProperty stepProperty,
@@ -203,21 +229,85 @@ namespace CNoom.DOTweenVisual.Editor
             _targetTransform = targetTransform;
             _getStartPosition = getStartPosition;
             _onPathDataChanged = onPathDataChanged;
+
+            if (!_isPreviewing)
+            {
+                RefreshCachedStartPosition();
+            }
+            else if (!_hasFrozenStartPos && getStartPosition != null)
+            {
+                // 预览期间首次设置数据（预览前未查看路径），用 lambda 冻结起始位置
+                // lambda 在 DOTweenVisualEditorWindow 中已处理预览期间使用保存位置，所以值是正确的
+                _frozenStartPos = getStartPosition();
+                _hasFrozenStartPos = true;
+            }
+
+            SceneView.RepaintAll();
+        }
+
+        /// <summary>
+        /// 在预览启动前冻结起始位置
+        /// 必须在 StartPreview() 之前调用，此时物体尚未被动画驱动
+        /// 使用独立的冻结字段，与普通缓存完全隔离
+        /// </summary>
+        public void FreezeForPreview()
+        {
+            // 通过委托获取起始位置（处理 UseStartValue 等逻辑），保存到冻结字段
+            if (_getStartPosition != null)
+            {
+                _frozenStartPos = _getStartPosition();
+                _hasFrozenStartPos = true;
+            }
+            else if (_targetTransform != null)
+            {
+                _frozenStartPos = _targetTransform.position;
+                _hasFrozenStartPos = true;
+            }
+            _isPreviewing = true;
+            DotweenPathHelper.ClearAllGizmoDelegates();
+        }
+
+        /// <summary>
+        /// 退出预览模式，解冻起始位置并刷新缓存
+        /// </summary>
+        public void UnfreezeFromPreview()
+        {
+            _isPreviewing = false;
+            _hasFrozenStartPos = false;
             RefreshCachedStartPosition();
             SceneView.RepaintAll();
         }
 
         /// <summary>
-        /// 设置预览状态，预览期间冻结起始位置避免路径跟随物体移动
+        /// 设置预览状态（由 StateChanged 事件驱动）
+        /// 进入预览：如果已通过 FreezeForPreview 冻结则跳过；否则冻结
+        /// 退出预览：解冻并刷新
         /// </summary>
         public void SetPreviewing(bool isPreviewing)
         {
             if (_isPreviewing == isPreviewing) return;
-            _isPreviewing = isPreviewing;
 
-            if (!_isPreviewing)
+            if (isPreviewing)
             {
-                // 预览结束时刷新起始位置
+                // 兜底保护：如果 FreezeForPreview 未被调用，在此冻结
+                if (_getStartPosition != null)
+                {
+                    _frozenStartPos = _getStartPosition();
+                    _hasFrozenStartPos = true;
+                }
+                else if (_targetTransform != null)
+                {
+                    _frozenStartPos = _targetTransform.position;
+                    _hasFrozenStartPos = true;
+                }
+                _isPreviewing = true;
+                DotweenPathHelper.ClearAllGizmoDelegates();
+            }
+            else
+            {
+                // 退出预览：解冻 + 刷新（物体已恢复到原始位置）
+                _isPreviewing = false;
+                _hasFrozenStartPos = false;
                 RefreshCachedStartPosition();
                 SceneView.RepaintAll();
             }
@@ -271,7 +361,15 @@ namespace CNoom.DOTweenVisual.Editor
                 waypoints[i] = waypointsProp.GetArrayElementAtIndex(i).vector3Value;
             }
 
-            Vector3 startPos = _hasCachedStartPos ? _cachedStartPos : _targetTransform.position;
+            // 预览期间使用冻结的起始位置（与普通缓存隔离，确保不被覆盖）
+            // 非预览时使用普通缓存或直接读取 Transform
+            Vector3 startPos;
+            if (_isPreviewing && _hasFrozenStartPos)
+                startPos = _frozenStartPos;
+            else if (_hasCachedStartPos)
+                startPos = _cachedStartPos;
+            else
+                startPos = _targetTransform.position;
 
             // 1. 计算完整路径点
             List<Vector3> fullPath = ComputePath(startPos, waypoints, pathType, resolution);
@@ -283,7 +381,11 @@ namespace CNoom.DOTweenVisual.Editor
             DrawStartPoint(startPos);
 
             // 4. 绘制路径点 + 拖拽 Handles
-            DrawWaypointHandles(waypoints, waypointsProp, pathColor);
+            // 预览期间禁用拖拽编辑，避免与动画冲突
+            if (!_isPreviewing)
+                DrawWaypointHandles(waypoints, waypointsProp, pathColor);
+            else
+                DrawWaypointDots(waypoints, pathColor);
 
             // 5. 绘制方向箭头
             DrawDirectionArrows(fullPath, pathColor);
@@ -336,6 +438,24 @@ namespace CNoom.DOTweenVisual.Editor
 
                 var labelStyle = WaypointLabelStyle;
                 Handles.Label(newPos + Vector3.up * handleSize * 2f, $"WP{i + 1}", labelStyle);
+            }
+        }
+
+        /// <summary>
+        /// 预览模式下只绘制路径点标记，不提供拖拽编辑
+        /// </summary>
+        private void DrawWaypointDots(Vector3[] waypoints, Color color)
+        {
+            for (int i = 0; i < waypoints.Length; i++)
+            {
+                Vector3 wp = waypoints[i];
+                float handleSize = HandleUtility.GetHandleSize(wp) * WaypointHandleSize;
+
+                Handles.color = color;
+                Handles.SphereHandleCap(0, wp, Quaternion.identity, handleSize, EventType.Repaint);
+
+                var labelStyle = WaypointLabelStyle;
+                Handles.Label(wp + Vector3.up * handleSize * 2f, $"WP{i + 1}", labelStyle);
             }
         }
 
@@ -453,7 +573,11 @@ namespace CNoom.DOTweenVisual.Editor
             finally
             {
                 // 移除 Path 构造函数自动注册的 Gizmo 绘制委托，避免重复绘制
-                DotweenPathHelper.RemoveGizmoDelegate(path);
+                // 预览期间清除所有 DOTween Gizmo 委托，防止内部路径绘制干扰
+                if (_isPreviewing)
+                    DotweenPathHelper.ClearAllGizmoDelegates();
+                else
+                    DotweenPathHelper.RemoveGizmoDelegate(path);
             }
         }
 

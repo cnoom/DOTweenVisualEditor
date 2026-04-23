@@ -57,6 +57,11 @@ namespace CNoom.DOTweenVisual.Editor
         private DOTweenPreviewManager _previewManager;
         private PathVisualizer _pathVisualizer;
 
+        /// <summary>
+        /// 预览开始前保存的所有 Transform 位置，用于预览期间计算正确的路径起始位置
+        /// </summary>
+        private readonly Dictionary<Transform, Vector3> _prePreviewPositions = new();
+
         #endregion
 
         #region 静态初始化
@@ -466,14 +471,23 @@ namespace CNoom.DOTweenVisual.Editor
             var useStartValueProp = stepProp.FindPropertyRelative("UseStartValue");
             var startVectorProp = stepProp.FindPropertyRelative("StartVector");
             Transform capturedTransform = targetTransform;
+            bool isInPreview = _previewManager != null
+                              && _previewManager.State != DOTweenPreviewManager.PreviewState.None;
 
             _pathVisualizer.SetData(
                 stepProp,
                 targetTransform,
                 () =>
                 {
+                    // UseStartValue=true 时直接返回序列化值（不受动画影响）
                     if (useStartValueProp != null && useStartValueProp.boolValue)
                         return startVectorProp != null ? startVectorProp.vector3Value : capturedTransform.position;
+
+                    // 预览期间使用预览前保存的位置（此时 Transform 已被动画驱动，position 不可靠）
+                    if (isInPreview && capturedTransform != null
+                        && _prePreviewPositions.TryGetValue(capturedTransform, out var savedPos))
+                        return savedPos;
+
                     return capturedTransform != null ? capturedTransform.position : Vector3.zero;
                 },
                 () => { _detailPanelController?.RefreshDetailPanel(); }
@@ -782,16 +796,52 @@ namespace CNoom.DOTweenVisual.Editor
             else if (_previewManager.IsPaused)
                 _previewManager.ResumePreview();
             else
+            {
+                // 在动画启动前保存所有 Transform 的位置并冻结路径起始位置
+                SavePrePreviewPositions();
+                _pathVisualizer?.FreezeForPreview();
                 _previewManager.StartPreview();
+            }
         }
 
         private void OnReplayClicked()
         {
             if (targetPlayer == null) return;
-            _previewManager.Replay();
+            // 重播：先停止恢复原始位置 → 保存位置 → 冻结 → 再启动预览
+            _previewManager.StopPreview();
+            SavePrePreviewPositions();
+            _pathVisualizer?.FreezeForPreview();
+            _previewManager.StartPreview();
         }
 
-        private void OnStopClicked() => _previewManager.StopPreview();
+        private void OnStopClicked()
+        {
+            _previewManager.StopPreview();
+            _prePreviewPositions.Clear();
+        }
+
+        /// <summary>
+        /// 保存预览开始前所有相关 Transform 的位置
+        /// 用于预览期间计算正确的路径起始位置（此时 Transform 已被动画驱动）
+        /// </summary>
+        private void SavePrePreviewPositions()
+        {
+            _prePreviewPositions.Clear();
+            if (targetPlayer == null) return;
+
+            SaveTransformPosition(targetPlayer.transform);
+            foreach (var step in targetPlayer.Steps)
+            {
+                if (step.TargetTransform != null)
+                    SaveTransformPosition(step.TargetTransform);
+            }
+        }
+
+        private void SaveTransformPosition(Transform t)
+        {
+            if (t != null && !_prePreviewPositions.ContainsKey(t))
+                _prePreviewPositions[t] = t.position;
+        }
 
         private void OnResetClicked()
         {

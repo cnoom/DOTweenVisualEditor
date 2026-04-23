@@ -248,7 +248,8 @@ namespace CNoom.DOTweenVisual.Editor
             foreach (var step in _targetPlayer.Steps)
             {
                 if (!step.IsEnabled) continue;
-                TweenFactory.AppendToSequence(_previewSequence, step, _targetPlayer.transform);
+                // 编辑器预览时抑制 DOTween 内置 Gizmo 路径绘制，避免与 PathVisualizer 冲突
+                TweenFactory.AppendToSequence(_previewSequence, step, _targetPlayer.transform, suppressPathGizmo: true);
             }
         }
 
