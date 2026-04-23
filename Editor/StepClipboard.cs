@@ -129,63 +129,75 @@ namespace CNoom.DOTweenVisual.Editor
             Undo.RecordObject(targetPlayer, L10n.Tr("Undo/PasteStep"));
             serializedObject?.Update();
 
-            stepsProperty.InsertArrayElementAtIndex(stepsProperty.arraySize);
-            var newStep = stepsProperty.GetArrayElementAtIndex(stepsProperty.arraySize - 1);
+            int insertIndex = stepsProperty.arraySize;
+            stepsProperty.InsertArrayElementAtIndex(insertIndex);
+            var newStep = stepsProperty.GetArrayElementAtIndex(insertIndex);
 
-            var parts = _clipboardJson.Split('|');
-            int i = 0;
-            newStep.FindPropertyRelative("Type").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("IsEnabled").boolValue = parts[i++] == "1";
-            newStep.FindPropertyRelative("Duration").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("Delay").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("Ease").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("MoveSpace").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("RotateSpace").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            // RotateDirection（兼容旧剪贴板格式）
-            if (parts.Length > 30)
-                newStep.FindPropertyRelative("RotateDirection").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            else
-                newStep.FindPropertyRelative("RotateDirection").enumValueIndex = 0;
-            newStep.FindPropertyRelative("PunchTarget").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("ShakeTarget").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("UseStartValue").boolValue = parts[i++] == "1";
-            newStep.FindPropertyRelative("StartVector").vector3Value = ParseVector3(parts[i++]);
-            newStep.FindPropertyRelative("TargetVector").vector3Value = ParseVector3(parts[i++]);
-            newStep.FindPropertyRelative("IsRelative").boolValue = parts[i++] == "1";
-            newStep.FindPropertyRelative("UseStartColor").boolValue = parts[i++] == "1";
-            newStep.FindPropertyRelative("StartColor").colorValue = ParseColor(parts[i++]);
-            newStep.FindPropertyRelative("TargetColor").colorValue = ParseColor(parts[i++]);
-            newStep.FindPropertyRelative("UseStartFloat").boolValue = parts[i++] == "1";
-            newStep.FindPropertyRelative("StartFloat").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("TargetFloat").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("JumpHeight").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("JumpNum").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("Intensity").vector3Value = ParseVector3(parts[i++]);
-            newStep.FindPropertyRelative("Vibrato").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("Elasticity").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("ShakeRandomness").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("ExecutionMode").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("InsertTime").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("UseCustomCurve").boolValue = parts[i++] == "1";
-            newStep.FindPropertyRelative("PathType").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("PathMode").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-            newStep.FindPropertyRelative("PathResolution").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
-
-            // 路径点数据（兼容旧剪贴板格式：无路径点数据时跳过）
-            if (i < parts.Length)
+            try
             {
-                // 格式：wpCount;wp1x,wp1y,wp1z;wp2x,wp2y,wp2z;...
-                var wpParts = parts[i].Split(';');
-                int wpCount = int.Parse(wpParts[0], CultureInfo.InvariantCulture);
-                if (wpCount > 0 && wpParts.Length > wpCount)
+                var parts = _clipboardJson.Split('|');
+                int i = 0;
+                newStep.FindPropertyRelative("Type").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("IsEnabled").boolValue = parts[i++] == "1";
+                newStep.FindPropertyRelative("Duration").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("Delay").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("Ease").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("MoveSpace").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("RotateSpace").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                // RotateDirection（兼容旧剪贴板格式：字段数量 >= 32 表示包含此字段）
+                if (parts.Length >= 32)
+                    newStep.FindPropertyRelative("RotateDirection").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                else
+                    newStep.FindPropertyRelative("RotateDirection").enumValueIndex = 0;
+                newStep.FindPropertyRelative("PunchTarget").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("ShakeTarget").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("UseStartValue").boolValue = parts[i++] == "1";
+                newStep.FindPropertyRelative("StartVector").vector3Value = ParseVector3(parts[i++]);
+                newStep.FindPropertyRelative("TargetVector").vector3Value = ParseVector3(parts[i++]);
+                newStep.FindPropertyRelative("IsRelative").boolValue = parts[i++] == "1";
+                newStep.FindPropertyRelative("UseStartColor").boolValue = parts[i++] == "1";
+                newStep.FindPropertyRelative("StartColor").colorValue = ParseColor(parts[i++]);
+                newStep.FindPropertyRelative("TargetColor").colorValue = ParseColor(parts[i++]);
+                newStep.FindPropertyRelative("UseStartFloat").boolValue = parts[i++] == "1";
+                newStep.FindPropertyRelative("StartFloat").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("TargetFloat").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("JumpHeight").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("JumpNum").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("Intensity").vector3Value = ParseVector3(parts[i++]);
+                newStep.FindPropertyRelative("Vibrato").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("Elasticity").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("ShakeRandomness").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("ExecutionMode").enumValueIndex = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("InsertTime").floatValue = float.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("UseCustomCurve").boolValue = parts[i++] == "1";
+                newStep.FindPropertyRelative("PathType").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("PathMode").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+                newStep.FindPropertyRelative("PathResolution").intValue = int.Parse(parts[i++], CultureInfo.InvariantCulture);
+
+                // 路径点数据（兼容旧剪贴板格式：无路径点数据时跳过）
+                if (i < parts.Length)
                 {
-                    var waypointsProp = newStep.FindPropertyRelative("PathWaypoints");
-                    waypointsProp.arraySize = wpCount;
-                    for (int w = 0; w < wpCount; w++)
+                    // 格式：wpCount;wp1x,wp1y,wp1z;wp2x,wp2y,wp2z;...
+                    var wpParts = parts[i].Split(';');
+                    int wpCount = int.Parse(wpParts[0], CultureInfo.InvariantCulture);
+                    if (wpCount > 0 && wpParts.Length > wpCount)
                     {
-                        waypointsProp.GetArrayElementAtIndex(w).vector3Value = ParseVector3(wpParts[w + 1]);
+                        var waypointsProp = newStep.FindPropertyRelative("PathWaypoints");
+                        waypointsProp.arraySize = wpCount;
+                        for (int w = 0; w < wpCount; w++)
+                        {
+                            waypointsProp.GetArrayElementAtIndex(w).vector3Value = ParseVector3(wpParts[w + 1]);
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                // 解析失败时回滚：删除已插入的空元素
+                stepsProperty.DeleteArrayElementAtIndex(insertIndex);
+                stepsProperty.serializedObject.ApplyModifiedProperties();
+                DOTweenLog.Error(string.Format(L10n.Tr("Clipboard/PasteFailed"), e.Message));
+                return;
             }
 
             stepsProperty.serializedObject.ApplyModifiedProperties();

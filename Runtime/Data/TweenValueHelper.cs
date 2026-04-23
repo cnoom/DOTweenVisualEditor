@@ -48,9 +48,9 @@ namespace CNoom.DOTweenVisual.Data
             }
 
             var renderer = target.GetComponent<Renderer>();
-            if (renderer != null && renderer.sharedMaterial != null)
+            if (renderer != null && renderer.material != null)
             {
-                color = renderer.sharedMaterial.color;
+                color = renderer.material.color;
                 return true;
             }
 
@@ -86,9 +86,9 @@ namespace CNoom.DOTweenVisual.Data
             }
 
             var renderer = target.GetComponent<Renderer>();
-            if (renderer != null && renderer.sharedMaterial != null)
+            if (renderer != null && renderer.material != null)
             {
-                renderer.sharedMaterial.color = color;
+                renderer.material.color = color;
                 return true;
             }
 
@@ -122,11 +122,11 @@ namespace CNoom.DOTweenVisual.Data
                 return spriteRenderer.DOColor(endColor, duration);
             }
 
-            // Renderer（Material）- 使用 sharedMaterial 保持读写一致
+            // Renderer（Material）- 使用 material 实例，避免污染共享材质
             var renderer = target.GetComponent<Renderer>();
-            if (renderer != null && renderer.sharedMaterial != null)
+            if (renderer != null && renderer.material != null)
             {
-                return renderer.sharedMaterial.DOColor(endColor, duration);
+                return renderer.material.DOColor(endColor, duration);
             }
 
 #if DOTWEEN_TMP || TMP_PRESENT
@@ -173,9 +173,9 @@ namespace CNoom.DOTweenVisual.Data
             }
 
             var renderer = target.GetComponent<Renderer>();
-            if (renderer != null && renderer.sharedMaterial != null)
+            if (renderer != null && renderer.material != null)
             {
-                alpha = renderer.sharedMaterial.color.a;
+                alpha = renderer.material.color.a;
                 return true;
             }
 
@@ -222,11 +222,11 @@ namespace CNoom.DOTweenVisual.Data
             }
 
             var renderer = target.GetComponent<Renderer>();
-            if (renderer != null && renderer.sharedMaterial != null)
+            if (renderer != null && renderer.material != null)
             {
-                var c = renderer.sharedMaterial.color;
+                var c = renderer.material.color;
                 c.a = alpha;
-                renderer.sharedMaterial.color = c;
+                renderer.material.color = c;
                 return true;
             }
 
@@ -268,11 +268,11 @@ namespace CNoom.DOTweenVisual.Data
                 return spriteRenderer.DOFade(endAlpha, duration);
             }
 
-            // Renderer（Material）- 使用 sharedMaterial 保持读写一致
+            // Renderer（Material）- 使用 material 实例，避免污染共享材质
             var renderer = target.GetComponent<Renderer>();
-            if (renderer != null && renderer.sharedMaterial != null)
+            if (renderer != null && renderer.material != null)
             {
-                return renderer.sharedMaterial.DOFade(endAlpha, duration);
+                return renderer.material.DOFade(endAlpha, duration);
             }
 
 #if DOTWEEN_TMP || TMP_PRESENT

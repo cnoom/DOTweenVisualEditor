@@ -72,22 +72,35 @@ namespace CNoom.DOTweenVisual.Editor
 
 #region 资源查找
 
+        private static StyleSheet _cachedStyleSheet;
+
         /// <summary>
-        /// 查找并加载 USS 样式表文件
+        /// 查找并加载 USS 样式表文件（带缓存）
         /// 搜索所有 StyleSheet 资源，按文件名匹配目标 USS
         /// </summary>
         public static StyleSheet FindStyleSheet()
         {
-            var guids = AssetDatabase.FindAssets($"t:StyleSheet");
+            if (_cachedStyleSheet != null) return _cachedStyleSheet;
+
+            var guids = AssetDatabase.FindAssets("t:StyleSheet");
             foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
                 if (path.EndsWith(USS_FILE_NAME))
                 {
-                    return AssetDatabase.LoadAssetAtPath<StyleSheet>(path);
+                    _cachedStyleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(path);
+                    return _cachedStyleSheet;
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// 清除样式表缓存（语言切换或域重载时调用）
+        /// </summary>
+        public static void ClearStyleSheetCache()
+        {
+            _cachedStyleSheet = null;
         }
 
         #endregion

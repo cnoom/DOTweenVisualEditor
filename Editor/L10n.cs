@@ -241,6 +241,7 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Clipboard/Copied", "已复制步骤 {0}"},
                 {"Clipboard/Empty", "剪贴板为空，请先复制一个步骤"},
                 {"Clipboard/Pasted", "已粘贴步骤"},
+                {"Clipboard/PasteFailed", "粘贴步骤失败：{0}"},
 
                 // === Lifecycle ===
                 {"Lifecycle/PlayTrigger", "播放触发"},
@@ -467,6 +468,7 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Clipboard/Copied", "Copied step {0}"},
                 {"Clipboard/Empty", "Clipboard is empty, copy a step first"},
                 {"Clipboard/Pasted", "Step pasted"},
+                {"Clipboard/PasteFailed", "Paste step failed: {0}"},
 
                 // === Lifecycle ===
                 {"Lifecycle/PlayTrigger", "Play Trigger"},
