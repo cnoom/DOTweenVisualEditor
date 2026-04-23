@@ -144,6 +144,10 @@ namespace CNoom.DOTweenVisual.Editor
 
             var type = (TweenStepType)typeProp.enumValueIndex;
 
+            // 预计算同步值读取函数
+            var targetValueReader = GetTargetValueReader(stepProperty);
+            var startValueReader = GetStartValueReader(stepProperty);
+
             // 回调委托
             Action onTypeChanged = () => { _onRebuildList(); _onRefreshDetail(); };
             Action onEnumRebuild = () => { _onRebuildList(); _onRefreshDetail(); };
@@ -180,11 +184,11 @@ namespace CNoom.DOTweenVisual.Editor
                 if (useStartValueProp.boolValue)
                 {
                     string startLabel = type == TweenStepType.Rotate ? L10n.Tr("Detail/StartRotation") : L10n.Tr("Detail/StartValue");
-                    AddDetailField(startLabel, DetailFieldFactory.CreateVector3Field(startVectorProp));
+                    AddSyncableField(startLabel, DetailFieldFactory.CreateVector3Field(startVectorProp), startVectorProp, startValueReader);
                 }
 
                 string targetLabel = type == TweenStepType.Rotate ? L10n.Tr("Detail/TargetValueEuler") : L10n.Tr("Detail/TargetValue");
-                AddDetailField(targetLabel, DetailFieldFactory.CreateVector3Field(targetVectorProp));
+                AddSyncableField(targetLabel, DetailFieldFactory.CreateVector3Field(targetVectorProp), targetVectorProp, targetValueReader);
             }
             else if (type == TweenStepType.AnchorMove || type == TweenStepType.SizeDelta)
             {
@@ -199,11 +203,11 @@ namespace CNoom.DOTweenVisual.Editor
                 if (useStartValueProp.boolValue)
                 {
                     string startLabel = type == TweenStepType.AnchorMove ? L10n.Tr("Detail/StartAnchorPos") : L10n.Tr("Detail/StartSize");
-                    AddDetailField(startLabel, DetailFieldFactory.CreateVector3Field(startVectorProp));
+                    AddSyncableField(startLabel, DetailFieldFactory.CreateVector3Field(startVectorProp), startVectorProp, startValueReader);
                 }
 
                 string targetLabel = type == TweenStepType.AnchorMove ? L10n.Tr("Detail/TargetAnchorPos") : L10n.Tr("Detail/TargetSize");
-                AddDetailField(targetLabel, DetailFieldFactory.CreateVector3Field(targetVectorProp));
+                AddSyncableField(targetLabel, DetailFieldFactory.CreateVector3Field(targetVectorProp), targetVectorProp, targetValueReader);
             }
             else if (type == TweenStepType.Color)
             {
@@ -216,10 +220,10 @@ namespace CNoom.DOTweenVisual.Editor
 
                 if (useStartColorProp.boolValue)
                 {
-                    AddDetailField(L10n.Tr("Detail/StartColor"), DetailFieldFactory.CreateColorField(startColorProp));
+                    AddSyncableField(L10n.Tr("Detail/StartColor"), DetailFieldFactory.CreateColorField(startColorProp), startColorProp, startValueReader);
                 }
 
-                AddDetailField(L10n.Tr("Detail/TargetColor"), DetailFieldFactory.CreateColorField(targetColorProp));
+                AddSyncableField(L10n.Tr("Detail/TargetColor"), DetailFieldFactory.CreateColorField(targetColorProp), targetColorProp, targetValueReader);
             }
             else if (type == TweenStepType.Fade)
             {
@@ -232,10 +236,10 @@ namespace CNoom.DOTweenVisual.Editor
 
                 if (useStartFloatProp.boolValue)
                 {
-                    AddDetailField(L10n.Tr("Detail/StartAlpha"), DetailFieldFactory.CreateFloatField(startFloatProp));
+                    AddSyncableField(L10n.Tr("Detail/StartAlpha"), DetailFieldFactory.CreateFloatField(startFloatProp), startFloatProp, startValueReader);
                 }
 
-                AddDetailField(L10n.Tr("Detail/TargetAlpha"), DetailFieldFactory.CreateFloatField(targetFloatProp));
+                AddSyncableField(L10n.Tr("Detail/TargetAlpha"), DetailFieldFactory.CreateFloatField(targetFloatProp), targetFloatProp, targetValueReader);
             }
             else if (type == TweenStepType.Jump)
             {
@@ -247,10 +251,10 @@ namespace CNoom.DOTweenVisual.Editor
 
                 if (useStartValueProp.boolValue)
                 {
-                    AddDetailField(L10n.Tr("Detail/StartPosition"), DetailFieldFactory.CreateVector3Field(startVectorProp));
+                    AddSyncableField(L10n.Tr("Detail/StartPosition"), DetailFieldFactory.CreateVector3Field(startVectorProp), startVectorProp, startValueReader);
                 }
 
-                AddDetailField(L10n.Tr("Detail/TargetPosition"), DetailFieldFactory.CreateVector3Field(targetVectorProp));
+                AddSyncableField(L10n.Tr("Detail/TargetPosition"), DetailFieldFactory.CreateVector3Field(targetVectorProp), targetVectorProp, targetValueReader);
 
                 AddSeparator();
 
@@ -291,10 +295,10 @@ namespace CNoom.DOTweenVisual.Editor
 
                 if (useStartFloatProp.boolValue)
                 {
-                    AddDetailField(L10n.Tr("Detail/StartValue"), DetailFieldFactory.CreateFloatField(startFloatProp));
+                    AddSyncableField(L10n.Tr("Detail/StartValue"), DetailFieldFactory.CreateFloatField(startFloatProp), startFloatProp, startValueReader);
                 }
 
-                AddDetailField(L10n.Tr("Detail/TargetValue"), DetailFieldFactory.CreateFloatField(targetFloatProp));
+                AddSyncableField(L10n.Tr("Detail/TargetValue"), DetailFieldFactory.CreateFloatField(targetFloatProp), targetFloatProp, targetValueReader);
             }
             else if (type == TweenStepType.DOPath)
             {
@@ -306,15 +310,25 @@ namespace CNoom.DOTweenVisual.Editor
 
                 if (useStartValueProp.boolValue)
                 {
-                    AddDetailField(L10n.Tr("Detail/StartPosition"), DetailFieldFactory.CreateVector3Field(startVectorProp));
+                    AddSyncableField(L10n.Tr("Detail/StartPosition"), DetailFieldFactory.CreateVector3Field(startVectorProp), startVectorProp, startValueReader);
                 }
 
                 var waypointsProp = stepProperty.FindPropertyRelative("PathWaypoints");
-                AddPathWaypointsEditor(waypointsProp);
+                var pathTypeProp = stepProperty.FindPropertyRelative("PathType");
+
+                // 确保路径点数量满足当前 PathType 的约束
+                EnsureWaypointCount(waypointsProp, pathTypeProp.intValue);
+                AddPathWaypointsEditor(waypointsProp, pathTypeProp);
 
                 AddSeparator();
 
-                AddDetailField(L10n.Tr("Detail/PathType"), DetailFieldFactory.CreatePathTypeEnumField(stepProperty.FindPropertyRelative("PathType")));
+                AddDetailField(L10n.Tr("Detail/PathType"), DetailFieldFactory.CreatePathTypeEnumField(pathTypeProp, () =>
+                {
+                    // PathType 切换后自动调整路径点数量
+                    EnsureWaypointCount(waypointsProp, pathTypeProp.intValue);
+                    _onRefreshDetail();
+                    _onPathDataChanged?.Invoke();
+                }));
                 AddDetailField(L10n.Tr("Detail/PathMode"), DetailFieldFactory.CreatePathModeEnumField(stepProperty.FindPropertyRelative("PathMode")));
                 AddDetailField(L10n.Tr("Detail/PathResolution"), DetailFieldFactory.CreateIntegerField(stepProperty.FindPropertyRelative("PathResolution")));
             }
@@ -450,9 +464,82 @@ namespace CNoom.DOTweenVisual.Editor
         #region 路径点编辑器
 
         /// <summary>
+        /// PathType 枚举值: 0=Linear, 1=CatmullRom, 2=CubicBezier
+        /// </summary>
+        private const int PathType_CubicBezier = 2;
+
+        /// <summary>
+        /// 获取指定 PathType 所需的最小路径点数量
+        /// </summary>
+        private static int GetMinWaypointCount(int pathType)
+        {
+            return pathType == PathType_CubicBezier ? 3 : 2;
+        }
+
+        /// <summary>
+        /// 获取指定 PathType 每次添加/删除的步长
+        /// </summary>
+        private static int GetWaypointStep(int pathType)
+        {
+            return pathType == PathType_CubicBezier ? 3 : 1;
+        }
+
+        /// <summary>
+        /// 确保路径点数量满足 PathType 约束，不满足时自动补齐或裁剪
+        /// </summary>
+        private void EnsureWaypointCount(SerializedProperty waypointsProp, int pathType)
+        {
+            if (waypointsProp == null || !waypointsProp.isArray) return;
+
+            int minCount = GetMinWaypointCount(pathType);
+            int step = GetWaypointStep(pathType);
+            int current = waypointsProp.arraySize;
+
+            if (pathType == PathType_CubicBezier)
+            {
+                // CubicBezier 需要 3n 个点，不足则补齐
+                int target = Mathf.Max(minCount, Mathf.CeilToInt((float)current / step) * step);
+                if (target < minCount) target = minCount;
+
+                if (current < target)
+                {
+                    _getSerializedObject()?.Update();
+                    while (waypointsProp.arraySize < target)
+                    {
+                        Vector3 lastPos = waypointsProp.arraySize > 0
+                            ? waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value
+                            : Vector3.zero;
+                        waypointsProp.InsertArrayElementAtIndex(waypointsProp.arraySize);
+                        waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value =
+                            lastPos + new Vector3(1f, 0f, 0f);
+                    }
+                    waypointsProp.serializedObject.ApplyModifiedProperties();
+                }
+            }
+            else
+            {
+                // Linear/CatmullRom 至少 2 个点
+                if (current < minCount)
+                {
+                    _getSerializedObject()?.Update();
+                    while (waypointsProp.arraySize < minCount)
+                    {
+                        Vector3 lastPos = waypointsProp.arraySize > 0
+                            ? waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value
+                            : Vector3.zero;
+                        waypointsProp.InsertArrayElementAtIndex(waypointsProp.arraySize);
+                        waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value =
+                            lastPos + new Vector3(1f, 0f, 0f);
+                    }
+                    waypointsProp.serializedObject.ApplyModifiedProperties();
+                }
+            }
+        }
+
+        /// <summary>
         /// 添加路径点列表编辑器（支持增删改路径点）
         /// </summary>
-        private void AddPathWaypointsEditor(SerializedProperty waypointsProp)
+        private void AddPathWaypointsEditor(SerializedProperty waypointsProp, SerializedProperty pathTypeProp)
         {
             if (waypointsProp == null || !waypointsProp.isArray) return;
 
@@ -470,11 +557,23 @@ namespace CNoom.DOTweenVisual.Editor
             countLabel.style.flexGrow = 1;
             headerRow.Add(countLabel);
 
-            var addButton = new Button(() => AddPathWaypoint(waypointsProp, countLabel)) { text = L10n.Tr("Detail/AddWaypoint") };
-            addButton.style.fontSize = 10f;
-            addButton.style.paddingLeft = 6f;
-            addButton.style.paddingRight = 6f;
+            int pathType = pathTypeProp.intValue;
+            int step = GetWaypointStep(pathType);
+            string addLabel = step > 1
+                ? $"{L10n.Tr("Detail/AddWaypoint")} +{step}"
+                : L10n.Tr("Detail/AddWaypoint");
+            var addButton = new Button(() => AddPathWaypoint(waypointsProp, pathTypeProp.intValue)) { text = addLabel };
+            addButton.AddToClassList("inline-add-button");
             headerRow.Add(addButton);
+
+            // 批量删除按钮（CubicBezier 模式下显示 "-3"，其他模式不显示）
+            if (step > 1)
+            {
+                string removeLabel = $"-{step}";
+                var removeButton = new Button(() => RemovePathWaypointsBatch(waypointsProp, pathTypeProp.intValue)) { text = removeLabel };
+                removeButton.AddToClassList("inline-batch-remove-button");
+                headerRow.Add(removeButton);
+            }
 
             container.Add(headerRow);
 
@@ -512,7 +611,8 @@ namespace CNoom.DOTweenVisual.Editor
                         waypointsProp.serializedObject.ApplyModifiedProperties();
                         _onPathDataChanged?.Invoke();
                     });
-                xField.style.width = Length.Percent(32f);
+                xField.style.flexGrow = 1f;
+                xField.style.flexBasis = 0f;
                 xField.style.marginRight = 1f;
                 pointRow.Add(xField);
 
@@ -528,7 +628,8 @@ namespace CNoom.DOTweenVisual.Editor
                         waypointsProp.serializedObject.ApplyModifiedProperties();
                         _onPathDataChanged?.Invoke();
                     });
-                yField.style.width = Length.Percent(32f);
+                yField.style.flexGrow = 1f;
+                yField.style.flexBasis = 0f;
                 yField.style.marginRight = 1f;
                 pointRow.Add(yField);
 
@@ -544,19 +645,25 @@ namespace CNoom.DOTweenVisual.Editor
                         waypointsProp.serializedObject.ApplyModifiedProperties();
                         _onPathDataChanged?.Invoke();
                     });
-                zField.style.width = Length.Percent(32f);
+                zField.style.flexGrow = 1f;
+                zField.style.flexBasis = 0f;
                 pointRow.Add(zField);
+
+                // 同步按钮：将该路径点设为物体当前位置
+                var wpProp = waypointsProp.GetArrayElementAtIndex(idx);
+                var wpSyncBtn = CreateInlineSyncButton(wpProp, t => (object)t.position);
+                wpSyncBtn.EnableInClassList("inline-sync-button", true);
+                wpSyncBtn.EnableInClassList("inline-sync-button--compact", true);
+                pointRow.Add(wpSyncBtn);
 
                 var delBtn = new Button(() =>
                 {
-                    RemovePathWaypoint(waypointsProp, idx);
-                }) { text = "✕" };
-                delBtn.style.fontSize = 9f;
-                delBtn.style.color = new Color(0.9f, 0.4f, 0.4f);
-                delBtn.style.width = 18f;
-                delBtn.style.height = 18f;
-                delBtn.style.flexShrink = 0;
-                delBtn.style.marginLeft = 2f;
+                    RemovePathWaypoint(waypointsProp, idx, pathTypeProp.intValue);
+                }) { text = "X" };
+                delBtn.AddToClassList("inline-delete-button");
+                // CubicBezier 模式下，无法单独删除（需保持 3n），禁用单点删除
+                if (pathType == PathType_CubicBezier)
+                    delBtn.SetEnabled(false);
                 pointRow.Add(delBtn);
 
                 container.Add(pointRow);
@@ -565,30 +672,39 @@ namespace CNoom.DOTweenVisual.Editor
             _detailScrollView.Add(container);
         }
 
-        private void AddPathWaypoint(SerializedProperty waypointsProp, Label countLabel)
+        private void AddPathWaypoint(SerializedProperty waypointsProp, int pathType)
         {
             if (waypointsProp == null) return;
+            int step = GetWaypointStep(pathType);
+            int minCount = GetMinWaypointCount(pathType);
+
             Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/AddWaypoint"));
             _getSerializedObject()?.Update();
 
-            Vector3 lastPos = Vector3.zero;
-            if (waypointsProp.arraySize > 0)
+            for (int i = 0; i < step; i++)
             {
-                lastPos = waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value;
-            }
+                Vector3 lastPos = Vector3.zero;
+                if (waypointsProp.arraySize > 0)
+                {
+                    lastPos = waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value;
+                }
 
-            waypointsProp.InsertArrayElementAtIndex(waypointsProp.arraySize);
-            var newWp = waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1);
-            newWp.vector3Value = lastPos + new Vector3(1f, 0f, 0f);
+                waypointsProp.InsertArrayElementAtIndex(waypointsProp.arraySize);
+                var newWp = waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1);
+                newWp.vector3Value = lastPos + new Vector3(1f, 0f, 0f);
+            }
             waypointsProp.serializedObject.ApplyModifiedProperties();
 
             _onRefreshDetail();
+            _onPathDataChanged?.Invoke();
         }
 
-        private void RemovePathWaypoint(SerializedProperty waypointsProp, int index)
+        private void RemovePathWaypoint(SerializedProperty waypointsProp, int index, int pathType)
         {
             if (waypointsProp == null || index < 0 || index >= waypointsProp.arraySize) return;
-            if (waypointsProp.arraySize <= 1)
+            int minCount = GetMinWaypointCount(pathType);
+
+            if (waypointsProp.arraySize <= minCount)
             {
                 DOTweenLog.Warning(L10n.Tr("Detail/MinWaypointsWarning"));
                 return;
@@ -600,6 +716,35 @@ namespace CNoom.DOTweenVisual.Editor
             waypointsProp.serializedObject.ApplyModifiedProperties();
 
             _onRefreshDetail();
+            _onPathDataChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// 批量删除末尾的 step 个路径点（CubicBezier 等需要保持 3n 约束的模式）
+        /// </summary>
+        private void RemovePathWaypointsBatch(SerializedProperty waypointsProp, int pathType)
+        {
+            if (waypointsProp == null) return;
+            int step = GetWaypointStep(pathType);
+            int minCount = GetMinWaypointCount(pathType);
+
+            if (waypointsProp.arraySize - step < minCount)
+            {
+                DOTweenLog.Warning(L10n.Tr("Detail/MinWaypointsWarning"));
+                return;
+            }
+
+            Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/DeleteWaypoint"));
+            _getSerializedObject()?.Update();
+
+            for (int i = 0; i < step; i++)
+            {
+                waypointsProp.DeleteArrayElementAtIndex(waypointsProp.arraySize - 1);
+            }
+            waypointsProp.serializedObject.ApplyModifiedProperties();
+
+            _onRefreshDetail();
+            _onPathDataChanged?.Invoke();
         }
 
         #endregion
@@ -607,71 +752,137 @@ namespace CNoom.DOTweenVisual.Editor
         #region 同步
 
         /// <summary>
-        /// 同步当前选中步骤的目标值为物体当前值
+        /// 同步枚举：标识要同步的是目标值还是起始值
         /// </summary>
-        public void OnSyncClicked()
+        private enum SyncTarget
+        {
+            TargetValue,
+            StartValue
+        }
+
+        /// <summary>
+        /// 获取当前步骤中目标 Transform
+        /// </summary>
+        private Transform GetStepTargetTransform()
         {
             int selectedIndex = _getSelectedIndex();
             var stepsProperty = _getStepsProperty();
-            if (selectedIndex < 0 || stepsProperty == null || selectedIndex >= stepsProperty.arraySize) return;
+            if (selectedIndex < 0 || stepsProperty == null || selectedIndex >= stepsProperty.arraySize) return null;
 
-            var targetPlayer = _getTargetPlayer();
-            Undo.RecordObject(targetPlayer, L10n.Tr("Undo/SyncValue"));
-            _getSerializedObject()?.Update();
             var stepProperty = stepsProperty.GetArrayElementAtIndex(selectedIndex);
-            var type = (TweenStepType)stepProperty.FindPropertyRelative("Type").enumValueIndex;
             var targetTransformProp = stepProperty.FindPropertyRelative("TargetTransform");
             var target = targetTransformProp.objectReferenceValue as Transform;
-            if (target == null && targetPlayer != null) target = targetPlayer.transform;
-            if (target == null) return;
+            if (target == null)
+            {
+                var player = _getTargetPlayer();
+                if (player != null) target = player.transform;
+            }
+            return target;
+        }
 
+        /// <summary>
+        /// 创建内联同步按钮，点击后将物体当前值写入指定 SerializedProperty
+        /// </summary>
+        private Button CreateInlineSyncButton(SerializedProperty prop, System.Func<Transform, object> readCurrentValue)
+        {
+            var btn = new Button(() =>
+            {
+                var target = GetStepTargetTransform();
+                if (target == null) return;
+
+                var value = readCurrentValue(target);
+                if (value == null) return;
+
+                Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/SyncValue"));
+                _getSerializedObject()?.Update();
+
+                if (value is Vector3 v3)
+                    prop.vector3Value = v3;
+                else if (value is Color col)
+                    prop.colorValue = col;
+                else if (value is float f)
+                    prop.floatValue = f;
+
+                prop.serializedObject.ApplyModifiedProperties();
+                _onRefreshDetail();
+            })
+            {
+                text = "S",
+                tooltip = L10n.Tr("Detail/SyncTooltip")
+            };
+            btn.AddToClassList("inline-sync-button");
+            return btn;
+        }
+
+        /// <summary>
+        /// 根据动画类型获取当前目标值的读取函数
+        /// </summary>
+        private System.Func<Transform, object> GetTargetValueReader(SerializedProperty stepProperty)
+        {
+            var type = (TweenStepType)stepProperty.FindPropertyRelative("Type").enumValueIndex;
             switch (type)
             {
                 case TweenStepType.Move:
                     var moveSpace = (MoveSpace)stepProperty.FindPropertyRelative("MoveSpace").enumValueIndex;
-                    stepProperty.FindPropertyRelative("TargetVector").vector3Value =
-                        moveSpace == MoveSpace.Local ? target.localPosition : target.position;
-                    break;
+                    return t => moveSpace == MoveSpace.Local ? (object)t.localPosition : t.position;
                 case TweenStepType.Rotate:
                     var rotateSpace = (RotateSpace)stepProperty.FindPropertyRelative("RotateSpace").enumValueIndex;
-                    stepProperty.FindPropertyRelative("TargetVector").vector3Value =
-                        rotateSpace == RotateSpace.Local ? target.localRotation.eulerAngles : target.rotation.eulerAngles;
-                    break;
+                    return t => rotateSpace == RotateSpace.Local ? (object)t.localRotation.eulerAngles : t.rotation.eulerAngles;
                 case TweenStepType.Scale:
-                    stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.localScale;
-                    break;
+                    return t => t.localScale;
                 case TweenStepType.Color:
-                    if (TweenValueHelper.TryGetColor(target, out Color currentColor))
-                        stepProperty.FindPropertyRelative("TargetColor").colorValue = currentColor;
-                    break;
+                    return t => TweenValueHelper.TryGetColor(t, out var c) ? (object)c : null;
                 case TweenStepType.Fade:
-                    if (TweenValueHelper.TryGetAlpha(target, out float currentAlpha))
-                        stepProperty.FindPropertyRelative("TargetFloat").floatValue = currentAlpha;
-                    break;
+                    return t => TweenValueHelper.TryGetAlpha(t, out var a) ? (object)a : null;
                 case TweenStepType.AnchorMove:
-                    if (TweenValueHelper.TryGetRectTransform(target, out var rt1))
-                        stepProperty.FindPropertyRelative("TargetVector").vector3Value = rt1.anchoredPosition;
-                    break;
+                    return t => TweenValueHelper.TryGetRectTransform(t, out var rt) ? (object)(Vector3)rt.anchoredPosition : null;
                 case TweenStepType.SizeDelta:
-                    if (TweenValueHelper.TryGetRectTransform(target, out var rt2))
-                        stepProperty.FindPropertyRelative("TargetVector").vector3Value = rt2.sizeDelta;
-                    break;
+                    return t => TweenValueHelper.TryGetRectTransform(t, out var rt) ? (object)(Vector3)rt.sizeDelta : null;
                 case TweenStepType.Jump:
-                    stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.position;
-                    break;
+                    return t => t.position;
                 case TweenStepType.FillAmount:
-                    var image = target.GetComponent<UnityEngine.UI.Image>();
-                    if (image != null)
-                        stepProperty.FindPropertyRelative("TargetFloat").floatValue = image.fillAmount;
-                    break;
+                    return t =>
+                    {
+                        var img = t.GetComponent<UnityEngine.UI.Image>();
+                        return img != null ? (object)img.fillAmount : null;
+                    };
                 case TweenStepType.DOPath:
-                    stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.position;
-                    break;
+                    return t => t.position;
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// 根据动画类型获取起始值的读取函数（起始值=目标值，概念上起始值就是动画开始时的"当前值"）
+        /// </summary>
+        private System.Func<Transform, object> GetStartValueReader(SerializedProperty stepProperty)
+        {
+            return GetTargetValueReader(stepProperty);
+        }
+
+        /// <summary>
+        /// 添加带内联同步按钮的字段行
+        /// </summary>
+        private void AddSyncableField(string label, VisualElement field, SerializedProperty prop, System.Func<Transform, object> valueReader)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("detail-field-row");
+
+            var labelEl = new Label(label);
+            labelEl.AddToClassList("detail-field-label");
+            row.Add(labelEl);
+
+            field.AddToClassList("detail-field-value");
+            row.Add(field);
+
+            if (valueReader != null)
+            {
+                var syncBtn = CreateInlineSyncButton(prop, valueReader);
+                row.Add(syncBtn);
             }
 
-            stepsProperty.serializedObject.ApplyModifiedProperties();
-            _onRefreshDetail();
-            _onRebuildList();
+            _detailScrollView.Add(row);
         }
 
         #endregion

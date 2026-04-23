@@ -168,6 +168,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             _listController?.RebuildStepList();
             _detailPanelController?.RefreshDetailPanel();
+            RebuildPlayerSettings();
             UpdatePathVisualizer();
         }
 
@@ -247,6 +248,14 @@ namespace CNoom.DOTweenVisual.Editor
             langButton.AddToClassList("lang-button");
             toolbar.Add(langButton);
 
+            var helpButton = new Button(OnHelpClicked)
+            {
+                text = L10n.Tr("Help/Button"),
+                tooltip = L10n.Tr("Help/Title")
+            };
+            helpButton.AddToClassList("help-button");
+            toolbar.Add(helpButton);
+
             var separator = new VisualElement();
             separator.AddToClassList("toolbar-separator");
             toolbar.Add(separator);
@@ -302,6 +311,18 @@ namespace CNoom.DOTweenVisual.Editor
             leftPanel.Add(leftHeader);
 
             _listController.CreateListView(leftPanel);
+
+            // --- 左侧底部：播放设置 ---
+            var settingsFoldout = new Foldout
+            {
+                text = L10n.Tr("Settings/Title"),
+                value = true
+            };
+            settingsFoldout.AddToClassList("player-settings-foldout");
+            _settingsFoldout = settingsFoldout;
+            BuildPlayerSettings(settingsFoldout);
+            leftPanel.Add(settingsFoldout);
+
             splitView.Add(leftPanel);
 
             // --- 右侧：步骤详情 ---
@@ -313,10 +334,6 @@ namespace CNoom.DOTweenVisual.Editor
             var rightTitle = new Label(L10n.Tr("Window/StepDetail"));
             rightTitle.AddToClassList("panel-title");
             rightHeader.Add(rightTitle);
-
-            var syncButton = new Button(() => _detailPanelController.OnSyncClicked()) { text = L10n.Tr("Window/SyncValue") };
-            syncButton.AddToClassList("sync-button");
-            rightHeader.Add(syncButton);
 
             rightPanel.Add(rightHeader);
 
@@ -335,6 +352,7 @@ namespace CNoom.DOTweenVisual.Editor
             {
                 _listController?.RebuildStepList();
                 _detailPanelController?.RefreshDetailPanel();
+                RebuildPlayerSettings();
             }
         }
 
@@ -407,6 +425,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             _listController?.RebuildStepList();
             _detailPanelController?.RefreshDetailPanel();
+            RebuildPlayerSettings();
             UpdatePathVisualizer();
         }
 
@@ -508,6 +527,18 @@ namespace CNoom.DOTweenVisual.Editor
 
         #endregion
 
+        #region 帮助
+
+        private void OnHelpClicked()
+        {
+            var popup = EditorWindow.GetWindow<HelpPopupWindow>();
+            popup.titleContent = new GUIContent(L10n.Tr("Help/Title"));
+            popup.minSize = new Vector2(360, 400);
+            popup.Show();
+        }
+
+        #endregion
+
         #region 语言切换
 
         private void OnLanguageMenuClicked()
@@ -549,6 +580,106 @@ namespace CNoom.DOTweenVisual.Editor
                 _clipboard?.PasteStep();
                 evt.StopPropagation();
             }
+        }
+
+        #endregion
+
+        #region 播放设置面板
+
+        private Foldout _settingsFoldout;
+
+        private void BuildPlayerSettings(Foldout container)
+        {
+            container.Clear();
+
+            if (targetPlayer == null || serializedObject == null)
+            {
+                container.SetEnabled(false);
+                return;
+            }
+
+            container.SetEnabled(true);
+            serializedObject.Update();
+
+            var playTriggerProp = serializedObject.FindProperty("_playTrigger");
+            var disableActionProp = serializedObject.FindProperty("_disableAction");
+            var loopsProp = serializedObject.FindProperty("_loops");
+            var loopTypeProp = serializedObject.FindProperty("_loopType");
+            var debugModeProp = serializedObject.FindProperty("_debugMode");
+
+            AddSettingsField(container, L10n.Tr("Settings/PlayTrigger"),
+                CreateSettingsEnumField(playTriggerProp, typeof(PlayTrigger)));
+            AddSettingsField(container, L10n.Tr("Settings/DisableAction"),
+                CreateSettingsEnumField(disableActionProp, typeof(DisableAction)));
+            AddSettingsField(container, L10n.Tr("Settings/Loops"),
+                CreateSettingsIntField(loopsProp));
+            AddSettingsField(container, L10n.Tr("Settings/LoopType"),
+                CreateSettingsEnumField(loopTypeProp, typeof(LoopType)));
+            AddSettingsField(container, L10n.Tr("Settings/DebugMode"),
+                CreateSettingsToggleField(debugModeProp));
+        }
+
+        private EnumField CreateSettingsEnumField(SerializedProperty prop, Type enumType)
+        {
+            var field = new EnumField((Enum)Enum.GetValues(enumType).GetValue(prop.enumValueIndex));
+            field.RegisterValueChangedCallback(evt =>
+            {
+                if (!DetailFieldFactory.IsValidProperty(prop)) return;
+                Undo.RecordObject(targetPlayer, L10n.Tr("Settings/Title"));
+                serializedObject.Update();
+                prop.enumValueIndex = Convert.ToInt32(evt.newValue);
+                serializedObject.ApplyModifiedProperties();
+            });
+            return field;
+        }
+
+        private IntegerField CreateSettingsIntField(SerializedProperty prop)
+        {
+            var field = new IntegerField { value = prop.intValue };
+            field.RegisterValueChangedCallback(evt =>
+            {
+                if (!DetailFieldFactory.IsValidProperty(prop)) return;
+                Undo.RecordObject(targetPlayer, L10n.Tr("Settings/Title"));
+                serializedObject.Update();
+                prop.intValue = evt.newValue;
+                serializedObject.ApplyModifiedProperties();
+            });
+            return field;
+        }
+
+        private Toggle CreateSettingsToggleField(SerializedProperty prop)
+        {
+            var field = new Toggle { value = prop.boolValue };
+            field.RegisterValueChangedCallback(evt =>
+            {
+                if (!DetailFieldFactory.IsValidProperty(prop)) return;
+                Undo.RecordObject(targetPlayer, L10n.Tr("Settings/Title"));
+                serializedObject.Update();
+                prop.boolValue = evt.newValue;
+                serializedObject.ApplyModifiedProperties();
+            });
+            return field;
+        }
+
+        private static void AddSettingsField(VisualElement container, string label, VisualElement field)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("detail-field-row");
+
+            var labelEl = new Label(label);
+            labelEl.AddToClassList("detail-field-label");
+            row.Add(labelEl);
+
+            field.AddToClassList("detail-field-value");
+            row.Add(field);
+
+            container.Add(row);
+        }
+
+        private void RebuildPlayerSettings()
+        {
+            if (_settingsFoldout != null)
+                BuildPlayerSettings(_settingsFoldout);
         }
 
         #endregion

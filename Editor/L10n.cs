@@ -114,6 +114,14 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Undo/MoveWaypoint", "移动路径点"},
                 {"Undo/ResetPreviewState", "重置预览状态"},
 
+                // === Player Settings ===
+                {"Settings/Title", "播放设置"},
+                {"Settings/PlayTrigger", "播放触发"},
+                {"Settings/DisableAction", "禁用行为"},
+                {"Settings/Loops", "循环次数"},
+                {"Settings/LoopType", "循环类型"},
+                {"Settings/DebugMode", "调试模式"},
+
                 // === Detail Panel ===
                 {"Detail/SelectStep", "请在左侧选择一个步骤"},
                 {"Detail/Type", "类型"},
@@ -175,6 +183,8 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Detail/CustomCurve", "自定义曲线"},
                 {"Detail/OnStart", "OnStart"},
                 {"Detail/OnComplete", "OnComplete"},
+                {"Detail/SyncTooltip", "从物体当前状态同步该值"},
+                {"Detail/SyncWaypointTooltip", "同步到物体当前位置"},
 
                 // === Path Options ===
                 {"PathOption/Linear", "Linear (直线)"},
@@ -248,6 +258,21 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Menu/Language", "语言/Language"},
                 {"Menu/Chinese", "中文 (简体)"},
                 {"Menu/English", "English"},
+
+                // === Help ===
+                {"Help/Button", "?"},
+                {"Help/Title", "使用帮助"},
+                {"Help/Section_Colors", "按钮颜色约定"},
+                {"Help/Color_Sync", "[S] 青色 — 同步按钮：从物体当前状态读取值并填入对应字段"},
+                {"Help/Color_Delete", "[X] 红色 — 删除按钮：删除当前项（路径点、步骤等）"},
+                {"Help/Color_Add", "[+] 绿色 — 添加按钮：添加新项（路径点等）"},
+                {"Help/Section_Shortcuts", "快捷键"},
+                {"Help/Shortcut_Copy", "Ctrl+C — 复制当前步骤"},
+                {"Help/Shortcut_Paste", "Ctrl+V — 粘贴步骤"},
+                {"Help/Shortcut_Delete", "Delete — 删除当前步骤"},
+                {"Help/Section_Path", "路径点规则"},
+                {"Help/Path_Linear", "Linear / CatmullRom：最少 2 个路径点，每次增减 1 个"},
+                {"Help/Path_Bezier", "CubicBezier：最少 3 个路径点，数量须为 3 的倍数，每次增减 3 个"},
             };
         }
 
@@ -315,6 +340,14 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Undo/MoveWaypoint", "Move Waypoint"},
                 {"Undo/ResetPreviewState", "Reset Preview State"},
 
+                // === Player Settings ===
+                {"Settings/Title", "Player Settings"},
+                {"Settings/PlayTrigger", "Play Trigger"},
+                {"Settings/DisableAction", "On Disable"},
+                {"Settings/Loops", "Loops"},
+                {"Settings/LoopType", "Loop Type"},
+                {"Settings/DebugMode", "Debug Mode"},
+
                 // === Detail Panel ===
                 {"Detail/SelectStep", "Select a step on the left"},
                 {"Detail/Type", "Type"},
@@ -376,6 +409,8 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Detail/CustomCurve", "Custom Curve"},
                 {"Detail/OnStart", "OnStart"},
                 {"Detail/OnComplete", "OnComplete"},
+                {"Detail/SyncTooltip", "Sync this value from object's current state"},
+                {"Detail/SyncWaypointTooltip", "Sync to object's current position"},
 
                 // === Path Options ===
                 {"PathOption/Linear", "Linear"},
@@ -449,6 +484,21 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Menu/Language", "语言/Language"},
                 {"Menu/Chinese", "中文 (简体)"},
                 {"Menu/English", "English"},
+
+                // === Help ===
+                {"Help/Button", "?"},
+                {"Help/Title", "Help"},
+                {"Help/Section_Colors", "Button Color Convention"},
+                {"Help/Color_Sync", "[S] Cyan — Sync: read current value from object and fill the field"},
+                {"Help/Color_Delete", "[X] Red — Delete: remove the item (waypoint, step, etc.)"},
+                {"Help/Color_Add", "[+] Green — Add: add a new item (waypoint, etc.)"},
+                {"Help/Section_Shortcuts", "Shortcuts"},
+                {"Help/Shortcut_Copy", "Ctrl+C — Copy current step"},
+                {"Help/Shortcut_Paste", "Ctrl+V — Paste step"},
+                {"Help/Shortcut_Delete", "Delete — Delete current step"},
+                {"Help/Section_Path", "Waypoint Rules"},
+                {"Help/Path_Linear", "Linear / CatmullRom: minimum 2 waypoints, add/remove 1 at a time"},
+                {"Help/Path_Bezier", "CubicBezier: minimum 3 waypoints, count must be multiple of 3, add/remove 3 at a time"},
             };
         }
 

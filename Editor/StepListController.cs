@@ -241,7 +241,7 @@ namespace CNoom.DOTweenVisual.Editor
             titleLabel.AddToClassList("step-title");
             row.Add(titleLabel);
 
-            var deleteButton = new Button { text = "✕" };
+            var deleteButton = new Button { text = "X" };
             deleteButton.AddToClassList("step-delete-button");
             deleteButton.RegisterCallback<ClickEvent>(e =>
             {

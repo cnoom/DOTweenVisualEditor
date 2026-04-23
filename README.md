@@ -9,6 +9,7 @@ A visual editor for DOTween, providing Unity developers with an intuitive and ef
 - **Component-Bound Design** - Data is bound 1:1 to GameObjects, reducing cognitive load
 - **Visual Editor** - Modern editor window built with UI Toolkit (`Tools > DOTween Visual Editor`)
 - **Real-time Preview** - Instant animation preview in the editor, with pause, replay, and reset support
+- **Player Settings Panel** - Configure play trigger, disable action, loops, loop type, and debug mode directly in the visual editor
 - **Path Visualization** - DOPath steps display path curves in SceneView in real-time, with draggable waypoint editing
 - **Inspector Editing** - Custom PropertyDrawer that conditionally displays fields by animation type, with one-click sync of current values
 - **14 Animation Types** - Move, Rotate, Scale, Color, Fade, AnchorMove, SizeDelta, Jump, Punch, Shake, FillAmount, DOPath, Delay, Callback
