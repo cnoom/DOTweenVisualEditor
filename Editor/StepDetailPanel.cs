@@ -314,11 +314,21 @@ namespace CNoom.DOTweenVisual.Editor
                 }
 
                 var waypointsProp = stepProperty.FindPropertyRelative("PathWaypoints");
-                AddPathWaypointsEditor(waypointsProp);
+                var pathTypeProp = stepProperty.FindPropertyRelative("PathType");
+
+                // 确保路径点数量满足当前 PathType 的约束
+                EnsureWaypointCount(waypointsProp, pathTypeProp.intValue);
+                AddPathWaypointsEditor(waypointsProp, pathTypeProp);
 
                 AddSeparator();
 
-                AddDetailField(L10n.Tr("Detail/PathType"), DetailFieldFactory.CreatePathTypeEnumField(stepProperty.FindPropertyRelative("PathType")));
+                AddDetailField(L10n.Tr("Detail/PathType"), DetailFieldFactory.CreatePathTypeEnumField(pathTypeProp, () =>
+                {
+                    // PathType 切换后自动调整路径点数量
+                    EnsureWaypointCount(waypointsProp, pathTypeProp.intValue);
+                    _onRefreshDetail();
+                    _onPathDataChanged?.Invoke();
+                }));
                 AddDetailField(L10n.Tr("Detail/PathMode"), DetailFieldFactory.CreatePathModeEnumField(stepProperty.FindPropertyRelative("PathMode")));
                 AddDetailField(L10n.Tr("Detail/PathResolution"), DetailFieldFactory.CreateIntegerField(stepProperty.FindPropertyRelative("PathResolution")));
             }
@@ -454,9 +464,82 @@ namespace CNoom.DOTweenVisual.Editor
         #region 路径点编辑器
 
         /// <summary>
+        /// PathType 枚举值: 0=Linear, 1=CatmullRom, 2=CubicBezier
+        /// </summary>
+        private const int PathType_CubicBezier = 2;
+
+        /// <summary>
+        /// 获取指定 PathType 所需的最小路径点数量
+        /// </summary>
+        private static int GetMinWaypointCount(int pathType)
+        {
+            return pathType == PathType_CubicBezier ? 3 : 2;
+        }
+
+        /// <summary>
+        /// 获取指定 PathType 每次添加/删除的步长
+        /// </summary>
+        private static int GetWaypointStep(int pathType)
+        {
+            return pathType == PathType_CubicBezier ? 3 : 1;
+        }
+
+        /// <summary>
+        /// 确保路径点数量满足 PathType 约束，不满足时自动补齐或裁剪
+        /// </summary>
+        private void EnsureWaypointCount(SerializedProperty waypointsProp, int pathType)
+        {
+            if (waypointsProp == null || !waypointsProp.isArray) return;
+
+            int minCount = GetMinWaypointCount(pathType);
+            int step = GetWaypointStep(pathType);
+            int current = waypointsProp.arraySize;
+
+            if (pathType == PathType_CubicBezier)
+            {
+                // CubicBezier 需要 3n 个点，不足则补齐
+                int target = Mathf.Max(minCount, Mathf.CeilToInt((float)current / step) * step);
+                if (target < minCount) target = minCount;
+
+                if (current < target)
+                {
+                    _getSerializedObject()?.Update();
+                    while (waypointsProp.arraySize < target)
+                    {
+                        Vector3 lastPos = waypointsProp.arraySize > 0
+                            ? waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value
+                            : Vector3.zero;
+                        waypointsProp.InsertArrayElementAtIndex(waypointsProp.arraySize);
+                        waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value =
+                            lastPos + new Vector3(1f, 0f, 0f);
+                    }
+                    waypointsProp.serializedObject.ApplyModifiedProperties();
+                }
+            }
+            else
+            {
+                // Linear/CatmullRom 至少 2 个点
+                if (current < minCount)
+                {
+                    _getSerializedObject()?.Update();
+                    while (waypointsProp.arraySize < minCount)
+                    {
+                        Vector3 lastPos = waypointsProp.arraySize > 0
+                            ? waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value
+                            : Vector3.zero;
+                        waypointsProp.InsertArrayElementAtIndex(waypointsProp.arraySize);
+                        waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value =
+                            lastPos + new Vector3(1f, 0f, 0f);
+                    }
+                    waypointsProp.serializedObject.ApplyModifiedProperties();
+                }
+            }
+        }
+
+        /// <summary>
         /// 添加路径点列表编辑器（支持增删改路径点）
         /// </summary>
-        private void AddPathWaypointsEditor(SerializedProperty waypointsProp)
+        private void AddPathWaypointsEditor(SerializedProperty waypointsProp, SerializedProperty pathTypeProp)
         {
             if (waypointsProp == null || !waypointsProp.isArray) return;
 
@@ -474,7 +557,12 @@ namespace CNoom.DOTweenVisual.Editor
             countLabel.style.flexGrow = 1;
             headerRow.Add(countLabel);
 
-            var addButton = new Button(() => AddPathWaypoint(waypointsProp, countLabel)) { text = L10n.Tr("Detail/AddWaypoint") };
+            int pathType = pathTypeProp.intValue;
+            int step = GetWaypointStep(pathType);
+            string addLabel = step > 1
+                ? $"{L10n.Tr("Detail/AddWaypoint")} +{step}"
+                : L10n.Tr("Detail/AddWaypoint");
+            var addButton = new Button(() => AddPathWaypoint(waypointsProp, pathTypeProp.intValue)) { text = addLabel };
             addButton.style.fontSize = 10f;
             addButton.style.paddingLeft = 6f;
             addButton.style.paddingRight = 6f;
@@ -563,7 +651,7 @@ namespace CNoom.DOTweenVisual.Editor
 
                 var delBtn = new Button(() =>
                 {
-                    RemovePathWaypoint(waypointsProp, idx);
+                    RemovePathWaypoint(waypointsProp, idx, pathTypeProp.intValue);
                 }) { text = "✕" };
                 delBtn.style.fontSize = 9f;
                 delBtn.style.color = new Color(0.9f, 0.4f, 0.4f);
@@ -571,6 +659,9 @@ namespace CNoom.DOTweenVisual.Editor
                 delBtn.style.height = 18f;
                 delBtn.style.flexShrink = 0;
                 delBtn.style.marginLeft = 2f;
+                // CubicBezier 模式下，无法单独删除（需保持 3n），禁用单点删除
+                if (pathType == PathType_CubicBezier)
+                    delBtn.SetEnabled(false);
                 pointRow.Add(delBtn);
 
                 container.Add(pointRow);
@@ -579,30 +670,39 @@ namespace CNoom.DOTweenVisual.Editor
             _detailScrollView.Add(container);
         }
 
-        private void AddPathWaypoint(SerializedProperty waypointsProp, Label countLabel)
+        private void AddPathWaypoint(SerializedProperty waypointsProp, int pathType)
         {
             if (waypointsProp == null) return;
+            int step = GetWaypointStep(pathType);
+            int minCount = GetMinWaypointCount(pathType);
+
             Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/AddWaypoint"));
             _getSerializedObject()?.Update();
 
-            Vector3 lastPos = Vector3.zero;
-            if (waypointsProp.arraySize > 0)
+            for (int i = 0; i < step; i++)
             {
-                lastPos = waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value;
-            }
+                Vector3 lastPos = Vector3.zero;
+                if (waypointsProp.arraySize > 0)
+                {
+                    lastPos = waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1).vector3Value;
+                }
 
-            waypointsProp.InsertArrayElementAtIndex(waypointsProp.arraySize);
-            var newWp = waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1);
-            newWp.vector3Value = lastPos + new Vector3(1f, 0f, 0f);
+                waypointsProp.InsertArrayElementAtIndex(waypointsProp.arraySize);
+                var newWp = waypointsProp.GetArrayElementAtIndex(waypointsProp.arraySize - 1);
+                newWp.vector3Value = lastPos + new Vector3(1f, 0f, 0f);
+            }
             waypointsProp.serializedObject.ApplyModifiedProperties();
 
             _onRefreshDetail();
+            _onPathDataChanged?.Invoke();
         }
 
-        private void RemovePathWaypoint(SerializedProperty waypointsProp, int index)
+        private void RemovePathWaypoint(SerializedProperty waypointsProp, int index, int pathType)
         {
             if (waypointsProp == null || index < 0 || index >= waypointsProp.arraySize) return;
-            if (waypointsProp.arraySize <= 1)
+            int minCount = GetMinWaypointCount(pathType);
+
+            if (waypointsProp.arraySize <= minCount)
             {
                 DOTweenLog.Warning(L10n.Tr("Detail/MinWaypointsWarning"));
                 return;
@@ -614,6 +714,7 @@ namespace CNoom.DOTweenVisual.Editor
             waypointsProp.serializedObject.ApplyModifiedProperties();
 
             _onRefreshDetail();
+            _onPathDataChanged?.Invoke();
         }
 
         #endregion

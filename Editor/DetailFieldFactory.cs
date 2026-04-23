@@ -134,7 +134,7 @@ namespace CNoom.DOTweenVisual.Editor
         /// <summary>
         /// 创建路径类型下拉选择器（0=Linear, 1=CatmullRom, 2=CubicBezier）
         /// </summary>
-        public static VisualElement CreatePathTypeEnumField(SerializedProperty prop)
+        public static VisualElement CreatePathTypeEnumField(SerializedProperty prop, Action onChanged = null)
         {
             var options = new System.Collections.Generic.List<string> { L10n.Tr("PathOption/Linear"), L10n.Tr("PathOption/CatmullRom"), L10n.Tr("PathOption/CubicBezier") };
             int idx = Mathf.Clamp(prop.intValue, 0, options.Count - 1);
@@ -146,6 +146,7 @@ namespace CNoom.DOTweenVisual.Editor
                 prop.intValue = options.IndexOf(evt.newValue);
                 if (prop.intValue < 0) prop.intValue = 0;
                 prop.serializedObject.ApplyModifiedProperties();
+                onChanged?.Invoke();
             });
             return field;
         }
