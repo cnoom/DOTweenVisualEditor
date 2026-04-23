@@ -184,6 +184,7 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Detail/OnStart", "OnStart"},
                 {"Detail/OnComplete", "OnComplete"},
                 {"Detail/SyncTooltip", "从物体当前状态同步该值"},
+                {"Detail/SyncWaypointTooltip", "同步到物体当前位置"},
 
                 // === Path Options ===
                 {"PathOption/Linear", "Linear (直线)"},
@@ -394,6 +395,7 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Detail/OnStart", "OnStart"},
                 {"Detail/OnComplete", "OnComplete"},
                 {"Detail/SyncTooltip", "Sync this value from object's current state"},
+                {"Detail/SyncWaypointTooltip", "Sync to object's current position"},
 
                 // === Path Options ===
                 {"PathOption/Linear", "Linear"},

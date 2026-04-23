@@ -563,6 +563,25 @@ namespace CNoom.DOTweenVisual.Editor
                 delBtn.style.marginLeft = 2f;
                 pointRow.Add(delBtn);
 
+                // 同步按钮：将该路径点设为物体当前位置
+                var wpSyncBtn = new Button(() =>
+                {
+                    var target = GetStepTargetTransform();
+                    if (target == null) return;
+                    Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/SyncValue"));
+                    _getSerializedObject()?.Update();
+                    waypointsProp.GetArrayElementAtIndex(idx).vector3Value = target.position;
+                    waypointsProp.serializedObject.ApplyModifiedProperties();
+                    _onRefreshDetail();
+                    _onPathDataChanged?.Invoke();
+                })
+                {
+                    text = "⤓",
+                    tooltip = L10n.Tr("Detail/SyncWaypointTooltip")
+                };
+                wpSyncBtn.AddToClassList("inline-sync-button");
+                pointRow.Add(wpSyncBtn);
+
                 container.Add(pointRow);
             }
 
