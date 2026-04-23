@@ -421,8 +421,10 @@ namespace CNoom.DOTweenVisual.Tests
             Assert.IsTrue(_player.IsPlaying);
 
             // 模拟 OnDisable（Editor 测试环境会触发 ShouldRunBehaviour 断言，需忽略）
-            using (LogAssert.ignoreFailingMessages)
-                _player.SendMessage("OnDisable");
+            var wasIgnoring = LogAssert.ignoreFailingMessages;
+            LogAssert.ignoreFailingMessages = true;
+            _player.SendMessage("OnDisable");
+            LogAssert.ignoreFailingMessages = wasIgnoring;
             DOTween.ManualUpdate(0.1f, 0.1f);
 
             // 暂停后位置应不变
@@ -451,8 +453,10 @@ namespace CNoom.DOTweenVisual.Tests
             DOTween.ManualUpdate(0.1f, 0.1f);
 
             // 模拟 OnDisable（Editor 测试环境会触发 ShouldRunBehaviour 断言，需忽略）
-            using (LogAssert.ignoreFailingMessages)
-                _player.SendMessage("OnDisable");
+            var wasIgnoring = LogAssert.ignoreFailingMessages;
+            LogAssert.ignoreFailingMessages = true;
+            _player.SendMessage("OnDisable");
+            LogAssert.ignoreFailingMessages = wasIgnoring;
             DOTween.ManualUpdate(0.1f, 0.1f);
 
             Assert.IsFalse(_player.IsPlaying, "DisableAction.Stop 应停止动画");
@@ -479,8 +483,10 @@ namespace CNoom.DOTweenVisual.Tests
             float posBefore = _gameObject.transform.position.x;
 
             // 模拟 OnDisable（Editor 测试环境会触发 ShouldRunBehaviour 断言，需忽略）
-            using (LogAssert.ignoreFailingMessages)
-                _player.SendMessage("OnDisable");
+            var wasIgnoring = LogAssert.ignoreFailingMessages;
+            LogAssert.ignoreFailingMessages = true;
+            _player.SendMessage("OnDisable");
+            LogAssert.ignoreFailingMessages = wasIgnoring;
             DOTween.ManualUpdate(0.1f, 0.1f);
 
             float posAfter = _gameObject.transform.position.x;
@@ -511,8 +517,10 @@ namespace CNoom.DOTweenVisual.Tests
             float posBefore = _gameObject.transform.position.x;
 
             // 模拟 OnEnable
-            using (LogAssert.ignoreFailingMessages)
-                _player.SendMessage("OnEnable");
+            var wasIgnoring = LogAssert.ignoreFailingMessages;
+            LogAssert.ignoreFailingMessages = true;
+            _player.SendMessage("OnEnable");
+            LogAssert.ignoreFailingMessages = wasIgnoring;
             DOTween.ManualUpdate(0.2f, 0.2f);
 
             float posAfter = _gameObject.transform.position.x;
@@ -541,8 +549,10 @@ namespace CNoom.DOTweenVisual.Tests
             Assert.Greater(posBefore, 0f, "应已移动");
 
             // 模拟 OnEnable → Stop + Play
-            using (LogAssert.ignoreFailingMessages)
-                _player.SendMessage("OnEnable");
+            var wasIgnoring2 = LogAssert.ignoreFailingMessages;
+            LogAssert.ignoreFailingMessages = true;
+            _player.SendMessage("OnEnable");
+            LogAssert.ignoreFailingMessages = wasIgnoring2;
             DOTween.ManualUpdate(0.01f, 0.01f);
 
             Assert.IsTrue(_player.IsPlaying, "OnEnableRestart 应重新播放");
