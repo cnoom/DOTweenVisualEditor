@@ -114,6 +114,14 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Undo/MoveWaypoint", "移动路径点"},
                 {"Undo/ResetPreviewState", "重置预览状态"},
 
+                // === Player Settings ===
+                {"Settings/Title", "播放设置"},
+                {"Settings/PlayTrigger", "播放触发"},
+                {"Settings/DisableAction", "禁用行为"},
+                {"Settings/Loops", "循环次数"},
+                {"Settings/LoopType", "循环类型"},
+                {"Settings/DebugMode", "调试模式"},
+
                 // === Detail Panel ===
                 {"Detail/SelectStep", "请在左侧选择一个步骤"},
                 {"Detail/Type", "类型"},
@@ -314,6 +322,14 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Undo/PasteStep", "Paste Tween Step"},
                 {"Undo/MoveWaypoint", "Move Waypoint"},
                 {"Undo/ResetPreviewState", "Reset Preview State"},
+
+                // === Player Settings ===
+                {"Settings/Title", "Player Settings"},
+                {"Settings/PlayTrigger", "Play Trigger"},
+                {"Settings/DisableAction", "On Disable"},
+                {"Settings/Loops", "Loops"},
+                {"Settings/LoopType", "Loop Type"},
+                {"Settings/DebugMode", "Debug Mode"},
 
                 // === Detail Panel ===
                 {"Detail/SelectStep", "Select a step on the left"},

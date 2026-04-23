@@ -302,6 +302,18 @@ namespace CNoom.DOTweenVisual.Editor
             leftPanel.Add(leftHeader);
 
             _listController.CreateListView(leftPanel);
+
+            // --- 左侧底部：播放设置 ---
+            var settingsFoldout = new Foldout
+            {
+                text = L10n.Tr("Settings/Title"),
+                value = true
+            };
+            settingsFoldout.AddToClassList("player-settings-foldout");
+            _settingsFoldout = settingsFoldout;
+            BuildPlayerSettings(settingsFoldout);
+            leftPanel.Add(settingsFoldout);
+
             splitView.Add(leftPanel);
 
             // --- 右侧：步骤详情 ---
@@ -335,6 +347,7 @@ namespace CNoom.DOTweenVisual.Editor
             {
                 _listController?.RebuildStepList();
                 _detailPanelController?.RefreshDetailPanel();
+                RebuildPlayerSettings();
             }
         }
 
@@ -407,6 +420,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             _listController?.RebuildStepList();
             _detailPanelController?.RefreshDetailPanel();
+            RebuildPlayerSettings();
             UpdatePathVisualizer();
         }
 
@@ -549,6 +563,78 @@ namespace CNoom.DOTweenVisual.Editor
                 _clipboard?.PasteStep();
                 evt.StopPropagation();
             }
+        }
+
+        #endregion
+
+        #region 播放设置面板
+
+        private Foldout _settingsFoldout;
+
+        private void BuildPlayerSettings(Foldout container)
+        {
+            container.Clear();
+
+            if (targetPlayer == null || serializedObject == null)
+            {
+                container.SetEnabled(false);
+                return;
+            }
+
+            container.SetEnabled(true);
+            serializedObject.Update();
+
+            var playTriggerProp = serializedObject.FindProperty("_playTrigger");
+            var disableActionProp = serializedObject.FindProperty("_disableAction");
+            var loopsProp = serializedObject.FindProperty("_loops");
+            var loopTypeProp = serializedObject.FindProperty("_loopType");
+            var debugModeProp = serializedObject.FindProperty("_debugMode");
+
+            AddSettingsField(container, L10n.Tr("Settings/PlayTrigger"),
+                DetailFieldFactory.CreateEnumField(playTriggerProp, typeof(PlayTrigger)));
+            AddSettingsField(container, L10n.Tr("Settings/DisableAction"),
+                DetailFieldFactory.CreateEnumField(disableActionProp, typeof(DisableAction)));
+            AddSettingsField(container, L10n.Tr("Settings/Loops"),
+                CreateLoopsField(loopsProp));
+            AddSettingsField(container, L10n.Tr("Settings/LoopType"),
+                DetailFieldFactory.CreateEnumField(loopTypeProp, typeof(LoopType)));
+            AddSettingsField(container, L10n.Tr("Settings/DebugMode"),
+                DetailFieldFactory.CreateToggle(debugModeProp));
+        }
+
+        private IntegerField CreateLoopsField(SerializedProperty prop)
+        {
+            var field = new IntegerField { value = prop.intValue };
+            field.RegisterValueChangedCallback(evt =>
+            {
+                if (!DetailFieldFactory.IsValidProperty(prop)) return;
+                Undo.RecordObject(targetPlayer, L10n.Tr("Settings/Title"));
+                serializedObject.Update();
+                prop.intValue = evt.newValue;
+                serializedObject.ApplyModifiedProperties();
+            });
+            return field;
+        }
+
+        private static void AddSettingsField(VisualElement container, string label, VisualElement field)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("detail-field-row");
+
+            var labelEl = new Label(label);
+            labelEl.AddToClassList("detail-field-label");
+            row.Add(labelEl);
+
+            field.AddToClassList("detail-field-value");
+            row.Add(field);
+
+            container.Add(row);
+        }
+
+        private void RebuildPlayerSettings()
+        {
+            if (_settingsFoldout != null)
+                BuildPlayerSettings(_settingsFoldout);
         }
 
         #endregion
