@@ -111,9 +111,6 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 确保清理旧的预览状态
             CleanupSequence();
-            // 仅在之前有预览状态时才调用 Stop，避免清除 DOTween 初始化后的内部回调
-            // Stop() 文档注明会 "clears any callback"，域重载后 DOTween 刚初始化，
-            // 此时调用 Stop() 可能破坏 DOTween 内部状态，导致后续预览卡顿
             if (State != PreviewState.None)
             {
                 DOTweenEditorPreview.Stop();
@@ -128,13 +125,14 @@ namespace CNoom.DOTweenVisual.Editor
                 SaveSnapshots();
             }
 
-            DOTweenEditorPreview.Start();
-
             try
             {
+                // DOTween 官方文档要求的调用顺序：先创建 Tween → Prepare → 再 Start
+                // PrepareTweenForPreview(tween, andPlay:true) 会设置编辑器预览模式并自动播放
                 _previewSequence = DOTween.Sequence();
                 BuildPreviewSequence();
                 DOTweenEditorPreview.PrepareTweenForPreview(_previewSequence);
+                DOTweenEditorPreview.Start();
 
                 _previewSequence.OnComplete(() =>
                 {
@@ -152,7 +150,12 @@ namespace CNoom.DOTweenVisual.Editor
                     }
                 });
 
-                _previewSequence.Play();
+                // PrepareTweenForPreview(andPlay:true) 已调用 Play，此处确保播放
+                if (!_previewSequence.IsPlaying())
+                {
+                    _previewSequence.Play();
+                }
+
                 State = PreviewState.Playing;
                 StateChanged?.Invoke();
             }
