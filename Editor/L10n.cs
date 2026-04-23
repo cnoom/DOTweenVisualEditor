@@ -183,6 +183,7 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Detail/CustomCurve", "自定义曲线"},
                 {"Detail/OnStart", "OnStart"},
                 {"Detail/OnComplete", "OnComplete"},
+                {"Detail/SyncTooltip", "从物体当前状态同步该值"},
 
                 // === Path Options ===
                 {"PathOption/Linear", "Linear (直线)"},
@@ -392,6 +393,7 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Detail/CustomCurve", "Custom Curve"},
                 {"Detail/OnStart", "OnStart"},
                 {"Detail/OnComplete", "OnComplete"},
+                {"Detail/SyncTooltip", "Sync this value from object's current state"},
 
                 // === Path Options ===
                 {"PathOption/Linear", "Linear"},

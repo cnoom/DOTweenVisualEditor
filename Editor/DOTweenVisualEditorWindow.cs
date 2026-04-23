@@ -327,10 +327,6 @@ namespace CNoom.DOTweenVisual.Editor
             rightTitle.AddToClassList("panel-title");
             rightHeader.Add(rightTitle);
 
-            var syncButton = new Button(() => _detailPanelController.OnSyncClicked()) { text = L10n.Tr("Window/SyncValue") };
-            syncButton.AddToClassList("sync-button");
-            rightHeader.Add(syncButton);
-
             rightPanel.Add(rightHeader);
 
             _detailPanelController.CreateDetailPanel(rightPanel);

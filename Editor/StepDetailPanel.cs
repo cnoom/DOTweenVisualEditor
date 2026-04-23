@@ -144,6 +144,10 @@ namespace CNoom.DOTweenVisual.Editor
 
             var type = (TweenStepType)typeProp.enumValueIndex;
 
+            // 预计算同步值读取函数
+            var targetValueReader = GetTargetValueReader(stepProperty);
+            var startValueReader = GetStartValueReader(stepProperty);
+
             // 回调委托
             Action onTypeChanged = () => { _onRebuildList(); _onRefreshDetail(); };
             Action onEnumRebuild = () => { _onRebuildList(); _onRefreshDetail(); };
@@ -180,11 +184,11 @@ namespace CNoom.DOTweenVisual.Editor
                 if (useStartValueProp.boolValue)
                 {
                     string startLabel = type == TweenStepType.Rotate ? L10n.Tr("Detail/StartRotation") : L10n.Tr("Detail/StartValue");
-                    AddDetailField(startLabel, DetailFieldFactory.CreateVector3Field(startVectorProp));
+                    AddSyncableField(startLabel, DetailFieldFactory.CreateVector3Field(startVectorProp), startVectorProp, startValueReader);
                 }
 
                 string targetLabel = type == TweenStepType.Rotate ? L10n.Tr("Detail/TargetValueEuler") : L10n.Tr("Detail/TargetValue");
-                AddDetailField(targetLabel, DetailFieldFactory.CreateVector3Field(targetVectorProp));
+                AddSyncableField(targetLabel, DetailFieldFactory.CreateVector3Field(targetVectorProp), targetVectorProp, targetValueReader);
             }
             else if (type == TweenStepType.AnchorMove || type == TweenStepType.SizeDelta)
             {
@@ -199,11 +203,11 @@ namespace CNoom.DOTweenVisual.Editor
                 if (useStartValueProp.boolValue)
                 {
                     string startLabel = type == TweenStepType.AnchorMove ? L10n.Tr("Detail/StartAnchorPos") : L10n.Tr("Detail/StartSize");
-                    AddDetailField(startLabel, DetailFieldFactory.CreateVector3Field(startVectorProp));
+                    AddSyncableField(startLabel, DetailFieldFactory.CreateVector3Field(startVectorProp), startVectorProp, startValueReader);
                 }
 
                 string targetLabel = type == TweenStepType.AnchorMove ? L10n.Tr("Detail/TargetAnchorPos") : L10n.Tr("Detail/TargetSize");
-                AddDetailField(targetLabel, DetailFieldFactory.CreateVector3Field(targetVectorProp));
+                AddSyncableField(targetLabel, DetailFieldFactory.CreateVector3Field(targetVectorProp), targetVectorProp, targetValueReader);
             }
             else if (type == TweenStepType.Color)
             {
@@ -216,10 +220,10 @@ namespace CNoom.DOTweenVisual.Editor
 
                 if (useStartColorProp.boolValue)
                 {
-                    AddDetailField(L10n.Tr("Detail/StartColor"), DetailFieldFactory.CreateColorField(startColorProp));
+                    AddSyncableField(L10n.Tr("Detail/StartColor"), DetailFieldFactory.CreateColorField(startColorProp), startColorProp, startValueReader);
                 }
 
-                AddDetailField(L10n.Tr("Detail/TargetColor"), DetailFieldFactory.CreateColorField(targetColorProp));
+                AddSyncableField(L10n.Tr("Detail/TargetColor"), DetailFieldFactory.CreateColorField(targetColorProp), targetColorProp, targetValueReader);
             }
             else if (type == TweenStepType.Fade)
             {
@@ -232,10 +236,10 @@ namespace CNoom.DOTweenVisual.Editor
 
                 if (useStartFloatProp.boolValue)
                 {
-                    AddDetailField(L10n.Tr("Detail/StartAlpha"), DetailFieldFactory.CreateFloatField(startFloatProp));
+                    AddSyncableField(L10n.Tr("Detail/StartAlpha"), DetailFieldFactory.CreateFloatField(startFloatProp), startFloatProp, startValueReader);
                 }
 
-                AddDetailField(L10n.Tr("Detail/TargetAlpha"), DetailFieldFactory.CreateFloatField(targetFloatProp));
+                AddSyncableField(L10n.Tr("Detail/TargetAlpha"), DetailFieldFactory.CreateFloatField(targetFloatProp), targetFloatProp, targetValueReader);
             }
             else if (type == TweenStepType.Jump)
             {
@@ -247,10 +251,10 @@ namespace CNoom.DOTweenVisual.Editor
 
                 if (useStartValueProp.boolValue)
                 {
-                    AddDetailField(L10n.Tr("Detail/StartPosition"), DetailFieldFactory.CreateVector3Field(startVectorProp));
+                    AddSyncableField(L10n.Tr("Detail/StartPosition"), DetailFieldFactory.CreateVector3Field(startVectorProp), startVectorProp, startValueReader);
                 }
 
-                AddDetailField(L10n.Tr("Detail/TargetPosition"), DetailFieldFactory.CreateVector3Field(targetVectorProp));
+                AddSyncableField(L10n.Tr("Detail/TargetPosition"), DetailFieldFactory.CreateVector3Field(targetVectorProp), targetVectorProp, targetValueReader);
 
                 AddSeparator();
 
@@ -291,10 +295,10 @@ namespace CNoom.DOTweenVisual.Editor
 
                 if (useStartFloatProp.boolValue)
                 {
-                    AddDetailField(L10n.Tr("Detail/StartValue"), DetailFieldFactory.CreateFloatField(startFloatProp));
+                    AddSyncableField(L10n.Tr("Detail/StartValue"), DetailFieldFactory.CreateFloatField(startFloatProp), startFloatProp, startValueReader);
                 }
 
-                AddDetailField(L10n.Tr("Detail/TargetValue"), DetailFieldFactory.CreateFloatField(targetFloatProp));
+                AddSyncableField(L10n.Tr("Detail/TargetValue"), DetailFieldFactory.CreateFloatField(targetFloatProp), targetFloatProp, targetValueReader);
             }
             else if (type == TweenStepType.DOPath)
             {
@@ -306,7 +310,7 @@ namespace CNoom.DOTweenVisual.Editor
 
                 if (useStartValueProp.boolValue)
                 {
-                    AddDetailField(L10n.Tr("Detail/StartPosition"), DetailFieldFactory.CreateVector3Field(startVectorProp));
+                    AddSyncableField(L10n.Tr("Detail/StartPosition"), DetailFieldFactory.CreateVector3Field(startVectorProp), startVectorProp, startValueReader);
                 }
 
                 var waypointsProp = stepProperty.FindPropertyRelative("PathWaypoints");
@@ -607,71 +611,137 @@ namespace CNoom.DOTweenVisual.Editor
         #region 同步
 
         /// <summary>
-        /// 同步当前选中步骤的目标值为物体当前值
+        /// 同步枚举：标识要同步的是目标值还是起始值
         /// </summary>
-        public void OnSyncClicked()
+        private enum SyncTarget
+        {
+            TargetValue,
+            StartValue
+        }
+
+        /// <summary>
+        /// 获取当前步骤中目标 Transform
+        /// </summary>
+        private Transform GetStepTargetTransform()
         {
             int selectedIndex = _getSelectedIndex();
             var stepsProperty = _getStepsProperty();
-            if (selectedIndex < 0 || stepsProperty == null || selectedIndex >= stepsProperty.arraySize) return;
+            if (selectedIndex < 0 || stepsProperty == null || selectedIndex >= stepsProperty.arraySize) return null;
 
-            var targetPlayer = _getTargetPlayer();
-            Undo.RecordObject(targetPlayer, L10n.Tr("Undo/SyncValue"));
-            _getSerializedObject()?.Update();
             var stepProperty = stepsProperty.GetArrayElementAtIndex(selectedIndex);
-            var type = (TweenStepType)stepProperty.FindPropertyRelative("Type").enumValueIndex;
             var targetTransformProp = stepProperty.FindPropertyRelative("TargetTransform");
             var target = targetTransformProp.objectReferenceValue as Transform;
-            if (target == null && targetPlayer != null) target = targetPlayer.transform;
-            if (target == null) return;
+            if (target == null)
+            {
+                var player = _getTargetPlayer();
+                if (player != null) target = player.transform;
+            }
+            return target;
+        }
 
+        /// <summary>
+        /// 创建内联同步按钮，点击后将物体当前值写入指定 SerializedProperty
+        /// </summary>
+        private Button CreateInlineSyncButton(SerializedProperty prop, System.Func<Transform, object> readCurrentValue)
+        {
+            var btn = new Button(() =>
+            {
+                var target = GetStepTargetTransform();
+                if (target == null) return;
+
+                var value = readCurrentValue(target);
+                if (value == null) return;
+
+                Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/SyncValue"));
+                _getSerializedObject()?.Update();
+
+                if (value is Vector3 v3)
+                    prop.vector3Value = v3;
+                else if (value is Color col)
+                    prop.colorValue = col;
+                else if (value is float f)
+                    prop.floatValue = f;
+
+                prop.serializedObject.ApplyModifiedProperties();
+                _onRefreshDetail();
+            })
+            {
+                text = "⤓",
+                tooltip = L10n.Tr("Detail/SyncTooltip")
+            };
+            btn.AddToClassList("inline-sync-button");
+            return btn;
+        }
+
+        /// <summary>
+        /// 根据动画类型获取当前目标值的读取函数
+        /// </summary>
+        private System.Func<Transform, object> GetTargetValueReader(SerializedProperty stepProperty)
+        {
+            var type = (TweenStepType)stepProperty.FindPropertyRelative("Type").enumValueIndex;
             switch (type)
             {
                 case TweenStepType.Move:
                     var moveSpace = (MoveSpace)stepProperty.FindPropertyRelative("MoveSpace").enumValueIndex;
-                    stepProperty.FindPropertyRelative("TargetVector").vector3Value =
-                        moveSpace == MoveSpace.Local ? target.localPosition : target.position;
-                    break;
+                    return t => moveSpace == MoveSpace.Local ? (object)t.localPosition : t.position;
                 case TweenStepType.Rotate:
                     var rotateSpace = (RotateSpace)stepProperty.FindPropertyRelative("RotateSpace").enumValueIndex;
-                    stepProperty.FindPropertyRelative("TargetVector").vector3Value =
-                        rotateSpace == RotateSpace.Local ? target.localRotation.eulerAngles : target.rotation.eulerAngles;
-                    break;
+                    return t => rotateSpace == RotateSpace.Local ? (object)t.localRotation.eulerAngles : t.rotation.eulerAngles;
                 case TweenStepType.Scale:
-                    stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.localScale;
-                    break;
+                    return t => t.localScale;
                 case TweenStepType.Color:
-                    if (TweenValueHelper.TryGetColor(target, out Color currentColor))
-                        stepProperty.FindPropertyRelative("TargetColor").colorValue = currentColor;
-                    break;
+                    return t => TweenValueHelper.TryGetColor(t, out var c) ? (object)c : null;
                 case TweenStepType.Fade:
-                    if (TweenValueHelper.TryGetAlpha(target, out float currentAlpha))
-                        stepProperty.FindPropertyRelative("TargetFloat").floatValue = currentAlpha;
-                    break;
+                    return t => TweenValueHelper.TryGetAlpha(t, out var a) ? (object)a : null;
                 case TweenStepType.AnchorMove:
-                    if (TweenValueHelper.TryGetRectTransform(target, out var rt1))
-                        stepProperty.FindPropertyRelative("TargetVector").vector3Value = rt1.anchoredPosition;
-                    break;
+                    return t => TweenValueHelper.TryGetRectTransform(t, out var rt) ? (object)(Vector3)rt.anchoredPosition : null;
                 case TweenStepType.SizeDelta:
-                    if (TweenValueHelper.TryGetRectTransform(target, out var rt2))
-                        stepProperty.FindPropertyRelative("TargetVector").vector3Value = rt2.sizeDelta;
-                    break;
+                    return t => TweenValueHelper.TryGetRectTransform(t, out var rt) ? (object)(Vector3)rt.sizeDelta : null;
                 case TweenStepType.Jump:
-                    stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.position;
-                    break;
+                    return t => t.position;
                 case TweenStepType.FillAmount:
-                    var image = target.GetComponent<UnityEngine.UI.Image>();
-                    if (image != null)
-                        stepProperty.FindPropertyRelative("TargetFloat").floatValue = image.fillAmount;
-                    break;
+                    return t =>
+                    {
+                        var img = t.GetComponent<UnityEngine.UI.Image>();
+                        return img != null ? (object)img.fillAmount : null;
+                    };
                 case TweenStepType.DOPath:
-                    stepProperty.FindPropertyRelative("TargetVector").vector3Value = target.position;
-                    break;
+                    return t => t.position;
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// 根据动画类型获取起始值的读取函数（起始值=目标值，概念上起始值就是动画开始时的"当前值"）
+        /// </summary>
+        private System.Func<Transform, object> GetStartValueReader(SerializedProperty stepProperty)
+        {
+            return GetTargetValueReader(stepProperty);
+        }
+
+        /// <summary>
+        /// 添加带内联同步按钮的字段行
+        /// </summary>
+        private void AddSyncableField(string label, VisualElement field, SerializedProperty prop, System.Func<Transform, object> valueReader)
+        {
+            var row = new VisualElement();
+            row.AddToClassList("detail-field-row");
+
+            var labelEl = new Label(label);
+            labelEl.AddToClassList("detail-field-label");
+            row.Add(labelEl);
+
+            field.AddToClassList("detail-field-value");
+            row.Add(field);
+
+            if (valueReader != null)
+            {
+                var syncBtn = CreateInlineSyncButton(prop, valueReader);
+                row.Add(syncBtn);
             }
 
-            stepsProperty.serializedObject.ApplyModifiedProperties();
-            _onRefreshDetail();
-            _onRebuildList();
+            _detailScrollView.Add(row);
         }
 
         #endregion
