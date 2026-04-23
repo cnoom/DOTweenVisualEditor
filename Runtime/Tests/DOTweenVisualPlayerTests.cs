@@ -387,5 +387,160 @@ namespace CNoom.DOTweenVisual.Tests
         }
 
         #endregion
+
+        #region 生命周期控制
+
+        [Test]
+        public void PlayTrigger_Manual_DoesNotAutoPlay()
+        {
+            // 默认 PlayTrigger.Manual，不自动播放
+            _player.AddStep(new TweenStepData
+            {
+                Type = TweenStepType.Move,
+                TargetVector = new Vector3(5f, 0f, 0f),
+                Duration = 1f
+            });
+
+            DOTween.ManualUpdate(0.1f, 0.1f);
+
+            Assert.IsFalse(_player.IsPlaying, "Manual 模式不应自动播放");
+        }
+
+        [Test]
+        public void DisableAction_Pause_PausesOnDisable()
+        {
+            _player.AddStep(new TweenStepData
+            {
+                Type = TweenStepType.Move,
+                TargetVector = new Vector3(10f, 0f, 0f),
+                Duration = 2f
+            });
+
+            _player.Play();
+            DOTween.ManualUpdate(0.1f, 0.1f);
+            Assert.IsTrue(_player.IsPlaying);
+
+            // 模拟 OnDisable
+            _player.SendMessage("OnDisable");
+            DOTween.ManualUpdate(0.1f, 0.1f);
+
+            // 暂停后位置应不变
+            float posAfterDisable = _gameObject.transform.position.x;
+            DOTween.ManualUpdate(0.5f, 0.5f);
+            Assert.AreEqual(posAfterDisable, _gameObject.transform.position.x, 0.01f,
+                "DisableAction.Pause 暂停后动画不应继续");
+        }
+
+        [Test]
+        public void DisableAction_Stop_StopsOnDisable()
+        {
+            _player.AddStep(new TweenStepData
+            {
+                Type = TweenStepType.Move,
+                TargetVector = new Vector3(10f, 0f, 0f),
+                Duration = 2f
+            });
+
+            _player.Play();
+            DOTween.ManualUpdate(0.1f, 0.1f);
+
+            // 模拟 OnDisable
+            _player.SendMessage("OnDisable");
+            DOTween.ManualUpdate(0.1f, 0.1f);
+
+            Assert.IsFalse(_player.IsPlaying, "DisableAction.Stop 应停止动画");
+        }
+
+        [Test]
+        public void DisableAction_None_DoesNotAffectAnimation()
+        {
+            // 通过反射设置 _disableAction = None
+            var field = typeof(DOTweenVisualPlayer).GetField("_disableAction",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            field.SetValue(_player, DisableAction.None);
+
+            _player.AddStep(new TweenStepData
+            {
+                Type = TweenStepType.Move,
+                TargetVector = new Vector3(10f, 0f, 0f),
+                Duration = 2f
+            });
+
+            _player.Play();
+            DOTween.ManualUpdate(0.1f, 0.1f);
+
+            float posBefore = _gameObject.transform.position.x;
+
+            // 模拟 OnDisable
+            _player.SendMessage("OnDisable");
+            DOTween.ManualUpdate(0.1f, 0.1f);
+
+            float posAfter = _gameObject.transform.position.x;
+            Assert.AreNotEqual(posBefore, posAfter, 0.01f,
+                "DisableAction.None 不应影响动画播放");
+        }
+
+        [Test]
+        public void OnEnableResume_ResumesPausedAnimation()
+        {
+            // 通过反射设置 _playTrigger
+            var field = typeof(DOTweenVisualPlayer).GetField("_playTrigger",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            field.SetValue(_player, PlayTrigger.OnEnableResume);
+
+            _player.AddStep(new TweenStepData
+            {
+                Type = TweenStepType.Move,
+                TargetVector = new Vector3(10f, 0f, 0f),
+                Duration = 2f
+            });
+
+            _player.Play();
+            DOTween.ManualUpdate(0.1f, 0.1f);
+            _player.Pause();
+            DOTween.ManualUpdate(0.1f, 0.1f);
+
+            float posBefore = _gameObject.transform.position.x;
+
+            // 模拟 OnEnable
+            _player.SendMessage("OnEnable");
+            DOTween.ManualUpdate(0.2f, 0.2f);
+
+            float posAfter = _gameObject.transform.position.x;
+            Assert.AreNotEqual(posBefore, posAfter, 0.01f,
+                "OnEnableResume 应恢复暂停的动画");
+        }
+
+        [Test]
+        public void OnEnableRestart_RestartsAnimation()
+        {
+            var field = typeof(DOTweenVisualPlayer).GetField("_playTrigger",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            field.SetValue(_player, PlayTrigger.OnEnableRestart);
+
+            _player.AddStep(new TweenStepData
+            {
+                Type = TweenStepType.Move,
+                TargetVector = new Vector3(10f, 0f, 0f),
+                Duration = 2f
+            });
+
+            _player.Play();
+            DOTween.ManualUpdate(0.5f, 0.5f);
+
+            float posBefore = _gameObject.transform.position.x;
+            Assert.Greater(posBefore, 0f, "应已移动");
+
+            // 模拟 OnEnable → Stop + Play
+            _player.SendMessage("OnEnable");
+            DOTween.ManualUpdate(0.01f, 0.01f);
+
+            Assert.IsTrue(_player.IsPlaying, "OnEnableRestart 应重新播放");
+
+            // 推进完成
+            SimulateTimeSync(2.5f);
+        }
+
+        #endregion
     }
 }

@@ -415,19 +415,19 @@ namespace CNoom.DOTweenVisual.Components
         #region 编辑器调试
 
 #if UNITY_EDITOR
-        [ContextMenu("播放")]
+        [ContextMenu("Play")]
         private void ContextMenuPlay() => Play();
 
-        [ContextMenu("停止")]
+        [ContextMenu("Stop")]
         private void ContextMenuStop() => Stop();
 
-        [ContextMenu("暂停")]
+        [ContextMenu("Pause")]
         private void ContextMenuPause() => Pause();
 
-        [ContextMenu("重播")]
+        [ContextMenu("Restart")]
         private void ContextMenuRestart() => Restart();
 
-        [ContextMenu("完成")]
+        [ContextMenu("Complete")]
         private void ContextMenuComplete() => Complete();
 #endif
 

@@ -14,6 +14,7 @@ A visual editor for DOTween, providing Unity developers with an intuitive and ef
 - **14 Animation Types** - Move, Rotate, Scale, Color, Fade, AnchorMove, SizeDelta, Jump, Punch, Shake, FillAmount, DOPath, Delay, Callback
 - **Flexible Orchestration** - Append (sequential), Join (parallel), Insert (point-in-time) execution modes
 - **Path Animation** - DOPath supports Linear / CatmullRom / CubicBezier paths with visual waypoint editing
+- **Lifecycle Control** - Configurable play trigger (Manual/OnAwake/OnStart/OnEnableRestart/OnEnableResume) and disable behavior (Pause/Stop/None)
 - **Async Await** - `PlayAsync()` returns TweenAwaitable, supporting coroutine yield and UniTask await
 - **Component Validation** - Automatically checks if target objects meet the component requirements for each animation type
 - **Copy & Paste** - Ctrl+C/V to copy/paste steps, Ctrl+D for quick duplication
@@ -91,6 +92,8 @@ Runtime/
     ├── TweenStepData.cs           # Animation step data
     ├── TweenStepType.cs           # Animation type enum
     ├── ExecutionMode.cs           # Execution mode enum
+    ├── PlayTrigger.cs             # Play trigger enum
+    ├── DisableAction.cs           # Disable action enum
     ├── TransformTarget.cs         # MoveSpace/RotateSpace/PunchTarget/ShakeTarget enums
     ├── TweenFactory.cs            # Tween creation factory
     ├── TweenStepRequirement.cs    # Component requirement validation

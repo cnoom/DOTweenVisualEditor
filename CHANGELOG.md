@@ -30,12 +30,26 @@
 - PathVisualizer GUIStyle 缓存为延迟初始化属性，避免每帧 GC 分配
 - DOTweenPreviewManager catch 保留完整异常堆栈信息
 
+## [1.2.0] - 2026-04-23
+
+### 新增
+
+- **生命周期控制** - DOTweenVisualPlayer 播放/停止行为完全可配置
+  - **PlayTrigger** 枚举：Manual / OnAwake / OnStart / OnEnableRestart / OnEnableResume
+  - **DisableAction** 枚举：Pause / Stop / None
+  - 移除旧的 `_playOnStart` bool 字段，由枚举替代
+  - 完整实现 Awake / Start / OnEnable / OnDisable / OnDestroy 生命周期回调
+
+### 变更
+
+- 移除 `DOTweenVisualPlayer._playOnStart`，替换为 `_playTrigger` + `_disableAction` 枚举字段
+
 ## [1.0.0] - 2026-04-19
 
 ### 新增
 
 - **DOTweenVisualPlayer** - 主播放器组件，支持 Play/Stop/Pause/Resume/Restart/Complete API
-  - PlayOnStart 自动播放、Loops 循环次数、LoopType 循环类型设置
+  - PlayTrigger 播放触发时机、DisableAction 禁用行为、Loops 循环次数、LoopType 循环类型设置
   - 链式事件回调 API（OnStart / OnComplete / OnUpdate / OnDone）
   - PlayAsync() 异步播放，返回 TweenAwaitable 只读等待包装器
 - **TweenAwaitable** - 基于 CustomYieldInstruction 的异步等待包装器
