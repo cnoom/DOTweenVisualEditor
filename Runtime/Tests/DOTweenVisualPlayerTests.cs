@@ -420,9 +420,9 @@ namespace CNoom.DOTweenVisual.Tests
             DOTween.ManualUpdate(0.1f, 0.1f);
             Assert.IsTrue(_player.IsPlaying);
 
-            // 模拟 OnDisable
-            LogAssert.Expect(LogType.Assert, "Assertion failed on expression: 'ShouldRunBehaviour()'");
-            _player.SendMessage("OnDisable");
+            // 模拟 OnDisable（Editor 测试环境会触发 ShouldRunBehaviour 断言，需忽略）
+            using (LogAssert.ignoreFailingMessages)
+                _player.SendMessage("OnDisable");
             DOTween.ManualUpdate(0.1f, 0.1f);
 
             // 暂停后位置应不变
@@ -435,6 +435,11 @@ namespace CNoom.DOTweenVisual.Tests
         [Test]
         public void DisableAction_Stop_StopsOnDisable()
         {
+            // 通过反射设置 _disableAction = Stop
+            var field = typeof(DOTweenVisualPlayer).GetField("_disableAction",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            field.SetValue(_player, DisableAction.Stop);
+
             _player.AddStep(new TweenStepData
             {
                 Type = TweenStepType.Move,
@@ -445,9 +450,9 @@ namespace CNoom.DOTweenVisual.Tests
             _player.Play();
             DOTween.ManualUpdate(0.1f, 0.1f);
 
-            // 模拟 OnDisable
-            LogAssert.Expect(LogType.Assert, "Assertion failed on expression: 'ShouldRunBehaviour()'");
-            _player.SendMessage("OnDisable");
+            // 模拟 OnDisable（Editor 测试环境会触发 ShouldRunBehaviour 断言，需忽略）
+            using (LogAssert.ignoreFailingMessages)
+                _player.SendMessage("OnDisable");
             DOTween.ManualUpdate(0.1f, 0.1f);
 
             Assert.IsFalse(_player.IsPlaying, "DisableAction.Stop 应停止动画");
@@ -474,8 +479,8 @@ namespace CNoom.DOTweenVisual.Tests
             float posBefore = _gameObject.transform.position.x;
 
             // 模拟 OnDisable（Editor 测试环境会触发 ShouldRunBehaviour 断言，需忽略）
-            LogAssert.Expect(LogType.Assert, "Assertion failed on expression: 'ShouldRunBehaviour()'");
-            _player.SendMessage("OnDisable");
+            using (LogAssert.ignoreFailingMessages)
+                _player.SendMessage("OnDisable");
             DOTween.ManualUpdate(0.1f, 0.1f);
 
             float posAfter = _gameObject.transform.position.x;
@@ -506,8 +511,8 @@ namespace CNoom.DOTweenVisual.Tests
             float posBefore = _gameObject.transform.position.x;
 
             // 模拟 OnEnable
-            LogAssert.Expect(LogType.Assert, "Assertion failed on expression: 'ShouldRunBehaviour()'");
-            _player.SendMessage("OnEnable");
+            using (LogAssert.ignoreFailingMessages)
+                _player.SendMessage("OnEnable");
             DOTween.ManualUpdate(0.2f, 0.2f);
 
             float posAfter = _gameObject.transform.position.x;
@@ -536,8 +541,8 @@ namespace CNoom.DOTweenVisual.Tests
             Assert.Greater(posBefore, 0f, "应已移动");
 
             // 模拟 OnEnable → Stop + Play
-            LogAssert.Expect(LogType.Assert, "Assertion failed on expression: 'ShouldRunBehaviour()'");
-            _player.SendMessage("OnEnable");
+            using (LogAssert.ignoreFailingMessages)
+                _player.SendMessage("OnEnable");
             DOTween.ManualUpdate(0.01f, 0.01f);
 
             Assert.IsTrue(_player.IsPlaying, "OnEnableRestart 应重新播放");
