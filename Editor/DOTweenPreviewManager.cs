@@ -109,11 +109,9 @@ namespace CNoom.DOTweenVisual.Editor
         {
             if (_targetPlayer == null || _targetPlayer.StepCount == 0) return;
 
-            // 确保清理旧的预览状态（编译后 DOTween 内部可能残留僵尸 Tween）
+            // 确保清理旧的预览状态
             CleanupSequence();
             DOTweenEditorPreview.Stop();
-            // 清除 DOTween 缓冲池中可能残留的僵尸 Tween（编译后域重载不会清除 DOTween 缓存池）
-            DOTween.PurgeAll();
 
             if (_snapshots.Count > 0)
             {
