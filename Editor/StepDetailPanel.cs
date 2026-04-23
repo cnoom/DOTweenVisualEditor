@@ -551,6 +551,13 @@ namespace CNoom.DOTweenVisual.Editor
                 zField.style.width = Length.Percent(32f);
                 pointRow.Add(zField);
 
+                // 同步按钮：将该路径点设为物体当前位置
+                var wpProp = waypointsProp.GetArrayElementAtIndex(idx);
+                var wpSyncBtn = CreateInlineSyncButton(wpProp, t => (object)t.position);
+                wpSyncBtn.EnableInClassList("inline-sync-button", true);
+                wpSyncBtn.EnableInClassList("inline-sync-button--compact", true);
+                pointRow.Add(wpSyncBtn);
+
                 var delBtn = new Button(() =>
                 {
                     RemovePathWaypoint(waypointsProp, idx);
@@ -562,25 +569,6 @@ namespace CNoom.DOTweenVisual.Editor
                 delBtn.style.flexShrink = 0;
                 delBtn.style.marginLeft = 2f;
                 pointRow.Add(delBtn);
-
-                // 同步按钮：将该路径点设为物体当前位置
-                var wpSyncBtn = new Button(() =>
-                {
-                    var target = GetStepTargetTransform();
-                    if (target == null) return;
-                    Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/SyncValue"));
-                    _getSerializedObject()?.Update();
-                    waypointsProp.GetArrayElementAtIndex(idx).vector3Value = target.position;
-                    waypointsProp.serializedObject.ApplyModifiedProperties();
-                    _onRefreshDetail();
-                    _onPathDataChanged?.Invoke();
-                })
-                {
-                    text = "⤓",
-                    tooltip = L10n.Tr("Detail/SyncWaypointTooltip")
-                };
-                wpSyncBtn.AddToClassList("inline-sync-button");
-                pointRow.Add(wpSyncBtn);
 
                 container.Add(pointRow);
             }
