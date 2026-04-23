@@ -232,6 +232,18 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Clipboard/Empty", "剪贴板为空，请先复制一个步骤"},
                 {"Clipboard/Pasted", "已粘贴步骤"},
 
+                // === Lifecycle ===
+                {"Lifecycle/PlayTrigger", "播放触发"},
+                {"Lifecycle/Manual", "手动"},
+                {"Lifecycle/OnAwake", "Awake 时播放"},
+                {"Lifecycle/OnStart", "Start 时播放"},
+                {"Lifecycle/OnEnableRestart", "Enable 时重新播放"},
+                {"Lifecycle/OnEnableResume", "Enable 时继续播放"},
+                {"Lifecycle/DisableAction", "禁用时行为"},
+                {"Lifecycle/Pause", "暂停"},
+                {"Lifecycle/Stop", "停止"},
+                {"Lifecycle/None", "无操作"},
+
                 // === Language Menu ===
                 {"Menu/Language", "语言/Language"},
                 {"Menu/Chinese", "中文 (简体)"},
@@ -420,6 +432,18 @@ namespace CNoom.DOTweenVisual.Editor
                 {"Clipboard/Copied", "Copied step {0}"},
                 {"Clipboard/Empty", "Clipboard is empty, copy a step first"},
                 {"Clipboard/Pasted", "Step pasted"},
+
+                // === Lifecycle ===
+                {"Lifecycle/PlayTrigger", "Play Trigger"},
+                {"Lifecycle/Manual", "Manual"},
+                {"Lifecycle/OnAwake", "On Awake"},
+                {"Lifecycle/OnStart", "On Start"},
+                {"Lifecycle/OnEnableRestart", "On Enable (Restart)"},
+                {"Lifecycle/OnEnableResume", "On Enable (Resume)"},
+                {"Lifecycle/DisableAction", "On Disable"},
+                {"Lifecycle/Pause", "Pause"},
+                {"Lifecycle/Stop", "Stop"},
+                {"Lifecycle/None", "None"},
 
                 // === Language Menu ===
                 {"Menu/Language", "语言/Language"},

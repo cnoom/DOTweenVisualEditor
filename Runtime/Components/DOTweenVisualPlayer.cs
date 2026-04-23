@@ -21,9 +21,13 @@ namespace CNoom.DOTweenVisual.Components
         private List<TweenStepData> _steps = new();
 
         [Header("播放设置")]
-        [Tooltip("游戏开始时自动播放")]
+        [Tooltip("播放触发时机")]
         [SerializeField]
-        private bool _playOnStart = false;
+        private PlayTrigger _playTrigger = PlayTrigger.Manual;
+
+        [Tooltip("禁用时的行为")]
+        [SerializeField]
+        private DisableAction _disableAction = DisableAction.Pause;
 
         [Tooltip("循环次数（-1 为无限循环）")]
         [SerializeField]
@@ -108,11 +112,47 @@ namespace CNoom.DOTweenVisual.Components
 
         #region Unity 生命周期
 
-        private void Start()
+        private void Awake()
         {
-            if (_playOnStart)
+            if (_playTrigger == PlayTrigger.OnAwake)
             {
                 Play();
+            }
+        }
+
+        private void Start()
+        {
+            if (_playTrigger == PlayTrigger.OnStart)
+            {
+                Play();
+            }
+        }
+
+        private void OnEnable()
+        {
+            switch (_playTrigger)
+            {
+                case PlayTrigger.OnEnableRestart:
+                    Stop();
+                    Play();
+                    break;
+                case PlayTrigger.OnEnableResume:
+                    Resume();
+                    break;
+            }
+        }
+
+        private void OnDisable()
+        {
+            switch (_disableAction)
+            {
+                case DisableAction.Pause:
+                    if (_isPlaying) Pause();
+                    break;
+                case DisableAction.Stop:
+                    if (_isPlaying) Stop();
+                    break;
+                // DisableAction.None: 不做处理
             }
         }
 
@@ -120,14 +160,6 @@ namespace CNoom.DOTweenVisual.Components
         {
             _isPlaying = false;
             KillSequence();
-        }
-
-        private void OnDisable()
-        {
-            if (_isPlaying)
-            {
-                Pause();
-            }
         }
 
         #endregion
