@@ -248,6 +248,14 @@ namespace CNoom.DOTweenVisual.Editor
             langButton.AddToClassList("lang-button");
             toolbar.Add(langButton);
 
+            var helpButton = new Button(OnHelpClicked)
+            {
+                text = L10n.Tr("Help/Button"),
+                tooltip = L10n.Tr("Help/Title")
+            };
+            helpButton.AddToClassList("help-button");
+            toolbar.Add(helpButton);
+
             var separator = new VisualElement();
             separator.AddToClassList("toolbar-separator");
             toolbar.Add(separator);
@@ -515,6 +523,18 @@ namespace CNoom.DOTweenVisual.Editor
             int secs = (int)(seconds % 60);
             int ms = (int)((seconds * 10) % 10);
             return $"{minutes:D2}:{secs:D2}.{ms}";
+        }
+
+        #endregion
+
+        #region 帮助
+
+        private void OnHelpClicked()
+        {
+            var popup = EditorWindow.GetWindow<HelpPopupWindow>();
+            popup.titleContent = new GUIContent(L10n.Tr("Help/Title"));
+            popup.minSize = new Vector2(360, 400);
+            popup.Show();
         }
 
         #endregion

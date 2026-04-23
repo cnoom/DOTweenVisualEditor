@@ -49,6 +49,23 @@
     color: #FFFFFF;
 }
 
+.help-button {
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px 6px;
+    min-width: 22px;
+    color: #AAAAAA;
+    border-width: 1px;
+    border-color: #555555;
+    border-radius: 3px;
+    margin-left: 4px;
+}
+
+.help-button:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+}
+
 .toolbar-separator {
     width: 1px;
     height: 18px;
