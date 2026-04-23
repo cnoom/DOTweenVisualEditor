@@ -563,9 +563,7 @@ namespace CNoom.DOTweenVisual.Editor
                 ? $"{L10n.Tr("Detail/AddWaypoint")} +{step}"
                 : L10n.Tr("Detail/AddWaypoint");
             var addButton = new Button(() => AddPathWaypoint(waypointsProp, pathTypeProp.intValue)) { text = addLabel };
-            addButton.style.fontSize = 10f;
-            addButton.style.paddingLeft = 6f;
-            addButton.style.paddingRight = 6f;
+            addButton.AddToClassList("inline-add-button");
             headerRow.Add(addButton);
 
             // 批量删除按钮（CubicBezier 模式下显示 "-3"，其他模式不显示）
@@ -573,10 +571,7 @@ namespace CNoom.DOTweenVisual.Editor
             {
                 string removeLabel = $"-{step}";
                 var removeButton = new Button(() => RemovePathWaypointsBatch(waypointsProp, pathTypeProp.intValue)) { text = removeLabel };
-                removeButton.style.fontSize = 10f;
-                removeButton.style.paddingLeft = 6f;
-                removeButton.style.paddingRight = 6f;
-                removeButton.style.marginLeft = 4f;
+                removeButton.AddToClassList("inline-batch-remove-button");
                 headerRow.Add(removeButton);
             }
 
@@ -664,13 +659,8 @@ namespace CNoom.DOTweenVisual.Editor
                 var delBtn = new Button(() =>
                 {
                     RemovePathWaypoint(waypointsProp, idx, pathTypeProp.intValue);
-                }) { text = "✕" };
-                delBtn.style.fontSize = 9f;
-                delBtn.style.color = new Color(0.9f, 0.4f, 0.4f);
-                delBtn.style.width = 18f;
-                delBtn.style.height = 18f;
-                delBtn.style.flexShrink = 0;
-                delBtn.style.marginLeft = 2f;
+                }) { text = "X" };
+                delBtn.AddToClassList("inline-delete-button");
                 // CubicBezier 模式下，无法单独删除（需保持 3n），禁用单点删除
                 if (pathType == PathType_CubicBezier)
                     delBtn.SetEnabled(false);
@@ -817,7 +807,7 @@ namespace CNoom.DOTweenVisual.Editor
                 _onRefreshDetail();
             })
             {
-                text = "⤓",
+                text = "S",
                 tooltip = L10n.Tr("Detail/SyncTooltip")
             };
             btn.AddToClassList("inline-sync-button");

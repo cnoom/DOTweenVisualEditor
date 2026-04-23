@@ -116,35 +116,94 @@
     padding: 2px 8px;
 }
 
-/* === 内联同步按钮 === */
+/* === 内联同步按钮 (青色) === */
 .inline-sync-button {
-    font-size: 14px;
+    font-size: 11px;
+    font-weight: bold;
     padding: 0 4px;
     min-width: 20px;
-    width: 20px;
     height: 18px;
     margin-left: 2px;
-    color: #AAAAAA;
-    background-color: rgba(255, 255, 255, 0.05);
+    color: #4FC3F7;
+    background-color: rgba(79, 195, 247, 0.1);
     border-width: 1px;
-    border-color: #555555;
+    border-color: rgba(79, 195, 247, 0.4);
     border-radius: 3px;
     flex-shrink: 0;
 }
 
 .inline-sync-button:hover {
     color: #FFFFFF;
-    background-color: rgba(74, 144, 217, 0.3);
-    border-color: #4A90D9;
+    background-color: rgba(79, 195, 247, 0.3);
+    border-color: #4FC3F7;
 }
 
 /* 路径点行内的紧凑同步按钮 */
 .inline-sync-button--compact {
-    font-size: 11px;
     min-width: 18px;
     width: 18px;
     height: 18px;
     padding: 0 2px;
+}
+
+/* === 内联删除按钮 (红色) === */
+.inline-delete-button {
+    font-size: 9px;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    margin-left: 2px;
+    color: #EF5350;
+    background-color: rgba(239, 83, 80, 0.1);
+    border-width: 1px;
+    border-color: rgba(239, 83, 80, 0.4);
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.inline-delete-button:hover {
+    color: #FFFFFF;
+    background-color: rgba(239, 83, 80, 0.3);
+    border-color: #EF5350;
+}
+
+/* === 内联添加按钮 (绿色) === */
+.inline-add-button {
+    font-size: 10px;
+    padding: 0 6px;
+    height: 20px;
+    color: #66BB6A;
+    background-color: rgba(102, 187, 106, 0.1);
+    border-width: 1px;
+    border-color: rgba(102, 187, 106, 0.4);
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.inline-add-button:hover {
+    color: #FFFFFF;
+    background-color: rgba(102, 187, 106, 0.3);
+    border-color: #66BB6A;
+}
+
+/* === 内联批量删除按钮 (红色) === */
+.inline-batch-remove-button {
+    font-size: 10px;
+    padding: 0 6px;
+    height: 20px;
+    margin-left: 4px;
+    color: #EF5350;
+    background-color: rgba(239, 83, 80, 0.1);
+    border-width: 1px;
+    border-color: rgba(239, 83, 80, 0.4);
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.inline-batch-remove-button:hover {
+    color: #FFFFFF;
+    background-color: rgba(239, 83, 80, 0.3);
+    border-color: #EF5350;
 }
 
 /* === 步骤列表 (ListView) === */
