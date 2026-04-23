@@ -91,26 +91,6 @@ namespace CNoom.DOTweenVisual.Editor
             window.Show();
         }
 
-        [MenuItem("Tools/DOTween Visual/中文 (简体)", false, 200)]
-        private static void SetLanguageZhCN() { L10n.Current = L10n.Language.ZhCN; }
-
-        [MenuItem("Tools/DOTween Visual/中文 (简体)", true)]
-        private static bool ValidateLanguageZhCN()
-        {
-            Menu.SetChecked("Tools/DOTween Visual/中文 (简体)", L10n.Current == L10n.Language.ZhCN);
-            return true;
-        }
-
-        [MenuItem("Tools/DOTween Visual/English", false, 201)]
-        private static void SetLanguageEnUS() { L10n.Current = L10n.Language.EnUS; }
-
-        [MenuItem("Tools/DOTween Visual/English", true)]
-        private static bool ValidateLanguageEnUS()
-        {
-            Menu.SetChecked("Tools/DOTween Visual/English", L10n.Current == L10n.Language.EnUS);
-            return true;
-        }
-
         private void OnEnable()
         {
             _previewManager = new DOTweenPreviewManager();
