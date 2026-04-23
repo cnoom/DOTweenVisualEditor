@@ -568,6 +568,18 @@ namespace CNoom.DOTweenVisual.Editor
             addButton.style.paddingRight = 6f;
             headerRow.Add(addButton);
 
+            // 批量删除按钮（CubicBezier 模式下显示 "-3"，其他模式不显示）
+            if (step > 1)
+            {
+                string removeLabel = $"-{step}";
+                var removeButton = new Button(() => RemovePathWaypointsBatch(waypointsProp, pathTypeProp.intValue)) { text = removeLabel };
+                removeButton.style.fontSize = 10f;
+                removeButton.style.paddingLeft = 6f;
+                removeButton.style.paddingRight = 6f;
+                removeButton.style.marginLeft = 4f;
+                headerRow.Add(removeButton);
+            }
+
             container.Add(headerRow);
 
             for (int i = 0; i < waypointsProp.arraySize; i++)
@@ -711,6 +723,34 @@ namespace CNoom.DOTweenVisual.Editor
             Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/DeleteWaypoint"));
             _getSerializedObject()?.Update();
             waypointsProp.DeleteArrayElementAtIndex(index);
+            waypointsProp.serializedObject.ApplyModifiedProperties();
+
+            _onRefreshDetail();
+            _onPathDataChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// 批量删除末尾的 step 个路径点（CubicBezier 等需要保持 3n 约束的模式）
+        /// </summary>
+        private void RemovePathWaypointsBatch(SerializedProperty waypointsProp, int pathType)
+        {
+            if (waypointsProp == null) return;
+            int step = GetWaypointStep(pathType);
+            int minCount = GetMinWaypointCount(pathType);
+
+            if (waypointsProp.arraySize - step < minCount)
+            {
+                DOTweenLog.Warning(L10n.Tr("Detail/MinWaypointsWarning"));
+                return;
+            }
+
+            Undo.RecordObject(_getTargetPlayer(), L10n.Tr("Undo/DeleteWaypoint"));
+            _getSerializedObject()?.Update();
+
+            for (int i = 0; i < step; i++)
+            {
+                waypointsProp.DeleteArrayElementAtIndex(waypointsProp.arraySize - 1);
+            }
             waypointsProp.serializedObject.ApplyModifiedProperties();
 
             _onRefreshDetail();
