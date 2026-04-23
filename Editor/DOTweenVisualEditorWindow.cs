@@ -325,6 +325,7 @@ namespace CNoom.DOTweenVisual.Editor
             BuildAddStepMenu();
             UpdateButtonStates();
 
+            rootVisualElement.UnregisterCallback<KeyDownEvent>(OnKeyDown);
             rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown);
 
             // 语言切换后恢复数据绑定
@@ -338,6 +339,10 @@ namespace CNoom.DOTweenVisual.Editor
 
         private void InitControllers()
         {
+            // 释放旧控制器，避免事件订阅累积
+            _listController?.Dispose();
+            _detailPanelController?.Dispose();
+
             _listController = new StepListController(
                 () => serializedObject,
                 () => stepsProperty,

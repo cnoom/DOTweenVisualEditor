@@ -96,6 +96,19 @@ namespace CNoom.DOTweenVisual.Editor
             return _stepListView;
         }
 
+        /// <summary>
+        /// 释放控制器资源，取消 ListView 事件订阅
+        /// </summary>
+        public void Dispose()
+        {
+            if (_stepListView != null)
+            {
+                _stepListView.itemsRemoved -= OnStepsRemoved;
+                _stepListView.itemIndexChanged -= OnStepIndexChanged;
+                _stepListView.selectionChanged -= OnStepSelectionChanged;
+            }
+        }
+
         #endregion
 
         #region 数据刷新

@@ -359,6 +359,7 @@ namespace CNoom.DOTweenVisual.Components
                 _onComplete?.Invoke();
                 _isPlaying = false;
                 _onDone?.Invoke(true);
+                _onDone = null;
                 if (_debugMode) DOTweenLog.Debug("动画播放完成");
             });
 
@@ -406,6 +407,9 @@ namespace CNoom.DOTweenVisual.Components
                     _onDone?.Invoke(false);
                 }
                 _onDone = null;
+                _onStart = null;
+                _onComplete = null;
+                _onUpdate = null;
             }
             _isPlaying = false;
         }
