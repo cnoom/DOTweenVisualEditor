@@ -421,6 +421,7 @@ namespace CNoom.DOTweenVisual.Tests
             Assert.IsTrue(_player.IsPlaying);
 
             // 模拟 OnDisable
+            LogAssert.Expect(LogType.Assert, "Assertion failed on expression: 'ShouldRunBehaviour()'");
             _player.SendMessage("OnDisable");
             DOTween.ManualUpdate(0.1f, 0.1f);
 
@@ -445,6 +446,7 @@ namespace CNoom.DOTweenVisual.Tests
             DOTween.ManualUpdate(0.1f, 0.1f);
 
             // 模拟 OnDisable
+            LogAssert.Expect(LogType.Assert, "Assertion failed on expression: 'ShouldRunBehaviour()'");
             _player.SendMessage("OnDisable");
             DOTween.ManualUpdate(0.1f, 0.1f);
 
@@ -471,7 +473,8 @@ namespace CNoom.DOTweenVisual.Tests
 
             float posBefore = _gameObject.transform.position.x;
 
-            // 模拟 OnDisable
+            // 模拟 OnDisable（Editor 测试环境会触发 ShouldRunBehaviour 断言，需忽略）
+            LogAssert.Expect(LogType.Assert, "Assertion failed on expression: 'ShouldRunBehaviour()'");
             _player.SendMessage("OnDisable");
             DOTween.ManualUpdate(0.1f, 0.1f);
 
@@ -503,6 +506,7 @@ namespace CNoom.DOTweenVisual.Tests
             float posBefore = _gameObject.transform.position.x;
 
             // 模拟 OnEnable
+            LogAssert.Expect(LogType.Assert, "Assertion failed on expression: 'ShouldRunBehaviour()'");
             _player.SendMessage("OnEnable");
             DOTween.ManualUpdate(0.2f, 0.2f);
 
@@ -532,6 +536,7 @@ namespace CNoom.DOTweenVisual.Tests
             Assert.Greater(posBefore, 0f, "应已移动");
 
             // 模拟 OnEnable → Stop + Play
+            LogAssert.Expect(LogType.Assert, "Assertion failed on expression: 'ShouldRunBehaviour()'");
             _player.SendMessage("OnEnable");
             DOTween.ManualUpdate(0.01f, 0.01f);
 
