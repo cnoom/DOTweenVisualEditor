@@ -341,7 +341,6 @@ namespace CNoom.DOTweenVisual.Editor
         {
             // 释放旧控制器，避免事件订阅累积
             _listController?.Dispose();
-            _detailPanelController?.Dispose();
 
             _listController = new StepListController(
                 () => serializedObject,
