@@ -111,7 +111,13 @@ namespace CNoom.DOTweenVisual.Editor
 
             // 确保清理旧的预览状态
             CleanupSequence();
-            DOTweenEditorPreview.Stop();
+            // 仅在之前有预览状态时才调用 Stop，避免清除 DOTween 初始化后的内部回调
+            // Stop() 文档注明会 "clears any callback"，域重载后 DOTween 刚初始化，
+            // 此时调用 Stop() 可能破坏 DOTween 内部状态，导致后续预览卡顿
+            if (State != PreviewState.None)
+            {
+                DOTweenEditorPreview.Stop();
+            }
 
             if (_snapshots.Count > 0)
             {
