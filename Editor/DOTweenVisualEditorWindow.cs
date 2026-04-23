@@ -168,6 +168,7 @@ namespace CNoom.DOTweenVisual.Editor
 
             _listController?.RebuildStepList();
             _detailPanelController?.RefreshDetailPanel();
+            RebuildPlayerSettings();
             UpdatePathVisualizer();
         }
 
@@ -591,18 +592,32 @@ namespace CNoom.DOTweenVisual.Editor
             var debugModeProp = serializedObject.FindProperty("_debugMode");
 
             AddSettingsField(container, L10n.Tr("Settings/PlayTrigger"),
-                DetailFieldFactory.CreateEnumField(playTriggerProp, typeof(PlayTrigger)));
+                CreateSettingsEnumField(playTriggerProp, typeof(PlayTrigger)));
             AddSettingsField(container, L10n.Tr("Settings/DisableAction"),
-                DetailFieldFactory.CreateEnumField(disableActionProp, typeof(DisableAction)));
+                CreateSettingsEnumField(disableActionProp, typeof(DisableAction)));
             AddSettingsField(container, L10n.Tr("Settings/Loops"),
-                CreateLoopsField(loopsProp));
+                CreateSettingsIntField(loopsProp));
             AddSettingsField(container, L10n.Tr("Settings/LoopType"),
-                DetailFieldFactory.CreateEnumField(loopTypeProp, typeof(LoopType)));
+                CreateSettingsEnumField(loopTypeProp, typeof(LoopType)));
             AddSettingsField(container, L10n.Tr("Settings/DebugMode"),
-                DetailFieldFactory.CreateToggle(debugModeProp));
+                CreateSettingsToggleField(debugModeProp));
         }
 
-        private IntegerField CreateLoopsField(SerializedProperty prop)
+        private EnumField CreateSettingsEnumField(SerializedProperty prop, Type enumType)
+        {
+            var field = new EnumField((Enum)Enum.GetValues(enumType).GetValue(prop.enumValueIndex));
+            field.RegisterValueChangedCallback(evt =>
+            {
+                if (!DetailFieldFactory.IsValidProperty(prop)) return;
+                Undo.RecordObject(targetPlayer, L10n.Tr("Settings/Title"));
+                serializedObject.Update();
+                prop.enumValueIndex = Convert.ToInt32(evt.newValue);
+                serializedObject.ApplyModifiedProperties();
+            });
+            return field;
+        }
+
+        private IntegerField CreateSettingsIntField(SerializedProperty prop)
         {
             var field = new IntegerField { value = prop.intValue };
             field.RegisterValueChangedCallback(evt =>
@@ -611,6 +626,20 @@ namespace CNoom.DOTweenVisual.Editor
                 Undo.RecordObject(targetPlayer, L10n.Tr("Settings/Title"));
                 serializedObject.Update();
                 prop.intValue = evt.newValue;
+                serializedObject.ApplyModifiedProperties();
+            });
+            return field;
+        }
+
+        private Toggle CreateSettingsToggleField(SerializedProperty prop)
+        {
+            var field = new Toggle { value = prop.boolValue };
+            field.RegisterValueChangedCallback(evt =>
+            {
+                if (!DetailFieldFactory.IsValidProperty(prop)) return;
+                Undo.RecordObject(targetPlayer, L10n.Tr("Settings/Title"));
+                serializedObject.Update();
+                prop.boolValue = evt.newValue;
                 serializedObject.ApplyModifiedProperties();
             });
             return field;

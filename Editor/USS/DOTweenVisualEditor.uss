@@ -344,3 +344,27 @@
 .path-waypoints-container {
     margin-top: 4px;
 }
+
+/* === 播放设置面板 === */
+.player-settings-foldout {
+    margin-top: 4px;
+    border-top-width: 1px;
+    border-top-color: #404040;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.player-settings-foldout > .unity-foldout__header {
+    height: 24px;
+    margin-top: 2px;
+}
+
+.player-settings-foldout .unity-foldout__text {
+    font-size: 11px;
+    color: #AAAAAA;
+}
+
+.player-settings-foldout .unity-foldout__content {
+    padding-top: 2px;
+    padding-bottom: 4px;
+}

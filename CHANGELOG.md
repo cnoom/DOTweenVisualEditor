@@ -30,6 +30,15 @@
 - PathVisualizer GUIStyle 缓存为延迟初始化属性，避免每帧 GC 分配
 - DOTweenPreviewManager catch 保留完整异常堆栈信息
 
+## [1.3.0] - 2026-04-23
+
+### 新增
+
+- **编辑器播放设置面板** - 可视化编辑器左侧新增可折叠面板
+  - 可直接在编辑器窗口中配置 PlayTrigger / DisableAction / Loops / LoopType / DebugMode
+  - 所有字段支持 Undo/Redo 操作
+  - 目标切换和语言切换时自动重建面板
+
 ## [1.2.0] - 2026-04-23
 
 ### 新增
