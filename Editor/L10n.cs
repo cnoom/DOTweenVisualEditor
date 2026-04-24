@@ -19,7 +19,8 @@ namespace CNoom.DOTweenVisual.Editor
 
         private const string LanguageKey = "DOTweenVisualEditor_Language";
         private static Language _current;
-        private static Dictionary<string, string> _dict;
+        private static Dictionary<string, string> _zhDict;
+        private static Dictionary<string, string> _enDict;
 
         public static Language Current
         {
@@ -29,13 +30,15 @@ namespace CNoom.DOTweenVisual.Editor
                 if (_current == value) return;
                 _current = value;
                 EditorPrefs.SetInt(LanguageKey, (int)value);
-                _dict = null; // 强制重建字典
             }
         }
 
         static L10n()
         {
             _current = (Language)EditorPrefs.GetInt(LanguageKey, (int)Language.ZhCN);
+            // 预构建两种语言的字典，避免首次 Tr() 调用时的延迟
+            _zhDict = BuildZhCN();
+            _enDict = BuildEnUS();
         }
 
         /// <summary>
@@ -43,13 +46,8 @@ namespace CNoom.DOTweenVisual.Editor
         /// </summary>
         public static string Tr(string key)
         {
-            _dict ??= BuildDictionary();
-            return _dict.TryGetValue(key, out var value) ? value : key;
-        }
-
-        private static Dictionary<string, string> BuildDictionary()
-        {
-            return _current == Language.ZhCN ? BuildZhCN() : BuildEnUS();
+            var dict = _current == Language.ZhCN ? _zhDict : _enDict;
+            return dict.TryGetValue(key, out var value) ? value : key;
         }
 
         #region 中文

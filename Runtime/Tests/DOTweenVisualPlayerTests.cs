@@ -437,10 +437,8 @@ namespace CNoom.DOTweenVisual.Tests
         [Test]
         public void DisableAction_Stop_StopsOnDisable()
         {
-            // 通过反射设置 _disableAction = Stop
-            var field = typeof(DOTweenVisualPlayer).GetField("_disableAction",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            field.SetValue(_player, DisableAction.Stop);
+            // 直接访问 internal 字段设置 _disableAction = Stop
+            _player._disableAction = DisableAction.Stop;
 
             _player.AddStep(new TweenStepData
             {
@@ -465,10 +463,8 @@ namespace CNoom.DOTweenVisual.Tests
         [Test]
         public void DisableAction_None_DoesNotAffectAnimation()
         {
-            // 通过反射设置 _disableAction = None
-            var field = typeof(DOTweenVisualPlayer).GetField("_disableAction",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            field.SetValue(_player, DisableAction.None);
+            // 直接访问 internal 字段设置 _disableAction = None
+            _player._disableAction = DisableAction.None;
 
             _player.AddStep(new TweenStepData
             {
@@ -497,10 +493,8 @@ namespace CNoom.DOTweenVisual.Tests
         [Test]
         public void OnEnableResume_ResumesPausedAnimation()
         {
-            // 通过反射设置 _playTrigger
-            var field = typeof(DOTweenVisualPlayer).GetField("_playTrigger",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            field.SetValue(_player, PlayTrigger.OnEnableResume);
+            // 直接访问 internal 字段设置 _playTrigger
+            _player._playTrigger = PlayTrigger.OnEnableResume;
 
             _player.AddStep(new TweenStepData
             {
@@ -531,9 +525,7 @@ namespace CNoom.DOTweenVisual.Tests
         [Test]
         public void OnEnableRestart_RestartsAnimation()
         {
-            var field = typeof(DOTweenVisualPlayer).GetField("_playTrigger",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            field.SetValue(_player, PlayTrigger.OnEnableRestart);
+            _player._playTrigger = PlayTrigger.OnEnableRestart;
 
             _player.AddStep(new TweenStepData
             {

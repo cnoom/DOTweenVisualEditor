@@ -67,6 +67,11 @@ namespace CNoom.DOTweenVisual
         /// 输出 Debug 级别日志
         /// 仅在编辑器环境下编译，发布版本自动移除调用
         /// </summary>
+        /// <remarks>
+        /// 注意：由于 [Conditional("UNITY_EDITOR")] 特性不会阻止参数求值，
+        /// 调用方应避免传入带副作用的表达式或昂贵的计算，如：
+        /// DOTweenLog.Debug(ExpensiveOperation()); // 即使在发布版本中 ExpensiveOperation() 仍会执行
+        /// </remarks>
         /// <param name="message">日志内容</param>
         [Conditional("UNITY_EDITOR")]
         public static void Debug(string message)

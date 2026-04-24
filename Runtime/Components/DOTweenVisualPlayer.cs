@@ -23,11 +23,11 @@ namespace CNoom.DOTweenVisual.Components
         [Header("播放设置")]
         [Tooltip("播放触发时机")]
         [SerializeField]
-        private PlayTrigger _playTrigger = PlayTrigger.Manual;
+        internal PlayTrigger _playTrigger = PlayTrigger.Manual;
 
         [Tooltip("禁用时的行为")]
         [SerializeField]
-        private DisableAction _disableAction = DisableAction.Pause;
+        internal DisableAction _disableAction = DisableAction.Pause;
 
         [Tooltip("循环次数（-1 为无限循环）")]
         [SerializeField]
